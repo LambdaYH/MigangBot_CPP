@@ -8,11 +8,12 @@
 #include "event/trie.h"
 #include "event/event_filter.h"
 #include "event/event.h"
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
 #include "pool/thread_pool.h"
+#include "logger/logger.h"
 
 #include <iostream>
 
@@ -103,6 +104,7 @@ inline bool EventHandler::Handle(const Event &event, std::function<void(const st
 {
     if(filter_ && !filter_->operator()(event))
         return false;
+    LOG_INFO("Bot[{}] Got a Message: {}", event["self_id"].asInt64(), event["message"].asString());
     auto func = MatchedHandler(event);
     if(func)
         pool_->AddTask(std::bind(func, event, notify));

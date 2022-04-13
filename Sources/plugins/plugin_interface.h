@@ -2,7 +2,7 @@
 #define PLUGINS_PLUGIN_INTERFACE_H_
 
 #include "event/event_handler.h"
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 #include <string>
 #include <functional>
 

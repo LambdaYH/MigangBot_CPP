@@ -7,7 +7,7 @@
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/strand.hpp>
 #include <condition_variable>
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 #include <thread>
 #include <queue>
 #include <mutex>
@@ -43,11 +43,6 @@ public:
     void DoRead();
 
     void OnRead(beast::error_code ec, std::size_t bytes_transferred);
-
-    void OnWrite(beast::error_code ec,
-        std::size_t bytes_transferred){
-            boost::ignore_unused(bytes_transferred);
-        };
 
 private:
     void StartThread(std::size_t write_thread_num, std::size_t process_thread_num);

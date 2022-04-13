@@ -2,7 +2,7 @@
 #define MIGANGBOTCPP_EVENT_EVENT_H_
 
 #include <string>
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 
 namespace white
 {

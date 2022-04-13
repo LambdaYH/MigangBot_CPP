@@ -93,7 +93,7 @@ private:
             Fail(ec, "accept");
         else
             std::make_shared<white::Bot>(std::move(socket))->Run();
-
+        
         // Accept another connection
         DoAccept();
     }

@@ -5,7 +5,8 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
+#include "event/event.h"
 
 namespace white
 {

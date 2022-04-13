@@ -1,6 +1,7 @@
 #include "bot/bot.h"
 #include "version.h"
 #include "event/event_handler.h"
+#include "logger/logger.h"
 #include <iostream>
 
 namespace white
@@ -62,7 +63,7 @@ void Bot::OnAccept(beast::error_code ec)
     if(ec)
         return fail(ec, "accept");
 
-        DoRead();
+    DoRead();
 }
 
 void Bot::DoRead()
