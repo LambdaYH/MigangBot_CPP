@@ -20,6 +20,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: true
 
     - name: config env
       run : sudo apt install libjsoncpp-dev -y

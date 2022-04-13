@@ -8,12 +8,18 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 find_package(Threads REQUIRED) # pthread
 
-find_package(PkgConfig REQUIRED) # libjsoncpp
-pkg_check_modules(JSONCPP jsoncpp)
+set(Boost_USE_MULTITHREADED ON)  
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME ON)
+find_package(Boost)
+IF(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+ENDIF(Boost_FOUND)
 
-link_libraries(${JSONCPP_LIBRARIES})
+add_subdirectory(third-party/yaml-cpp)
+add_subdirectory(third-party/jsoncpp)
+add_subdirectory(third-party/spdlog)
 
-include_directories(Externals)
 include_directories(Sources)
 
 aux_source_directory(Sources/bot BOT_SRC)
@@ -27,4 +33,4 @@ add_executable(${PROJECT_NAME}
                 ${EVENT_SRC}
 )
                 
-target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads ${JSONCPP_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads jsoncpp yaml-cpp spdlog)
