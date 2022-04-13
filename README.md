@@ -1,6 +1,6 @@
 # MigangBotCPP
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/2f2ff355bd7f482badfb151c8ad76744)](https://www.codacy.com/gh/LambdaYH/MigangBotCPP/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=LambdaYH/MigangBotCPP&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/1e01e2e5def849ecabaf4474a575e29f)](https://www.codacy.com/gh/LambdaYH/MigangBotCPP/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=LambdaYH/MigangBotCPP&amp;utm_campaign=Badge_Grade)
 
 ## 
 
