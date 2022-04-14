@@ -8,7 +8,6 @@
 namespace white
 {
 
-using plugin_func = std::function<void(const Event &, std::function<void(const std::string &)> &)>;
 using Event = nlohmann::json;
 
 } // namespace white

@@ -15,8 +15,9 @@ void fail(beast::error_code ec, char const* what)
 Bot::Bot(tcp::socket&& socket, std::size_t write_thread_num, std::size_t process_thread_num) :
         ws_(std::move(socket)),
         notify_(std::bind(&Bot::Notify, this, std::placeholders::_1)),
-        event_handler_( std::bind(&EventHandler::Handle, &EventHandler::GetInstance(), std::placeholders::_1, notify_) ),
-        stop_(false)
+        stop_(false),
+        api_bot_(notify_),
+        event_handler_( std::bind(&EventHandler::Handle, &EventHandler::GetInstance(), std::placeholders::_1, std::ref(api_bot_)) )
 {
     StartThread(write_thread_num, process_thread_num);
 }

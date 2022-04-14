@@ -7,6 +7,7 @@
 #include <vector>
 #include <functional>
 #include "plugins/utility.h"
+#include "bot/api_bot.h"
 
 namespace white
 {

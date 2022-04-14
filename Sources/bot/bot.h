@@ -14,6 +14,7 @@
 #include <string>
 #include <utility>
 #include <functional>
+#include "bot/api_bot.h"
 
 #include "event/event.h"
 
@@ -63,6 +64,7 @@ private:
     std::mutex mutex_write_;
     std::mutex mutex_process_;
     std::function<void(const std::string &)> notify_;
+    ApiBot api_bot_;
     std::function<bool(const Event &)> event_handler_;
 
     bool stop_;

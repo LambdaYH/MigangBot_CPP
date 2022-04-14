@@ -8,6 +8,7 @@
 #include <queue>
 #include <condition_variable>
 #include <mutex>
+#include <string_view>
 
 namespace white
 {
@@ -16,7 +17,7 @@ class Echo : public PluginInterface
 {
 public:
     virtual void Register(EventHandler &event_handler);
-    void DoEcho(const Event &event, std::function<void(const std::string &)> &notify);
+    void DoEcho(const Event &event, ApiBot &bot);
 private:
     onebot11::ApiImpl api_impl;
 };
@@ -24,13 +25,12 @@ private:
 inline void Echo::Register(EventHandler &event_handler)
 {
     event_handler.RegisterCommand(PREFIX, "/echo", std::bind(&Echo::DoEcho, this, std::placeholders::_1, std::placeholders::_2));
-    event_handler.RegisterCommand(PREFIX, "/回声", std::bind(&Echo::DoEcho, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-inline void Echo::DoEcho( const Event &event, std::function<void(const std::string &)> &notify)
+inline void Echo::DoEcho( const Event &event, ApiBot &bot)
 {
-    std::string_view msg = event["message"].get<std::string_view>().substr(6);
-    notify(api_impl.send_msg(event, std::move(std::string(msg))));
+    std::string msg = event["message"].get<std::string>().substr(6);
+    bot.send_msg(event, std::move(std::string(msg)));
 }
 
 } // namespace white

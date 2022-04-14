@@ -7,9 +7,12 @@
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include "event/event.h"
+#include "bot/api_bot.h"
 
 namespace white
 {
+
+using plugin_func = std::function<void(const Event &, ApiBot &)>;
 
 class Trie
 {

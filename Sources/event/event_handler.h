@@ -14,11 +14,14 @@
 #include <queue>
 #include "pool/thread_pool.h"
 #include "logger/logger.h"
+#include "bot/api_bot.h"
 
 #include <iostream>
 
 namespace white
 {
+
+using plugin_func = std::function<void(const Event &, ApiBot &)>;
 
 constexpr auto FULLMATCH = 0;
 constexpr auto PREFIX = 1;
@@ -43,7 +46,7 @@ public:
 public:
     template<typename F>
     bool RegisterCommand(const int type, const std::string &command, F &&func);
-    bool Handle(const Event &event, std::function<void(const std::string &)> &notify) const;
+    bool Handle(const Event &event, ApiBot &bot) const;
 
 private:
     EventHandler() : pool_(new ThreadPool(8)) {}
@@ -100,19 +103,19 @@ inline bool EventHandler::RegisterCommand(const int type, const std::string &com
     }
 }
 
-inline bool EventHandler::Handle(const Event &event, std::function<void(const std::string &)> &notify) const
+inline bool EventHandler::Handle(const Event &event, ApiBot &bot) const
 {
     if(filter_ && !filter_->operator()(event))
         return false;
     LOG_INFO("Bot[{}] Got a Message: {}", event["self_id"].get<uint64_t>(), event["message"].get<std::string>());
     auto func = MatchedHandler(event);
     if(func)
-        pool_->AddTask(std::bind(func, event, notify));
+        pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝
     else
     {
         auto &funcs = FreeHandler();
         for(auto &func : funcs)
-            pool_->AddTask(std::bind(func, event, notify));
+            pool_->AddTask(std::bind(func, event, std::ref(bot)));
     }
     return true;
 }
