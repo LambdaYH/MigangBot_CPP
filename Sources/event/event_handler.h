@@ -22,7 +22,7 @@ namespace white
 
 constexpr auto FULLMATCH = 0;
 constexpr auto PREFIX = 1;
-constexpr auto SUBFIX = 2;
+constexpr auto SUFFIX = 2;
 constexpr auto KEYWORD = 3;
 constexpr auto ALLMSG = 4;
 
@@ -81,7 +81,7 @@ inline bool EventHandler::RegisterCommand(const int type, const std::string &com
         case PREFIX:
             return command_prefix_.Insert(std::move(command), std::forward<F>(func));
             break;
-        case SUBFIX:
+        case SUFFIX:
         {
             std::string command_reverse = command;
             std::reverse(command_reverse.begin(), command_reverse.end());
@@ -127,9 +127,9 @@ inline const plugin_func &EventHandler::MatchedHandler(const Event &event) const
         return func_prefix;
     std::string msg_str_reverse = msg_str;
     std::reverse(msg_str_reverse.begin(), msg_str_reverse.end());
-    const plugin_func &func_subfix = command_suffix_.Search(msg_str_reverse);
-    if(func_subfix)
-        return func_subfix;
+    const plugin_func &func_suffix = command_suffix_.Search(msg_str_reverse);
+    if(func_suffix)
+        return func_suffix;
     return no_func_avaliable_;
 }
 

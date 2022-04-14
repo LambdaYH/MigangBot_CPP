@@ -49,7 +49,7 @@ inline void InitEventFilter()
 int main(int argc, char* argv[])
 {
     // load config
-    std::filesystem::path current_working_dir = std::filesystem::current_path().parent_path();
+    std::filesystem::path current_working_dir = std::filesystem::current_path();
     std::filesystem::path config_doc_path = current_working_dir / "config.yml";
     if(!std::filesystem::exists(config_doc_path))
     {

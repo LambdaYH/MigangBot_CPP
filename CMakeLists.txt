@@ -17,17 +17,24 @@ IF(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 ENDIF(Boost_FOUND)
 
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(third-party/yaml-cpp)
-set(JSON_ImplicitConversions OFF)
+
+set(JSON_ImplicitConversions OFF CACHE BOOL "Enable implicit conversions.")
 add_subdirectory(third-party/json)
+
 add_subdirectory(third-party/spdlog)
+
+set(BUILD_SHARED OFF CACHE BOOL "build shared library")
+set(BUILD_EXAMPLES OFF CACHE BOOL "build examples")
+add_subdirectory(third-party/libhv)
 
 include_directories(Sources)
 include_directories(
     Sources
     third-party/json/include
     third-party/yaml-cpp/include
-    third-party/spdlog/include
+    include
 )
 
 aux_source_directory(Sources/bot BOT_SRC)
@@ -41,4 +48,4 @@ add_executable(${PROJECT_NAME}
                 ${EVENT_SRC}
 )
                 
-target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads yaml-cpp nlohmann_json::nlohmann_json spdlog)
+target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads yaml-cpp nlohmann_json::nlohmann_json hv_static spdlog)

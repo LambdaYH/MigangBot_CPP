@@ -4,7 +4,9 @@
 #include "event/event_handler.h"
 #include <nlohmann/json.hpp>
 #include <string>
+#include <vector>
 #include <functional>
+#include "plugins/utility.h"
 
 namespace white
 {
