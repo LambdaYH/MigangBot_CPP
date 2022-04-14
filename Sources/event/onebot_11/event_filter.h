@@ -14,7 +14,9 @@ class EventFilterOnebot11 : public EventFilter
 public:
     virtual const bool operator()(const Event &msg) const
     {
-        if(msg["meta_event_type"] != Json::nullValue)
+        if(msg.contains("meta_event_type"))
+            return false;
+        if(msg.contains("retcode"))
             return false;
         return true;
     }

@@ -8,7 +8,7 @@
 #include "event/trie.h"
 #include "event/event_filter.h"
 #include "event/event.h"
-#include <json/json.h>
+#include <nlohmann/json.hpp>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
@@ -104,7 +104,7 @@ inline bool EventHandler::Handle(const Event &event, std::function<void(const st
 {
     if(filter_ && !filter_->operator()(event))
         return false;
-    LOG_INFO("Bot[{}] Got a Message: {}", event["self_id"].asInt64(), event["message"].asString());
+    LOG_INFO("Bot[{}] Got a Message: {}", event["self_id"].get<uint64_t>(), event["message"].get<std::string>());
     auto func = MatchedHandler(event);
     if(func)
         pool_->AddTask(std::bind(func, event, notify));
@@ -119,7 +119,7 @@ inline bool EventHandler::Handle(const Event &event, std::function<void(const st
 
 inline const plugin_func &EventHandler::MatchedHandler(const Event &event) const
 {
-    std::string msg_str = event["message"].asString();
+    std::string msg_str = event["message"].get<std::string>();
     if(command_fullmatch_.count(msg_str))
         return command_fullmatch_.find(msg_str)->second;
     const plugin_func &func_prefix = command_prefix_.Search(msg_str);

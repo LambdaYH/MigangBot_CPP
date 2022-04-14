@@ -2,12 +2,12 @@
 #define MIGANGBOTCPP_EVENT_EVENT_H_
 
 #include <string>
-#include <json/json.h>
+#include <nlohmann/json.hpp>
 
 namespace white
 {
 
-using Event = Json::Value;
+using Event = nlohmann::json;
 using plugin_func = std::function<void(const Event &, std::function<void(const std::string &)> &)>;
 
 } // namespace white

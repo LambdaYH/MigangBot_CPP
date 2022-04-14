@@ -7,7 +7,7 @@
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/strand.hpp>
 #include <condition_variable>
-#include <json/json.h>
+#include <nlohmann/json.hpp>
 #include <thread>
 #include <queue>
 #include <mutex>
@@ -55,8 +55,6 @@ private:
 
 private:
     beast::websocket::stream<boost::beast::tcp_stream> ws_;
-    Json::CharReaderBuilder builder_;
-    std::unique_ptr<Json::CharReader> reader_;
     beast::flat_buffer buffer_;
     std::condition_variable cond_write_;
     std::condition_variable cond_process_;

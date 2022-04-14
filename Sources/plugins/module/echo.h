@@ -28,8 +28,8 @@ inline void Echo::Register(EventHandler &event_handler)
 
 inline void Echo::DoEcho( const Event &event, std::function<void(const std::string &)> &notify)
 {
-    std::string msg = event["message"].asString().substr(6);
-    notify(api_impl.send_msg(event, msg));
+    std::string_view msg = event["message"].get<std::string_view>().substr(6);
+    notify(api_impl.send_msg(event, std::move(std::string(msg))));
 }
 
 } // namespace white

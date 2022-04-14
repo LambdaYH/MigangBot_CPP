@@ -18,14 +18,14 @@ IF(Boost_FOUND)
 ENDIF(Boost_FOUND)
 
 add_subdirectory(third-party/yaml-cpp)
-set(JSONCPP_WITH_TESTS OFF)
-add_subdirectory(third-party/jsoncpp)
+set(JSON_ImplicitConversions OFF)
+add_subdirectory(third-party/json)
 add_subdirectory(third-party/spdlog)
 
 include_directories(Sources)
 include_directories(
     Sources
-    third-party/jsoncpp/include
+    third-party/json/include
     third-party/yaml-cpp/include
     third-party/spdlog/include
 )
@@ -41,4 +41,4 @@ add_executable(${PROJECT_NAME}
                 ${EVENT_SRC}
 )
                 
-target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads yaml-cpp jsoncpp_lib spdlog)
+target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads yaml-cpp nlohmann_json::nlohmann_json spdlog)

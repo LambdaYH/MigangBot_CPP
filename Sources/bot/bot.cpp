@@ -16,7 +16,6 @@ Bot::Bot(tcp::socket&& socket, std::size_t write_thread_num, std::size_t process
         ws_(std::move(socket)),
         notify_(std::bind(&Bot::Notify, this, std::placeholders::_1)),
         event_handler_( std::bind(&EventHandler::Handle, &EventHandler::GetInstance(), std::placeholders::_1, notify_) ),
-        reader_(builder_.newCharReader()),
         stop_(false)
 {
     StartThread(write_thread_num, process_thread_num);
@@ -105,7 +104,7 @@ void Bot::StartThread(std::size_t write_thread_num, std::size_t process_thread_n
 
 void Bot::ThreadFunctionProcess()
 {
-    Json::Value msg;
+    Event msg;
     std::unique_lock<std::mutex> locker(mutex_process_);
     while(!stop_)
     {
@@ -116,8 +115,8 @@ void Bot::ThreadFunctionProcess()
             auto msg_str = std::move(processable_msg_queue_.front());
             processable_msg_queue_.pop();
             locker.unlock();
-            reader_->parse(msg_str.c_str(), msg_str.c_str() + msg_str.size(), &msg, nullptr);
-            event_handler_(msg);
+            LOG_DEBUG("Recieve: {}", msg_str);
+            event_handler_(std::move(nlohmann::json::parse(msg_str)));
             locker.lock();
         }
     }
