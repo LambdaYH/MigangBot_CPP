@@ -15,8 +15,9 @@ void fail(beast::error_code ec, char const* what)
 Bot::Bot(tcp::socket&& socket, std::size_t write_thread_num, std::size_t process_thread_num) :
         ws_(std::move(socket)),
         notify_(std::bind(&Bot::Notify, this, std::placeholders::_1)),
+        set_echo_function_(std::bind(&Bot::SetEchoFunction, this, std::placeholders::_1, std::placeholders::_2)),
         stop_(false),
-        api_bot_(notify_),
+        api_bot_(notify_, set_echo_function_),
         event_handler_( std::bind(&EventHandler::Handle, &EventHandler::GetInstance(), std::placeholders::_1, std::ref(api_bot_)) )
 {
     StartThread(write_thread_num, process_thread_num);
@@ -117,7 +118,9 @@ void Bot::ThreadFunctionProcess()
             processable_msg_queue_.pop();
             locker.unlock();
             LOG_DEBUG("Recieve: {}", msg_str);
-            event_handler_(std::move(nlohmann::json::parse(msg_str)));
+            auto msg = nlohmann::json::parse(msg_str);
+            EventProcess(msg);
+            event_handler_(msg);
             locker.lock();
         }
     }
@@ -140,6 +143,19 @@ void Bot::ThreadFunctionWrite()
             ws_.write(buffer.data());
             buffer.consume(buffer.size());
             locker.lock();
+        }
+    }
+}
+
+void Bot::EventProcess(const Event &event)
+{
+    if(event.contains("retcode"))
+    {
+        auto echo_code = event["echo"].get<int>();
+        if(echo_function_.count(echo_code))
+        {
+            echo_function_.at(echo_code)(event["data"]);
+            echo_function_.erase(echo_code);
         }
     }
 }

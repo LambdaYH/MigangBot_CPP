@@ -12,6 +12,7 @@ namespace white
 {
 namespace onebot11
 {
+using Json = nlohmann::json;
 
 inline void ErrorHanding(boost::beast::error_code ec, char const* what)
 {
@@ -25,7 +26,7 @@ public:
     ~ApiImpl();
 
 public:
-    std::string send_msg(const Event &event, const std::string &message, bool auto_escape = false);
+    Json send_msg(const Event &event, const std::string &message, bool auto_escapee = false);
     
 };
 
@@ -39,7 +40,7 @@ inline ApiImpl::~ApiImpl()
 
 }
 
-inline std::string ApiImpl::send_msg(const Event &event, const std::string &message, bool auto_escape)
+inline Json ApiImpl::send_msg(const Event &event, const std::string &message, bool auto_escape)
 {
     Event msg = {
         {"action", "send_msg_async"},
@@ -51,7 +52,7 @@ inline std::string ApiImpl::send_msg(const Event &event, const std::string &mess
             {"auto_escape" , auto_escape}
         }}
     };
-    return msg.dump();
+    return msg;
 }
 
 } // namespace onebot11

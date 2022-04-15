@@ -31,7 +31,7 @@ class Bot : public std::enable_shared_from_this<Bot>
 {
 public:
     explicit 
-    Bot(tcp::socket&& socket, std::size_t write_thread_num = 2, std::size_t process_thread_num = 2);
+    Bot(tcp::socket&& socket, std::size_t write_thread_num = 4, std::size_t process_thread_num = 8);
     ~Bot();
 
     void Run();
@@ -54,6 +54,10 @@ private:
 
     void Notify(const std::string &msg);
 
+    void SetEchoFunction(const int echo_code, std::function<void(const Json &)> &&func);
+
+    void EventProcess(const Event &event);
+
 private:
     beast::websocket::stream<boost::beast::tcp_stream> ws_;
     beast::flat_buffer buffer_;
@@ -61,9 +65,11 @@ private:
     std::condition_variable cond_process_;
     std::queue<std::string> writable_msg_queue_;
     std::queue<std::string> processable_msg_queue_;
+    std::unordered_map<int, std::function<void(const Json &)>> echo_function_;
     std::mutex mutex_write_;
     std::mutex mutex_process_;
     std::function<void(const std::string &)> notify_;
+    std::function<void(const int, std::function<void(const Json &)> &&)> set_echo_function_;
     ApiBot api_bot_;
     std::function<bool(const Event &)> event_handler_;
 
@@ -77,6 +83,11 @@ inline void Bot::Notify(const std::string &msg)
         writable_msg_queue_.push(msg);
     }
     cond_write_.notify_one();
+}
+
+inline void Bot::SetEchoFunction(const int echo_code, std::function<void(const Json &)> &&func)
+{
+    echo_function_.emplace(echo_code, func);
 }
 
 } // namespace white

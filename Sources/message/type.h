@@ -3,7 +3,7 @@
 
 namespace white
 {
-
+    
     using MsgId = int32_t;
 
 } // namespace white
