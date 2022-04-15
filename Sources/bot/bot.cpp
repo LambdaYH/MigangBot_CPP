@@ -149,7 +149,7 @@ void Bot::ThreadFunctionWrite()
 
 void Bot::EventProcess(const Event &event)
 {
-    if(event.contains("retcode"))
+    if(event.contains("retcode") && !event["data"].is_null())
     {
         auto echo_code = event["echo"].get<int>();
         if(echo_function_.count(echo_code))

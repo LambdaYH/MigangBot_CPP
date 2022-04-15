@@ -40,6 +40,11 @@ private:
 class ApiBot
 {
 public:
+    FutureWrapper<MsgId>    send_private_msg(const Event &event, const uint64_t user_id, const std::string &message,  bool at_sender = false, bool auto_escape = false);
+    FutureWrapper<MsgId>    send_group_msg(const Event &event, const uint64_t group_id, const std::string &message,  bool at_sender = false, bool auto_escape = false);
+    FutureWrapper<MsgId>    send_msg(const Event &event, const std::string &message, bool at_sender = false, bool auto_escape = false);
+    void                    delete_msg(int32_t msg_id);
+public:
     ApiBot(std::function<void(const std::string &)> &notify, std::function<void(const int, std::function<void(const Json &)> &&)> &set_echo_function) : 
         notify_(notify),
         set_echo_function_(set_echo_function), 
@@ -49,13 +54,7 @@ public:
     }
 
     ~ApiBot() {}
-    FutureWrapper<MsgId> send_msg(const Event &event, const std::string &message, bool auto_escape = false)
-    {
-        Json msg = api_impl_.send_msg(event, message, auto_escape);
-        auto ret = Echo<MsgId>(msg);
-        notify_(msg.dump());
-        return ret;
-    }
+
 private:
     template<typename T>
     void EchoFuntion(std::shared_ptr<std::promise<T>> p, const Json &value)
@@ -84,6 +83,48 @@ private:
     std::mt19937 random_engine_;
     std::uniform_int_distribution<int> u_;
 };
+
+inline FutureWrapper<MsgId> ApiBot::send_private_msg(const Event &event, const uint64_t user_id, const std::string &message,  bool at_sender, bool auto_escape)
+{
+    Json msg;
+    if(at_sender)
+        msg = api_impl_.handle_quick_operation(event, message, at_sender, auto_escape);
+    else
+        msg = api_impl_.send_private_msg(event, user_id, message, auto_escape);
+    auto ret = Echo<MsgId>(msg);
+    notify_(msg.dump());
+    return ret;
+}
+
+inline FutureWrapper<MsgId> ApiBot::send_group_msg(const Event &event, const uint64_t group_id, const std::string &message,  bool at_sender, bool auto_escape)
+{
+    Json msg;
+    if(at_sender)
+        msg = api_impl_.handle_quick_operation(event, message, at_sender, auto_escape);
+    else
+        msg = api_impl_.send_group_msg(event, group_id, message, auto_escape);
+    auto ret = Echo<MsgId>(msg);
+    notify_(msg.dump());
+    return ret;
+}
+
+inline FutureWrapper<MsgId> ApiBot::send_msg(const Event &event, const std::string &message, bool at_sender, bool auto_escape)
+{
+    Json msg;
+    if(at_sender)
+        msg = api_impl_.handle_quick_operation(event, message, at_sender, auto_escape);
+    else
+        msg = api_impl_.send_msg(event, message, auto_escape);
+    auto ret = Echo<MsgId>(msg);
+    notify_(msg.dump());
+    return ret;
+}
+
+inline void ApiBot::delete_msg(int32_t msg_id)
+{
+    Json msg = api_impl_.delete_msg(msg_id);
+    notify_(msg.dump());
+}
 
 } // namespace white
 

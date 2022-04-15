@@ -83,6 +83,7 @@ inline void Bot::Notify(const std::string &msg)
         writable_msg_queue_.push(msg);
     }
     cond_write_.notify_one();
+    LOG_DEBUG("Msg To sent: {}", msg);
 }
 
 inline void Bot::SetEchoFunction(const int echo_code, std::function<void(const Json &)> &&func)
