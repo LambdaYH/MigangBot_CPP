@@ -10,10 +10,32 @@
 #include <queue>
 #include <random>
 #include "logger/logger.h"
+#include <chrono>
+
 namespace white
 {
 
 using Json = nlohmann::json;
+
+template<typename T>
+class FutureWrapper
+{
+public:
+    FutureWrapper(std::future<T> &&f) : future_(std::move(f)) {}
+
+    T Ret()
+    {
+        auto status = future_.wait_for(std::chrono::seconds(30));
+        if(status == std::future_status::timeout)
+        {
+            if constexpr (std::is_same<T, MsgId>::value)
+                return 0;
+        }else
+            return future_.get();
+    }
+private:
+    std::future<T> future_;
+};
 
 class ApiBot
 {
@@ -27,9 +49,9 @@ public:
     }
 
     ~ApiBot() {}
-    std::future<MsgId> send_msg(const Event &event, const std::string &message, bool auto_escape = false)
+    FutureWrapper<MsgId> send_msg(const Event &event, const std::string &message, bool auto_escape = false)
     {
-        Json msg = api_impl_.send_msg(event, message);
+        Json msg = api_impl_.send_msg(event, message, auto_escape);
         auto ret = Echo<MsgId>(msg);
         notify_(msg.dump());
         return ret;
@@ -45,12 +67,12 @@ private:
     }
 
     template<typename T>
-    std::future<T> Echo(Json &msg)
+    FutureWrapper<T> Echo(Json &msg)
     {
         int echo_code = u_(random_engine_);
         msg["echo"] = echo_code;
         std::shared_ptr<std::promise<T>> promise = std::make_shared<std::promise<T>>();
-        std::future<T> ret = promise->get_future();
+        FutureWrapper<T> ret{std::move(promise->get_future())};
         auto func = std::bind(&ApiBot::EchoFuntion<MsgId>, this, promise, std::placeholders::_1);
         set_echo_function_(echo_code, std::move(func));
         return ret;

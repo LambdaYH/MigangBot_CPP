@@ -30,7 +30,7 @@ inline void Echo::Register(EventHandler &event_handler)
 inline void Echo::DoEcho( const Event &event, ApiBot &bot)
 {
     std::string msg = event["message"].get<std::string>().substr(6);
-    auto ret = bot.send_msg(event, std::move(std::string(msg))).get();
+    auto ret = bot.send_msg(event, std::move(std::string(msg))).Ret();
     LOG_DEBUG("ret msgid: {}", ret);
 }
 
