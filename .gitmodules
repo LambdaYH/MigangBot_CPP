@@ -9,4 +9,4 @@
 	url = https://github.com/jbeder/yaml-cpp.git
 [submodule "third-party/libhv"]
 	path = third-party/libhv
-	url = https://github.com/libuv/libuv.git
+	url = https://github.com/ithewei/libhv
