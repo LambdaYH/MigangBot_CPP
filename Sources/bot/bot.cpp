@@ -119,8 +119,8 @@ void Bot::ThreadFunctionProcess()
             locker.unlock();
             LOG_DEBUG("Recieve: {}", msg_str);
             auto msg = nlohmann::json::parse(msg_str);
-            EventProcess(msg);
-            event_handler_(msg);
+            if(EventProcess(msg))
+                event_handler_(msg);
             locker.lock();
         }
     }
@@ -147,17 +147,22 @@ void Bot::ThreadFunctionWrite()
     }
 }
 
-void Bot::EventProcess(const Event &event)
+bool Bot::EventProcess(const Event &event)
 {
-    if(event.contains("retcode") && !event["data"].is_null())
+    if(event.contains("retcode"))
     {
-        auto echo_code = event["echo"].get<int>();
-        if(echo_function_.count(echo_code))
+        if(event.value("status", "failed") == "ok")
         {
-            echo_function_.at(echo_code)(event["data"]);
-            echo_function_.erase(echo_code);
+            auto echo_code = event.value("echo", 0);
+            if(echo_function_.count(echo_code))
+            {
+                echo_function_.at(echo_code)(event["data"]);
+                echo_function_.erase(echo_code);
+            }
         }
+        return false;
     }
+    return true;
 }
 
 } // namespace white

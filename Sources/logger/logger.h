@@ -64,7 +64,7 @@ inline void Logger::Init(const std::string &log_file, const std::string &level)
 
 #define LOG_WARN(...) Logger::GetInstance().GetLogger().warn(__VA_ARGS__)
 
-#define LOG_ERROR(...) Logger::GetInstance().GetLogger().err(__VA_ARGS__)
+#define LOG_ERROR(...) Logger::GetInstance().GetLogger().error(__VA_ARGS__)
 
 #define LOG_CRITICAL(...) Logger::GetInstance().GetLogger().critical(__VA_ARGS__)
 

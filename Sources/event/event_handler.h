@@ -107,7 +107,7 @@ inline bool EventHandler::Handle(const Event &event, ApiBot &bot) const
 {
     if(filter_ && !filter_->operator()(event))
         return false;
-    LOG_INFO("Bot[{}] Got a Message: {}", event["self_id"].get<uint64_t>(), event["message"].get<std::string>());
+    LOG_INFO("Bot[{}] Got a Message: {}", event.value("self_id", 0), event.value("message", "Unknown message"));
     auto func = MatchedHandler(event);
     if(func)
         pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝
@@ -122,8 +122,12 @@ inline bool EventHandler::Handle(const Event &event, ApiBot &bot) const
 
 inline const plugin_func &EventHandler::MatchedHandler(const Event &event) const
 {
-    std::string msg_str = event["message"].get<std::string>();
-    if(command_fullmatch_.count(msg_str))
+    if(event.is_null())
+        return no_func_avaliable_;
+    std::string msg_str = event.value("message", "");
+    if(msg_str.empty())
+        return no_func_avaliable_;
+    if (command_fullmatch_.count(msg_str))
         return command_fullmatch_.find(msg_str)->second;
     const plugin_func &func_prefix = command_prefix_.Search(msg_str);
     if(func_prefix)

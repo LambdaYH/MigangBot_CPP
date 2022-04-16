@@ -11,6 +11,7 @@
 #include <queue>
 #include <thread>
 #include <functional>
+#include "logger/logger.h"
 
 namespace white {
     
@@ -73,7 +74,15 @@ inline void ThreadPool::Run(size_t thread_num)
                         auto task{std::move(tasks_queue_.front())};
                         tasks_queue_.pop();
                         locker.unlock();
-                        task();
+                        try
+                        {
+                            task();
+                        }
+                        catch(...)
+                        {
+                            // 异常处理
+                            LOG_ERROR("Some Expection Happened...");
+                        }
                         locker.lock();
                     }else
                         cond_.wait(locker);

@@ -56,7 +56,7 @@ private:
 
     void SetEchoFunction(const int echo_code, std::function<void(const Json &)> &&func);
 
-    void EventProcess(const Event &event);
+    bool EventProcess(const Event &event);
 
 private:
     beast::websocket::stream<boost::beast::tcp_stream> ws_;
