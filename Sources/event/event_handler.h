@@ -15,6 +15,7 @@
 #include "pool/thread_pool.h"
 #include "logger/logger.h"
 #include "bot/api_bot.h"
+#include "utility.h"
 
 #include <iostream>
 
@@ -45,8 +46,16 @@ public:
 
 public:
     template<typename F>
-    bool RegisterCommand(const int type, const std::string &command, F &&func);
+    bool RegisterCommand(const int command_type, const std::string &command, F &&func);
+
+    template<typename F>
+    bool RegisterNotice(const std::string &notice_type, const std::string &sub_type, F &&func);
+
+    template<typename F>
+    bool RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func);
+
     bool Handle(const Event &event, ApiBot &bot) const;
+
 
 private:
     EventHandler() : pool_(new ThreadPool(8)) {}
@@ -66,6 +75,8 @@ private:
     Trie command_prefix_;
     Trie command_suffix_;
     std::unordered_map<std::string, plugin_func> command_keyword_;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<plugin_func>>> notice_handler_;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<plugin_func>>> request_handler_;
     std::vector<plugin_func> all_msg_handler_;
     plugin_func no_func_avaliable_;
 
@@ -74,9 +85,9 @@ private:
 };
 
 template<typename F>
-inline bool EventHandler::RegisterCommand(const int type, const std::string &command, F &&func)
+inline bool EventHandler::RegisterCommand(const int command_type, const std::string &command, F &&func)
 {
-    switch(type)
+    switch(command_type)
     {
         case FULLMATCH:
             return command_fullmatch_.emplace(std::move(command), std::forward<F>(func)).second;
@@ -86,9 +97,9 @@ inline bool EventHandler::RegisterCommand(const int type, const std::string &com
             break;
         case SUFFIX:
         {
-            std::string command_reverse = command;
-            std::reverse(command_reverse.begin(), command_reverse.end());
-            return command_suffix_.Insert(std::move(command_reverse), std::forward<F>(func));
+            auto w_command = str_to_wstr(command);
+            std::reverse(w_command.begin(), w_command.end());
+            return command_suffix_.Insert(std::move(wstr_to_str(w_command)), std::forward<F>(func));
             break;
         }
         case KEYWORD:
@@ -101,21 +112,89 @@ inline bool EventHandler::RegisterCommand(const int type, const std::string &com
         default:
             return command_fullmatch_.emplace(std::move(command), std::forward<F>(func)).second;
     }
+    return true;
+}
+
+template<typename F>
+inline bool EventHandler::RegisterNotice(const std::string &notice_type, const std::string &sub_type, F &&func)
+{
+    notice_handler_[notice_type][sub_type].push_back(std::forward<F>(func));
+}
+
+template<typename F>
+inline bool EventHandler::RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func)
+{
+    request_handler_[request_type][sub_type].push_back(std::forward<F>(func));
 }
 
 inline bool EventHandler::Handle(const Event &event, ApiBot &bot) const
 {
     if(filter_ && !filter_->operator()(event))
         return false;
-    LOG_INFO("Bot[{}] Got a Message: {}", event.value("self_id", 0), event.value("message", "Unknown message"));
-    auto func = MatchedHandler(event);
-    if(func)
-        pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝
-    else
+    if(event.contains("post_type"))
     {
-        auto &funcs = FreeHandler();
-        for(auto &func : funcs)
-            pool_->AddTask(std::bind(func, event, std::ref(bot)));
+        auto post_type = event["post_type"].get<std::string>();
+        switch(post_type[3])
+        {
+            // message
+            case 's':
+            {
+                LOG_INFO("Bot[{}] 收到一条消息: {}", event.value("self_id", 0), event.value("message", "Unknown message"));
+                auto func = MatchedHandler(event);
+                if(func)
+                    pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝
+                else
+                {
+                    auto &funcs = FreeHandler();
+                    for(auto &func : funcs)
+                        pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                }  
+            }
+            break;
+            // notice
+            case 'i':
+            {
+                auto notice_type = event.value("notice_type", "");
+                auto sub_type = event.value("sub_type", "");
+                for(auto &func : notice_handler_.at(notice_type).at(sub_type))
+                    pool_->AddTask(std::bind(func, event, std::ref(bot)));
+            }
+            break;
+            // request
+            case 'u':
+            {
+                auto request_type = event.value("request_type", "");
+                auto sub_type = event.value("sub_type", "");
+                for(auto &func : request_handler_.at(request_type).at(sub_type))
+                    pool_->AddTask(std::bind(func, event, std::ref(bot)));
+            }
+            break;
+            // meta_event
+            case 'a':
+            {
+                auto meta_event_type = event["meta_event_type"].get<std::string>();
+                if(meta_event_type[0] == 'l')
+                {
+                    auto sub_type = event["sub_type"].get<std::string>();
+                    switch(sub_type[0])
+                    {
+                        case 'e':
+                        case 'c':
+                            LOG_INFO("Bot[{}]已成功建立连接", event["self_id"].get<QId>());
+                            break;
+                        case 'd':
+                            LOG_INFO("Bot[{}]已断开连接", event["self_id"].get<QId>());
+                            break;
+                    }
+                }else
+                {
+                    LOG_DEBUG("Bot[{}]与[{}]收到一次心跳连接", event["self_id"].get<QId>(), event["time"].get<int64_t>());
+                }
+            }
+            break;
+            default:
+                break;
+        }
     }
     return true;
 }

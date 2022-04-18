@@ -14,8 +14,10 @@ class EventFilterOnebot11 : public EventFilter
 public:
     virtual const bool operator()(const Event &msg) const
     {
-        if(msg.contains("meta_event_type"))
-            return false;
+        // 过滤临时会话
+        if(msg.contains("post_type"))
+            if(msg.value("message_type", "") == "private" && msg.value("sub_type", "") == "group")
+                return false;
         if(msg.contains("retcode"))
             return false;
         return true;
