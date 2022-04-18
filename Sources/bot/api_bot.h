@@ -3,7 +3,7 @@
 
 #include <functional>
 #include <future>
-#include "message/type.h"
+#include "type.h"
 #include "api/onebot_11/api_impl.h"
 #include "event/event.h"
 #include <mutex>
@@ -21,19 +21,28 @@ template<typename T>
 class FutureWrapper
 {
 public:
-    FutureWrapper(std::future<T> &&f) : future_(std::move(f)) {}
+    FutureWrapper(std::shared_ptr<std::promise<T>> &&p) : promise_ptr_(std::move(p)), future_(promise_ptr_->get_future()) {}
 
     T Ret()
     {
         auto status = future_.wait_for(std::chrono::seconds(30));
-        if(status == std::future_status::timeout)
+        switch(status)
         {
-            if constexpr (std::is_same<T, MsgId>::value)
-                return 0;
-        }else
-            return future_.get();
+            case std::future_status::timeout:
+            case std::future_status::deferred:
+            {
+                if constexpr (std::is_same<T, MsgId>::value)
+                    return 0;
+                else if constexpr (std::is_same<T, std::string>::value)
+                    return "";
+            }
+            break;
+            case std::future_status::ready:
+                return future_.get();
+        }
     }
 private:
+    std::shared_ptr<std::promise<T>> promise_ptr_;
     std::future<T> future_;
 };
 
@@ -44,6 +53,40 @@ public:
     FutureWrapper<MsgId>    send_group_msg(const Event &event, const uint64_t group_id, const std::string &message, bool at_sender = false, bool auto_escape = false);
     FutureWrapper<MsgId>    send_msg(const Event &event, const std::string &message, bool at_sender = false, bool auto_escape = false);
     void                    delete_msg(int32_t msg_id);
+
+public:
+    std::string WaitForNextMessage()
+    {
+        std::shared_ptr<std::promise<std::string>> p = std::make_shared<std::promise<std::string>>();
+        auto weak_p = std::weak_ptr(p);
+        FutureWrapper f{std::move(p)};
+        {
+            std::lock_guard<std::mutex> locker(wait_for_message_to_process_further_mutex_);
+            wait_for_message_to_process_further_queue_.push(std::move(weak_p));
+        }
+        return f.Ret();
+    }
+
+    bool IsNeedMessage()
+    {
+        return !wait_for_message_to_process_further_queue_.empty();
+    }
+
+    void FeedMessage(const std::string &message)
+    {
+        std::lock_guard<std::mutex> locker(wait_for_message_to_process_further_mutex_);
+        while(!wait_for_message_to_process_further_queue_.empty())
+        {
+            auto weak_p = wait_for_message_to_process_further_queue_.front();
+            wait_for_message_to_process_further_queue_.pop();
+            if(!weak_p.expired())
+            {
+                weak_p.lock()->set_value(message);
+                break;
+            }
+        }
+    }
+
 public:
     ApiBot(std::function<void(const std::string &)> &notify, std::function<void(const int, std::function<void(const Json &)> &&)> &set_echo_function) : 
         notify_(notify),
@@ -57,13 +100,14 @@ public:
 
 private:
     template<typename T>
-    void EchoFuntion(std::shared_ptr<std::promise<T>> p, const Json &value)
+    void EchoFuntion(std::weak_ptr<std::promise<T>> weak_p, const Json &value)
     {
-        if(value.is_null())
+        if(value.is_null() || weak_p.expired())
             return;
+        auto shared_p = weak_p.lock();
         if constexpr (std::is_same<T, MsgId>::value)
         {
-            p->set_value(value.value("message_id", 0));
+            shared_p->set_value(value.value("message_id", 0));
         }
     }
 
@@ -73,8 +117,8 @@ private:
         int echo_code = u_(random_engine_);
         msg["echo"] = echo_code;
         std::shared_ptr<std::promise<T>> promise = std::make_shared<std::promise<T>>();
-        FutureWrapper<T> ret{std::move(promise->get_future())};
-        auto func = std::bind(&ApiBot::EchoFuntion<MsgId>, this, promise, std::placeholders::_1);
+        auto func = std::bind(&ApiBot::EchoFuntion<MsgId>, this, std::weak_ptr(promise), std::placeholders::_1);
+        FutureWrapper<T> ret{std::move(promise)};
         set_echo_function_(echo_code, std::move(func));
         return ret;
     }
@@ -84,6 +128,9 @@ private:
     std::function<void(const int, std::function<void(const Json &)> &&)> &set_echo_function_;
     std::mt19937 random_engine_;
     std::uniform_int_distribution<int> u_;
+
+    std::mutex wait_for_message_to_process_further_mutex_;
+    std::queue<std::weak_ptr<std::promise<std::string>>> wait_for_message_to_process_further_queue_;
 };
 
 inline FutureWrapper<MsgId> ApiBot::send_private_msg(const Event &event, const uint64_t user_id, const std::string &message, bool auto_escape)

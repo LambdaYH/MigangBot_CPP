@@ -27,11 +27,14 @@ inline void Echo::Register(EventHandler &event_handler)
     event_handler.RegisterCommand(PREFIX, "/echo", std::bind(&Echo::DoEcho, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-inline void Echo::DoEcho( const Event &event, ApiBot &bot)
+inline void Echo::DoEcho(const Event &event, ApiBot &bot)
 {
     std::string msg = event["message"].get<std::string>().substr(6);
     auto ret = bot.send_msg(event, std::string(msg)).Ret();
     LOG_DEBUG("ret msgid: {}", ret);
+    auto new_msg = bot.WaitForNextMessage();
+    ret = bot.send_msg(event, new_msg).Ret();
+    bot.send_msg(event, std::to_string(ret));
 }
 
 } // namespace white

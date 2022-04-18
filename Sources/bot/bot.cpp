@@ -161,6 +161,10 @@ bool Bot::EventProcess(const Event &event)
             }
         }
         return false;
+    }else if(event.contains("message"))
+    {
+        if(api_bot_.IsNeedMessage())
+            api_bot_.FeedMessage(event["message"].get<std::string>());
     }
     return true;
 }

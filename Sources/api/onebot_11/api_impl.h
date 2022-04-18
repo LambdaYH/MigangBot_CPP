@@ -2,7 +2,7 @@
 #define MIGANGBOTCPP_API_ONTBOT_11_API_IMPL_H_
 
 #include "event/event.h"
-#include "message/type.h"
+#include "type.h"
 #include <nlohmann/json.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
