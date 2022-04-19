@@ -32,7 +32,7 @@ inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)
     std::string msg = event["message"].get<std::string>().substr(6);
     auto ret = bot.send_msg(event, std::string(msg)).Ret();
     LOG_DEBUG("ret msgid: {}", ret);
-    auto new_msg = bot.WaitForNextMessage();
+    auto new_msg = bot.WaitForNextMessageFrom(event["user_id"].get<QId>());
     ret = bot.send_msg(event, new_msg).Ret();
     bot.send_msg(event, std::to_string(ret));
 }

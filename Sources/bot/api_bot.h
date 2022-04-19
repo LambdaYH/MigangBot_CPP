@@ -3,14 +3,15 @@
 
 #include <functional>
 #include <future>
-#include "type.h"
-#include "api/onebot_11/api_impl.h"
-#include "event/event.h"
 #include <mutex>
 #include <queue>
 #include <random>
-#include "logger/logger.h"
 #include <chrono>
+
+#include "type.h"
+#include "api/onebot_11/api_impl.h"
+#include "event/event.h"
+#include "logger/logger.h"
 
 namespace white
 {
@@ -58,37 +59,17 @@ public:
     void                    delete_msg(int32_t msg_id);
 
 public:
-    std::string WaitForNextMessage()
-    {
-        std::shared_ptr<std::promise<std::string>> p = std::make_shared<std::promise<std::string>>();
-        auto weak_p = std::weak_ptr(p);
-        FutureWrapper f{std::move(p)};
-        {
-            std::lock_guard<std::mutex> locker(wait_for_message_to_process_further_mutex_);
-            wait_for_message_to_process_further_queue_.push(std::move(weak_p));
-        }
-        return f.Ret();
-    }
+    std::string WaitForNextMessage();
 
-    bool IsNeedMessage()
-    {
-        return !wait_for_message_to_process_further_queue_.empty();
-    }
+    std::string WaitForNextMessageFrom(QId person);
 
-    void FeedMessage(const std::string &message)
-    {
-        std::lock_guard<std::mutex> locker(wait_for_message_to_process_further_mutex_);
-        while(!wait_for_message_to_process_further_queue_.empty())
-        {
-            auto weak_p = wait_for_message_to_process_further_queue_.front();
-            wait_for_message_to_process_further_queue_.pop();
-            if(!weak_p.expired())
-            {
-                weak_p.lock()->set_value(message);
-                break;
-            }
-        }
-    }
+    bool IsSomeOneNeedMessage(QId person) const;
+
+    bool IsNeedMessage() const;
+
+    void FeedMessageTo(QId person, const std::string &message);
+
+    void FeedMessage(const std::string &message);
 
 public:
     ApiBot(std::function<void(const std::string &)> &notify, std::function<void(const int, std::function<void(const Json &)> &&)> &set_echo_function) : 
@@ -134,7 +115,76 @@ private:
 
     std::mutex wait_for_message_to_process_further_mutex_;
     std::queue<std::weak_ptr<std::promise<std::string>>> wait_for_message_to_process_further_queue_;
+
+    std::unordered_map<QId, std::queue<std::weak_ptr<std::promise<std::string>>>> someone_need_message_;
+    std::unordered_map<QId, std::mutex> someone_need_message_mutex_;
 };
+
+inline std::string ApiBot::WaitForNextMessage()
+{
+    std::shared_ptr<std::promise<std::string>> p = std::make_shared<std::promise<std::string>>();
+    auto weak_p = std::weak_ptr(p);
+    FutureWrapper f{std::move(p)};
+    {
+        std::lock_guard<std::mutex> locker(wait_for_message_to_process_further_mutex_);
+        wait_for_message_to_process_further_queue_.push(std::move(weak_p));
+    }
+    return f.Ret();
+}
+
+inline std::string ApiBot::WaitForNextMessageFrom(QId person)
+{
+    std::shared_ptr<std::promise<std::string>> p = std::make_shared<std::promise<std::string>>();
+    auto weak_p = std::weak_ptr(p);
+    FutureWrapper f{std::move(p)};
+    {
+        std::lock_guard<std::mutex> locker(someone_need_message_mutex_[person]);
+        someone_need_message_[person].push(std::move(weak_p));
+    }
+    return f.Ret();
+}
+
+inline bool ApiBot::IsSomeOneNeedMessage(QId person) const 
+{
+    return someone_need_message_.count(person);
+}
+
+inline bool ApiBot::IsNeedMessage() const
+{
+    return !wait_for_message_to_process_further_queue_.empty();
+}
+
+inline void ApiBot::FeedMessageTo(QId person, const std::string &message)
+{
+    std::lock_guard<std::mutex> locker(someone_need_message_mutex_[person]);
+    while(!someone_need_message_[person].empty())
+    {
+        auto weak_p = someone_need_message_[person].front();
+        someone_need_message_[person].pop();
+        if(!weak_p.expired())
+        {
+            weak_p.lock()->set_value(message);
+            break;
+        }
+    }
+    if(someone_need_message_[person].empty())
+        someone_need_message_.erase(person);
+}   
+
+inline void ApiBot::FeedMessage(const std::string &message)
+{
+    std::lock_guard<std::mutex> locker(wait_for_message_to_process_further_mutex_);
+    while(!wait_for_message_to_process_further_queue_.empty())
+    {
+        auto weak_p = wait_for_message_to_process_further_queue_.front();
+        wait_for_message_to_process_further_queue_.pop();
+        if(!weak_p.expired())
+        {
+            weak_p.lock()->set_value(message);
+            break;
+        }
+    }
+}
 
 inline FutureWrapper<MsgId> ApiBot::send_private_msg(const Event &event, const uint64_t user_id, const std::string &message, bool auto_escape)
 {

@@ -254,6 +254,8 @@ inline bool Bot::EventProcess(const Event &event)
     {
         if(api_bot_.IsNeedMessage())
             api_bot_.FeedMessage(event["message"].get<std::string>());
+        if(api_bot_.IsSomeOneNeedMessage(event["user_id"].get<QId>()))
+            api_bot_.FeedMessageTo(event["user_id"].get<QId>(), event["message"].get<std::string>());
     }
     return true;
 }
