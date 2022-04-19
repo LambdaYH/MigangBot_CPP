@@ -10,6 +10,7 @@
 
     [Boost](https://github.com/boostorg/boost)
     Cmake
+    libmysqlclient
 
 ## Build
 

@@ -22,7 +22,7 @@
 namespace white
 {
 
-using plugin_func = std::function<void(const Event &, ApiBot &)>;
+using plugin_func = std::function<void(const Event &, onebot11::ApiBot &)>;
 
 constexpr auto FULLMATCH = 0;
 constexpr auto PREFIX = 1;
@@ -37,6 +37,11 @@ public:
     {
         static EventHandler event_handler;
         return event_handler;
+    }
+
+    void Init(std::size_t thread_num)
+    {
+        pool_.reset(new ThreadPool(thread_num));
     }
 
     void InitFilter(std::unique_ptr<EventFilter> &&filter)
@@ -54,11 +59,11 @@ public:
     template<typename F>
     bool RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func);
 
-    bool Handle(const Event &event, ApiBot &bot) const;
+    bool Handle(const Event &event, onebot11::ApiBot &bot) const;
 
 
 private:
-    EventHandler() : pool_(new ThreadPool(8)) {}
+    EventHandler() {}
     ~EventHandler() {}
 
     EventHandler(const EventHandler &) = delete;
@@ -119,15 +124,17 @@ template<typename F>
 inline bool EventHandler::RegisterNotice(const std::string &notice_type, const std::string &sub_type, F &&func)
 {
     notice_handler_[notice_type][sub_type].push_back(std::forward<F>(func));
+    return true;
 }
 
 template<typename F>
 inline bool EventHandler::RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func)
 {
     request_handler_[request_type][sub_type].push_back(std::forward<F>(func));
+    return true;
 }
 
-inline bool EventHandler::Handle(const Event &event, ApiBot &bot) const
+inline bool EventHandler::Handle(const Event &event, onebot11::ApiBot &bot) const
 {
     if(filter_ && !filter_->operator()(event))
         return false;
@@ -156,8 +163,11 @@ inline bool EventHandler::Handle(const Event &event, ApiBot &bot) const
             {
                 auto notice_type = event.value("notice_type", "");
                 auto sub_type = event.value("sub_type", "");
-                for(auto &func : notice_handler_.at(notice_type).at(sub_type))
-                    pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                if(notice_handler_.count(notice_type) && notice_handler_.at(notice_type).count(sub_type))
+                {
+                    for(auto &func : notice_handler_.at(notice_type).at(sub_type))
+                        pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                }
             }
             break;
             // request
@@ -165,8 +175,11 @@ inline bool EventHandler::Handle(const Event &event, ApiBot &bot) const
             {
                 auto request_type = event.value("request_type", "");
                 auto sub_type = event.value("sub_type", "");
-                for(auto &func : request_handler_.at(request_type).at(sub_type))
-                    pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                if(request_handler_.count(request_type) && request_handler_.at(request_type).count(sub_type))
+                {
+                    for(auto &func : request_handler_.at(request_type).at(sub_type))
+                        pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                }
             }
             break;
             // meta_event

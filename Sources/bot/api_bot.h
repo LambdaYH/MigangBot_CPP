@@ -14,6 +14,8 @@
 
 namespace white
 {
+namespace onebot11
+{
 
 using Json = nlohmann::json;
 
@@ -40,6 +42,7 @@ public:
             case std::future_status::ready:
                 return future_.get();
         }
+        return future_.get();
     }
 private:
     std::shared_ptr<std::promise<T>> promise_ptr_;
@@ -167,6 +170,7 @@ inline void ApiBot::delete_msg(MsgId msg_id)
     notify_(msg.dump());
 }
 
+} // namespace onebot11
 } // namespace white
 
 #endif

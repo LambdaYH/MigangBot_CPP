@@ -24,7 +24,7 @@ jobs:
         submodules: true
 
     - name: Install boost
-      run: sudo apt install libboost-dev
+      run: sudo apt install libboost-dev libmysqlclient -y
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

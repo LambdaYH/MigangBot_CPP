@@ -12,7 +12,7 @@
 namespace white
 {
 
-using plugin_func = std::function<void(const Event &, ApiBot &)>;
+using plugin_func = std::function<void(const Event &, onebot11::ApiBot &)>;
 
 class Trie
 {

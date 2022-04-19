@@ -8,6 +8,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 find_package(Threads REQUIRED) # pthread
 
+# mysql
+IF (LINUX)
+    include(FindPkgConfig)
+    pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
+    link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
+ELSE()
+    message([FATAL_ERROR] "Unsupport Platform")
+ENDIF()
+
 # Boost
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_LIBS ON)
@@ -17,29 +26,24 @@ IF(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 ENDIF(Boost_FOUND)
 
+# yaml-cpp
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(third-party/yaml-cpp)
 
+# nlohmann/json
 set(JSON_ImplicitConversions OFF CACHE BOOL "Enable implicit conversions.")
 add_subdirectory(third-party/json)
 
+# spdlog
 add_subdirectory(third-party/spdlog)
 
+# libhv
 set(BUILD_SHARED OFF CACHE BOOL "build shared library")
 set(BUILD_EXAMPLES OFF CACHE BOOL "build examples")
+set(BUILD_UNITTEST OFF CACHE BOOL "build unittest")
 add_subdirectory(third-party/libhv)
 
-include_directories(Sources)
-include_directories(
-    Sources
-    third-party/json/include
-    third-party/yaml-cpp/include
-    include
-)
-
 aux_source_directory(Sources/bot BOT_SRC)
-aux_source_directory(Sources/event EVENT_SRC)
-aux_source_directory(Sources/logger LOGGER_SRC)
 
 add_executable(${PROJECT_NAME} 
                 Sources/main.cpp
@@ -47,5 +51,19 @@ add_executable(${PROJECT_NAME}
                 ${LOGGER_SRC}
                 ${EVENT_SRC}
 )
-                
-target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads yaml-cpp nlohmann_json::nlohmann_json hv_static spdlog)
+target_include_directories(${PROJECT_NAME} PRIVATE
+                            Sources 
+                            third-party/json/include
+                            third-party/yaml-cpp/include
+                            third-party/include
+                            ${LIBMYSQLCLIENT_INCLUDE_DIRS}
+)    
+
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+                        Threads::Threads 
+                        yaml-cpp 
+                        nlohmann_json::nlohmann_json 
+                        hv_static 
+                        spdlog
+                        ${LIBMYSQLCLIENT_LIBRARIES}
+)
