@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(MigangBotCPP)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -12,15 +12,6 @@ find_package(Threads REQUIRED) # pthread
 include(FindPkgConfig)
 pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
 link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
-
-# Boost
-set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
-find_package(Boost)
-IF(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
-ENDIF(Boost_FOUND)
 
 # yaml-cpp
 set(BUILD_SHARED_LIBS OFF)
@@ -39,6 +30,10 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "build examples")
 set(BUILD_UNITTEST OFF CACHE BOOL "build unittest")
 add_subdirectory(third-party/libhv)
 
+set(Beast_BUILD_EXAMPLES OFF CACHE BOOL "Build examples")
+set(Beast_BUILD_TESTS OFF CACHE BOOL "Build tests")
+add_subdirectory(third-party/beast)
+
 aux_source_directory(Sources/bot BOT_SRC)
 
 add_executable(${PROJECT_NAME} 
@@ -51,6 +46,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
                             Sources 
                             third-party/json/include
                             third-party/yaml-cpp/include
+                            third-party/beast/include
                             third-party/include
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    

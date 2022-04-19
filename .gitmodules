@@ -9,4 +9,7 @@
 	url = https://github.com/jbeder/yaml-cpp.git
 [submodule "third-party/libhv"]
 	path = third-party/libhv
-	url = https://github.com/ithewei/libhv
+	url = https://github.com/ithewei/libhv.git
+[submodule "third-party/beast"]
+	path = third-party/beast
+	url = https://github.com/boostorg/beast.git

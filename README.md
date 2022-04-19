@@ -4,15 +4,27 @@
 
 ## 
 
-目前极其简陋，仅支持简单的回声功能
+| 模块名 | 模块功能 |
+| ----- | ------- |
+|Echo| 回声|
 
-## Requirements
+## For User
+
+### Requirements
+
+    libmysqlclient21
+
+## For Developer
+
+### Requirements
 
     [Boost](https://github.com/boostorg/boost)
     Cmake
     libmysqlclient
 
-## Build
+See [Github Action](https://github.com/LambdaYH/MigangBotCPP/blob/main/.github/workflows/cmake.yml) for more Details.
+
+### Step
 
     git clone https://github.com/LambdaYH/MigangBotCPP
     cd MigangBotCPP
