@@ -16,10 +16,29 @@
 namespace white
 {
 
+inline void RegisterCommand(const int type, const std::initializer_list<std::string> &commands, const plugin_func &func)
+{
+    for(auto &command : commands)
+    {
+        auto func_cp = func;
+        EventHandler::GetInstance().RegisterCommand(type, command, std::move(func_cp));
+    }
+}
+
+inline void RegisterNotice(const std::string &notice_type, const std::string &sub_type, const plugin_func &func)
+{
+    EventHandler::GetInstance().RegisterNotice(notice_type, sub_type, std::move(func));
+}
+
+inline void RegisterRequest(const std::string &request_type, const std::string &sub_type, const plugin_func &func)
+{
+    EventHandler::GetInstance().RegisterRequest(request_type, sub_type, std::move(func));
+}
+
 class PluginInterface
 {
 public:
-    virtual void Register(EventHandler &event_handler) = 0;
+    virtual void Register() = 0;
     
 };
 

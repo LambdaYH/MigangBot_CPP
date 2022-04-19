@@ -1,6 +1,6 @@
 # MigangBotCPP
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/2f2ff355bd7f482badfb151c8ad76744)](https://www.codacy.com/gh/LambdaYH/MigangBotCPP/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=LambdaYH/MigangBotCPP&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/2f2ff355bd7f482badfb151c8ad76744)](https://www.codacy.com/gh/LambdaYH/MigangBotCPP/dashboard?utm_source=github.com&utm_medium=referral&utm_content=LambdaYH/MigangBotCPP&utm_campaign=Badge_Grade)
 
 ## 
 
@@ -32,3 +32,9 @@
 -   [x] 简化插件添加流程
 -   [ ] 加注释
 -   [x] 支持注册各类事件
+
+## 如何添加插件
+
+首先写一个继承自PluginInterface的类并实现其接口，该类位于plugins/plugin_interface.h文件中。
+
+写完后在module_list中按照样例添加即可。

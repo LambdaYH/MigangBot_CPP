@@ -2,12 +2,6 @@
 #define PLUGINS_MODULE_BOTMANAGE_HELP_H_
 
 #include "plugins/plugin_interface.h"
-#include "api/onebot_11/api_impl.h"
-#include "event/event.h"
-#include <functional>
-#include <queue>
-#include <condition_variable>
-#include <mutex>
 
 namespace white
 {
@@ -15,16 +9,15 @@ namespace white
 class Help : public PluginInterface
 {
 public:
-    virtual void Register(EventHandler &event_handler);
+    virtual void Register();
     void HelpMsg(const Event &event, onebot11::ApiBot &bot);
 private:
     onebot11::ApiImpl api_impl;
 };
 
-inline void Help::Register(EventHandler &event_handler)
+inline void Help::Register()
 {
-    event_handler.RegisterCommand(FULLMATCH, "/help", std::bind(&Help::HelpMsg, this, std::placeholders::_1, std::placeholders::_2));
-    event_handler.RegisterCommand(FULLMATCH, ".help", std::bind(&Help::HelpMsg, this, std::placeholders::_1, std::placeholders::_2));
+    RegisterCommand(FULLMATCH, {".help", "/帮助"}, std::bind(&Help::HelpMsg, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 inline void Help::HelpMsg( const Event &event, onebot11::ApiBot &bot)

@@ -25,7 +25,7 @@ public:
         else
         {
             module_container_.push_back(std::move(std::unique_ptr<T>(new T)));
-            module_container_.back()->Register(EventHandler::GetInstance());
+            module_container_.back()->Register();
         }
     }
 private:

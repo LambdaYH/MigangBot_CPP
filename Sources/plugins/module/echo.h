@@ -16,15 +16,15 @@ namespace white
 class Echo : public PluginInterface
 {
 public:
-    virtual void Register(EventHandler &event_handler);
+    virtual void Register();
     void DoEcho(const Event &event, onebot11::ApiBot &bot);
 private:
     onebot11::ApiImpl api_impl;
 };
 
-inline void Echo::Register(EventHandler &event_handler)
+inline void Echo::Register()
 {
-    event_handler.RegisterCommand(PREFIX, "/echo", std::bind(&Echo::DoEcho, this, std::placeholders::_1, std::placeholders::_2));
+    RegisterCommand(PREFIX, {"/echo"}, std::bind(&Echo::DoEcho, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)
