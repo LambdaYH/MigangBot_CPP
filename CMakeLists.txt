@@ -9,13 +9,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 find_package(Threads REQUIRED) # pthread
 
 # mysql
-IF (LINUX)
-    include(FindPkgConfig)
-    pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
-    link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
-ELSE()
-    message([FATAL_ERROR] "Unsupport Platform")
-ENDIF()
+include(FindPkgConfig)
+pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
+link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
 
 # Boost
 set(Boost_USE_MULTITHREADED ON)  
