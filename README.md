@@ -12,7 +12,7 @@
 
 ### Requirements
 
-    libmysqlclient21
+    sudo apt install default-libmysqlclient-dev -y
 
 ## For Developer
 

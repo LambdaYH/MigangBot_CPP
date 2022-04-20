@@ -8,6 +8,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 find_package(Threads REQUIRED) # pthread
 
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME ON)
+
+# Boost
+set(Boost_USE_MULTITHREADED ON)  
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME ON)
+find_package(Boost)
+IF(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+ENDIF(Boost_FOUND)
+
 # mysql
 include(FindPkgConfig)
 pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
@@ -30,10 +42,6 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "build examples")
 set(BUILD_UNITTEST OFF CACHE BOOL "build unittest")
 add_subdirectory(third-party/libhv)
 
-set(Beast_BUILD_EXAMPLES OFF CACHE BOOL "Build examples")
-set(Beast_BUILD_TESTS OFF CACHE BOOL "Build tests")
-add_subdirectory(third-party/beast)
-
 aux_source_directory(Sources/bot BOT_SRC)
 
 add_executable(${PROJECT_NAME} 
@@ -46,7 +54,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
                             Sources 
                             third-party/json/include
                             third-party/yaml-cpp/include
-                            third-party/beast/include
                             third-party/include
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    

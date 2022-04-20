@@ -1,15 +1,16 @@
 [submodule "third-party/spdlog"]
 	path = third-party/spdlog
 	url = https://github.com/gabime/spdlog.git
+	tags = v1.10.0
 [submodule "third-party/json"]
 	path = third-party/json
 	url = https://github.com/nlohmann/json.git
+	tags = v3.10.5
 [submodule "third-party/yaml-cpp"]
 	path = third-party/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+	tags = yaml-cpp-0.7.0
 [submodule "third-party/libhv"]
 	path = third-party/libhv
 	url = https://github.com/ithewei/libhv.git
-[submodule "third-party/beast"]
-	path = third-party/beast
-	url = https://github.com/boostorg/beast.git
+	tags = v1.2.5
