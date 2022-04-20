@@ -16,7 +16,9 @@ namespace white
 class Echo : public PluginInterface
 {
 public:
+    Echo() : PluginInterface("") {}
     virtual void Register();
+
     void DoEcho(const Event &event, onebot11::ApiBot &bot);
 private:
     onebot11::ApiImpl api_impl;
@@ -24,17 +26,15 @@ private:
 
 inline void Echo::Register()
 {
-    RegisterCommand(PREFIX, {"/echo"}, std::bind(&Echo::DoEcho, this, std::placeholders::_1, std::placeholders::_2));
+    RegisterCommand(PREFIX, {"/echo", "/回声"}, std::bind(&Echo::DoEcho, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)
 {
     std::string msg = event["message"].get<std::string>().substr(6);
-    auto ret = bot.send_msg(event, std::string(msg)).Ret();
-    LOG_DEBUG("ret msgid: {}", ret);
-    auto new_msg = bot.WaitForNextMessageFrom(event["user_id"].get<QId>());
-    ret = bot.send_msg(event, new_msg).Ret();
-    bot.send_msg(event, std::to_string(ret));
+    auto text = ExtraPlainText(msg);
+    auto ret = bot.send_msg(event, std::string(text)).Ret();
+    LOG_DEBUG("DoEcho: ret msgid: {}", ret);
 }
 
 } // namespace white

@@ -9,10 +9,14 @@ namespace white
 class Help : public PluginInterface
 {
 public:
+    Help() : PluginInterface("botmanage/help.yml", "哈哈哈哈") {
+        config_ = LoadConfig();
+    }
     virtual void Register();
     void HelpMsg(const Event &event, onebot11::ApiBot &bot);
 private:
     onebot11::ApiImpl api_impl;
+    Config config_;
 };
 
 inline void Help::Register()

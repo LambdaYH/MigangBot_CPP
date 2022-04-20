@@ -146,7 +146,7 @@ inline bool EventHandler::Handle(const Event &event, onebot11::ApiBot &bot) cons
             // message
             case 's':
             {
-                LOG_INFO("Bot[{}] 收到一条消息: {}", event.value("self_id", 0), event.value("message", "Unknown message"));
+                LOG_INFO("Bot[{}] 收到一条消息: {}", event["self_id"].get<QId>(), event.value("message", "Unknown message"));
                 auto func = MatchedHandler(event);
                 if(func)
                     pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝
@@ -163,6 +163,7 @@ inline bool EventHandler::Handle(const Event &event, onebot11::ApiBot &bot) cons
             {
                 auto notice_type = event.value("notice_type", "");
                 auto sub_type = event.value("sub_type", "");
+                LOG_INFO("Bot[{}] 收到一个通知事件: {}.{}", event["self_id"].get<QId>(), notice_type, sub_type);
                 if(notice_handler_.count(notice_type) && notice_handler_.at(notice_type).count(sub_type))
                 {
                     for(auto &func : notice_handler_.at(notice_type).at(sub_type))
@@ -175,6 +176,7 @@ inline bool EventHandler::Handle(const Event &event, onebot11::ApiBot &bot) cons
             {
                 auto request_type = event.value("request_type", "");
                 auto sub_type = event.value("sub_type", "");
+                LOG_INFO("Bot[{}] 收到一个请求事件: {}.{}", event["self_id"].get<QId>(), request_type, sub_type);
                 if(request_handler_.count(request_type) && request_handler_.at(request_type).count(sub_type))
                 {
                     for(auto &func : request_handler_.at(request_type).at(sub_type))

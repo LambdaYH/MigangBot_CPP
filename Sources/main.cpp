@@ -47,6 +47,8 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 constexpr auto kThreadNum = 2;
 
 YAML::Node white::global_config;
+std::filesystem::path white::kConfigDir;
+
 constexpr auto kGlobalConfigExample =   "Server:\n"
                                         "  Listen: 0.0.0.0\n" 
                                         "  Port: 8080\n"
@@ -93,6 +95,16 @@ int main(int argc, char* argv[])
         config_file.close();
         return 1;
     }
+    white::kConfigDir = current_working_dir / "configs";
+    if(!std::filesystem::exists(white::kConfigDir))
+    {
+        if(!std::filesystem::create_directory(white::kConfigDir))
+        {
+            std::cerr << "[" << config_doc_path << "]，配置目录创建失败" << std::endl;
+            return 1;
+        }
+        std::cout << "插件配置文件目录已创建" << std::endl;
+    }
 
     // 加载配置文件
     white::global_config = YAML::LoadFile(config_doc_path);
@@ -124,6 +136,7 @@ int main(int argc, char* argv[])
     white::InitModuleList();
 
     white::LOG_INFO("MigangBot已初始化");
+    white::LOG_INFO("监听地址: {}:{}", white::global_config["Server"]["Listen"].as<std::string>(), white::global_config["Server"]["Port"].as<unsigned short>());
 
     // 开始监听
     // The io_context is required for all I/O

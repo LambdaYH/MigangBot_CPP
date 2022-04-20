@@ -24,8 +24,14 @@ public:
             return; // add log here
         else
         {
-            module_container_.push_back(std::move(std::unique_ptr<T>(new T)));
-            module_container_.back()->Register();
+            try
+            {
+                module_container_.push_back(std::move(std::unique_ptr<T>(new T)));
+                module_container_.back()->Register();
+            }catch(...)
+            {
+                LOG_ERROR("创建[{}]时发生异常", typeid(T).name());
+            }
         }
     }
 private:
