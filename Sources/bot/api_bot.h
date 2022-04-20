@@ -208,7 +208,7 @@ inline FutureWrapper<MsgId> ApiBot::send_msg(const Event &event, const std::stri
     if (event.value("message_type", "private") == "group")
         msg = api_impl_.send_msg<true>(event.value("user_id", 0), event.value("group_id", 0), at_sender ? fmt::format("[CQ:at,qq={}]{}", event.value("user_id", 0), message) : message, auto_escape);
     else
-        msg = api_impl_.send_msg<false>(event.value("user_id", 0), event.value("group_id", 0), at_sender ? fmt::format("[CQ:at,qq={}]{}", event.value("user_id", 0), message) : message, auto_escape);
+        msg = api_impl_.send_msg<false>(event.value("user_id", 0), event.value("group_id", 0), message, auto_escape);
     auto ret = Echo<MsgId>(msg);
     notify_(msg.dump());
     return ret;

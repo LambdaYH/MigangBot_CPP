@@ -5,30 +5,53 @@
 
 namespace white
 {
+namespace plugin_botmanage_help
+{
+constexpr auto kHelpConfigExample = "help_msg_group: <群聊中显示的帮助信息>\n"
+                                    "help_msg_friend: <私聊中显示的帮助信息>\n";
+}
 
 class Help : public PluginInterface
 {
 public:
-    Help() : PluginInterface("botmanage/help.yml", "哈哈哈哈") {
-        config_ = LoadConfig();
-    }
+    Help() : 
+        PluginInterface("botmanage/help.yml", plugin_botmanage_help::kHelpConfigExample), 
+        config_(LoadConfig()),
+        help_msg_group_(config_["help_msg_group"].as<std::string>()),
+        help_msg_friend_(config_["help_msg_friend"].as<std::string>())
+    {}
     virtual void Register();
     void HelpMsg(const Event &event, onebot11::ApiBot &bot);
 private:
     onebot11::ApiImpl api_impl;
     Config config_;
+
+    const std::string help_msg_group_;
+    const std::string help_msg_friend_;
 };
 
 inline void Help::Register()
 {
-    RegisterCommand(FULLMATCH, {".help", "/帮助"}, std::bind(&Help::HelpMsg, this, std::placeholders::_1, std::placeholders::_2));
+    RegisterCommand(PREFIX, {".help", "/帮助", "。help"}, std::bind(&Help::HelpMsg, this, std::placeholders::_1, std::placeholders::_2));
+    RegisterCommand(FULLMATCH, {".help", "/帮助", "。help"}, std::bind(&Help::HelpMsg, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-inline void Help::HelpMsg( const Event &event, onebot11::ApiBot &bot)
+inline void Help::HelpMsg(const Event &event, onebot11::ApiBot &bot)
 {
-    std::string msg = "欢迎使用米缸\n=============\n.dismiss 2215 使米缸退群\n请使用命令而不是直接T\n请不要随意禁言\n=============\n/help 查看FF14帮助\n-help 查看露儿帮助\nhelp 查看HoshinoBot帮助(仅群聊)\n=============\n.send 给维护者留言\n";
-    msg += "=============\n[.help 其他] 查看其他功能\n[.help 设定] 查看设定\n(以上命令不包含[])\n(使用[.help]或[/帮助]可呼出本帮助)\n[默认开启FF14微博推送，如果不需要或嫌吵请使用[禁用 weibo-ff14]来关闭]";
-    bot.send_msg(event, std::move(msg), true);
+    auto msg = event["message"].get<std::string>();
+    auto text = ExtraPlainText(msg);
+    Strip(text, ' ');
+    if(text.size() == msg.size())
+    {
+        auto message_type = event["message_type"].get<std::string>();
+        if(message_type[0] == 'g')
+            bot.send_msg(event, help_msg_group_, true);
+        else
+            bot.send_msg(event, help_msg_friend_);
+    }else if(text == "其他")
+    {
+        bot.send_msg(event, "还没写", true);
+    }
 }
 
 } // namespace white

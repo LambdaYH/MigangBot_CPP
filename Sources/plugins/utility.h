@@ -31,13 +31,13 @@ inline void LStrip(std::string_view &str, char ch)
 
 inline void RStrip(std::string_view &str, char ch)
 {
-    str.remove_suffix(std::max(str.find_last_not_of(ch), std::size_t(0)));
+    str.remove_suffix(std::min(str.size() - str.find_last_not_of(ch), str.size()));
 }
 
 inline void Strip(std::string_view &str, char ch)
 {
     str.remove_prefix(std::min(str.find_first_not_of(ch), str.size()));
-    str.remove_suffix(std::max(str.find_last_not_of(ch), std::size_t(0)));
+    str.remove_suffix(std::min(str.size() - str.find_last_not_of(ch) - 1, str.size()));
 }
 
 } //namespace white
