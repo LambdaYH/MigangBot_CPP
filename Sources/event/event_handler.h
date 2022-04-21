@@ -5,17 +5,19 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include "event/trie.h"
-#include "event/event_filter.h"
-#include "event/event.h"
 #include <nlohmann/json.hpp>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
+
+#include "event/trie.h"
+#include "event/event_filter.h"
+#include "event/event.h"
 #include "pool/thread_pool.h"
 #include "logger/logger.h"
 #include "bot/api_bot.h"
 #include "utility.h"
+#include "permission/permission.h"
 
 #include <iostream>
 
@@ -29,6 +31,17 @@ constexpr auto PREFIX = 1;
 constexpr auto SUFFIX = 2;
 constexpr auto KEYWORD = 3;
 constexpr auto ALLMSG = 4;
+
+const std::unordered_map<int, int> perm_to_loc{
+    {permission::BLACK,         0},
+    {permission::NORMAL,        1},
+    {permission::PRIVATE,       2},
+    {permission::GROUP_MEMBER,  3},
+    {permission::GROUP_ADMIN,   4},
+    {permission::GROUP_OWNER,   5},
+    {permission::WHITE_LIST,    6},
+    {permission::SUPERUSER,     7}
+};
 
 class EventHandler
 {
@@ -51,19 +64,29 @@ public:
 
 public:
     template<typename F>
-    bool RegisterCommand(const int command_type, const std::string &command, F &&func);
+    bool RegisterCommand(const int command_type, const std::string_view &command, F &&func, int permission = permission::NORMAL, bool only_to_me = false);
 
     template<typename F>
-    bool RegisterNotice(const std::string &notice_type, const std::string &sub_type, F &&func);
+    bool RegisterNotice(const std::string_view &notice_type, const std::string_view &sub_type, F &&func);
 
     template<typename F>
-    bool RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func);
+    bool RegisterRequest(const std::string_view &request_type, const std::string_view &sub_type, F &&func);
 
-    bool Handle(const Event &event, onebot11::ApiBot &bot) const;
+    bool Handle(Event &event, onebot11::ApiBot &bot) const;
 
 
 private:
-    EventHandler() {}
+    EventHandler() :
+        command_fullmatch_each_perm_(8),
+        command_prefix_each_perm_(8),
+        command_suffix_each_perm_(8),
+        command_keyword_each_perm_(8),
+        command_fullmatch_each_perm_to_me_(8),
+        command_prefix_each_perm_to_me_(8),
+        command_suffix_each_perm_to_me_(8),
+        command_keyword_each_perm_to_me_(8),
+        all_msg_handler_each_perm_(8)
+    {}
     ~EventHandler() {}
 
     EventHandler(const EventHandler &) = delete;
@@ -72,17 +95,25 @@ private:
     EventHandler &operator=(const EventHandler &&) = delete;
 
 private:
-    const plugin_func &MatchedHandler(const Event &msg) const;
-    const std::vector<plugin_func> &FreeHandler() const;
+    const plugin_func &MatchedHandler(Event &event) const;
+    const plugin_func &MatchHelper(int permission, const std::string_view &msg, bool only_to_me) const;
+    const std::vector<plugin_func> FreeHandler(const Event &event) const;
 
 private:
-    std::unordered_map<std::string, plugin_func> command_fullmatch_;
-    Trie command_prefix_;
-    Trie command_suffix_;
-    std::unordered_map<std::string, plugin_func> command_keyword_;
-    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<plugin_func>>> notice_handler_;
-    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<plugin_func>>> request_handler_;
-    std::vector<plugin_func> all_msg_handler_;
+    std::vector<std::unordered_map<std::string_view, plugin_func>> command_fullmatch_each_perm_;
+    std::vector<Trie> command_prefix_each_perm_;
+    std::vector<Trie> command_suffix_each_perm_;
+    std::vector<std::unordered_map<std::string_view, plugin_func>> command_keyword_each_perm_;
+
+    std::vector<std::unordered_map<std::string_view, plugin_func>> command_fullmatch_each_perm_to_me_;
+    std::vector<Trie> command_prefix_each_perm_to_me_;
+    std::vector<Trie> command_suffix_each_perm_to_me_;
+    std::vector<std::unordered_map<std::string_view, plugin_func>> command_keyword_each_perm_to_me_;
+
+    std::vector<std::vector<plugin_func>> all_msg_handler_each_perm_;
+
+    std::unordered_map<std::string_view, std::unordered_map<std::string_view, std::vector<plugin_func>>> notice_handler_;
+    std::unordered_map<std::string_view, std::unordered_map<std::string_view, std::vector<plugin_func>>> request_handler_;
     plugin_func no_func_avaliable_;
 
     std::unique_ptr<EventFilter> filter_;
@@ -90,51 +121,62 @@ private:
 };
 
 template<typename F>
-inline bool EventHandler::RegisterCommand(const int command_type, const std::string &command, F &&func)
+inline bool EventHandler::RegisterCommand(const int command_type, const std::string_view &command, F &&func, int permission, bool only_to_me)
 {
+    if(!perm_to_loc.count(permission))
+        return false;
     switch(command_type)
     {
         case FULLMATCH:
-            return command_fullmatch_.emplace(std::move(command), std::forward<F>(func)).second;
+            if(only_to_me)
+                return command_fullmatch_each_perm_to_me_[perm_to_loc.at(permission)].emplace(std::move(command), std::forward<F>(func)).second;
+            return command_fullmatch_each_perm_[perm_to_loc.at(permission)].emplace(std::move(command), std::forward<F>(func)).second;
             break;
         case PREFIX:
-            return command_prefix_.Insert(std::move(command), std::forward<F>(func));
+            if(only_to_me)
+                return command_prefix_each_perm_to_me_[perm_to_loc.at(permission)].Insert(std::move(command), std::forward<F>(func));
+            return command_prefix_each_perm_[perm_to_loc.at(permission)].Insert(std::move(command), std::forward<F>(func));
             break;
         case SUFFIX:
         {
-            auto w_command = str_to_wstr(command);
+            std::string command_str(command);
+            auto w_command = str_to_wstr(command_str);
             std::reverse(w_command.begin(), w_command.end());
-            return command_suffix_.Insert(std::move(wstr_to_str(w_command)), std::forward<F>(func));
+            if(only_to_me)
+                return command_suffix_each_perm_to_me_[perm_to_loc.at(permission)].Insert(wstr_to_str(w_command), std::forward<F>(func));
+            return command_suffix_each_perm_[perm_to_loc.at(permission)].Insert(wstr_to_str(w_command), std::forward<F>(func));
             break;
         }
         case KEYWORD:
-            return command_keyword_.emplace(std::move(command), std::forward<F>(func)).second;
+            if(only_to_me)
+                return command_keyword_each_perm_to_me_[perm_to_loc.at(permission)].emplace(std::move(command), std::forward<F>(func)).second;
+            return command_fullmatch_each_perm_[perm_to_loc.at(permission)].emplace(std::move(command), std::forward<F>(func)).second;
             break;
         case ALLMSG:
-            all_msg_handler_.push_back(std::forward<F>(func));
+            all_msg_handler_each_perm_[perm_to_loc.at(permission)].push_back(std::forward<F>(func));
             return true;
             break;
         default:
-            return command_fullmatch_.emplace(std::move(command), std::forward<F>(func)).second;
+            return command_fullmatch_each_perm_[perm_to_loc.at(permission)].emplace(std::move(command), std::forward<F>(func)).second;
     }
     return true;
 }
 
 template<typename F>
-inline bool EventHandler::RegisterNotice(const std::string &notice_type, const std::string &sub_type, F &&func)
+inline bool EventHandler::RegisterNotice(const std::string_view &notice_type, const std::string_view &sub_type, F &&func)
 {
     notice_handler_[notice_type][sub_type].push_back(std::forward<F>(func));
     return true;
 }
 
 template<typename F>
-inline bool EventHandler::RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func)
+inline bool EventHandler::RegisterRequest(const std::string_view &request_type, const std::string_view &sub_type, F &&func)
 {
     request_handler_[request_type][sub_type].push_back(std::forward<F>(func));
     return true;
 }
 
-inline bool EventHandler::Handle(const Event &event, onebot11::ApiBot &bot) const
+inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) const
 {
     if(filter_ && !filter_->operator()(event))
         return false;
@@ -152,7 +194,7 @@ inline bool EventHandler::Handle(const Event &event, onebot11::ApiBot &bot) cons
                     pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝
                 else
                 {
-                    auto &funcs = FreeHandler();
+                    auto &funcs = FreeHandler(event);
                     for(auto &func : funcs)
                         pool_->AddTask(std::bind(func, event, std::ref(bot)));
                 }  
@@ -214,29 +256,123 @@ inline bool EventHandler::Handle(const Event &event, onebot11::ApiBot &bot) cons
     return true;
 }
 
-inline const plugin_func &EventHandler::MatchedHandler(const Event &event) const
+inline const plugin_func &EventHandler::MatchedHandler(Event &event) const
 {
     if(event.is_null())
         return no_func_avaliable_;
-    std::string msg_str = event.value("message", "");
-    if(msg_str.empty())
+    auto msg = event["message"].get<std::string_view>();
+    if(msg.empty())
         return no_func_avaliable_;
-    if (command_fullmatch_.count(msg_str))
-        return command_fullmatch_.find(msg_str)->second;
-    const plugin_func &func_prefix = command_prefix_.Search(msg_str);
-    if(func_prefix)
-        return func_prefix;
-    std::string msg_str_reverse = msg_str;
-    std::reverse(msg_str_reverse.begin(), msg_str_reverse.end());
-    const plugin_func &func_suffix = command_suffix_.Search(msg_str_reverse);
-    if(func_suffix)
-        return func_suffix;
+    bool only_to_me = false;
+    if(msg.starts_with("[CQ:at"))
+    {
+        auto at_id_start = msg.find_first_of('=') + 1;
+        if(at_id_start != std::string_view::npos)
+        {
+            auto at_id_end = msg.find_first_of(']');
+            if(at_id_end != std::string_view::npos)
+            {
+                auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
+                auto self_id = std::to_string(event["self_id"].get<QId>());
+                if(at_id == self_id)
+                {
+                    only_to_me = true;
+                    msg = msg.substr(msg.find_first_of(']') + 1);
+                    msg = msg.substr(msg.find_first_not_of(' '));
+                    event["message"] = std::string(msg);
+                }
+            }
+        }
+    }
+    auto perm = permission::GetUserPermission(event);
+    switch(perm)
+    {
+        case permission::SUPERUSER:
+            if(auto &func = MatchHelper(permission::SUPERUSER, msg, only_to_me))
+                return func; 
+        case permission::WHITE_LIST:
+            if(auto &func = MatchHelper(permission::WHITE_LIST, msg, only_to_me))
+                return func;           
+        case permission::GROUP_OWNER:
+            if(auto &func = MatchHelper(permission::GROUP_OWNER, msg, only_to_me))
+                return func;               
+        case permission::GROUP_ADMIN:
+            if(auto &func = MatchHelper(permission::GROUP_ADMIN, msg, only_to_me))
+                return func;   
+        case permission::GROUP_MEMBER:
+            if(auto &func = MatchHelper(permission::GROUP_MEMBER, msg, only_to_me))
+                return func;   
+        case permission::PRIVATE:
+            if(auto &func = MatchHelper(permission::PRIVATE, msg, only_to_me))
+                return func;   
+        case permission::NORMAL:
+            if(auto &func = MatchHelper(permission::NORMAL, msg, only_to_me))
+                return func;   
+        case permission::BLACK:
+            if(auto &func = MatchHelper(permission::BLACK, msg, only_to_me))
+                return func; 
+        default:
+            return no_func_avaliable_;
+    }   
     return no_func_avaliable_;
 }
 
-inline const std::vector<plugin_func> &EventHandler::FreeHandler() const
+inline const plugin_func &EventHandler::MatchHelper(int permission, const std::string_view &msg, bool only_to_me) const
 {
-    return all_msg_handler_;
+    if(only_to_me)
+    {
+        if (command_fullmatch_each_perm_to_me_[perm_to_loc.at(permission)].count(msg))
+            return command_fullmatch_each_perm_to_me_[perm_to_loc.at(permission)].at(msg);
+        const plugin_func &func_prefix = command_prefix_each_perm_to_me_[perm_to_loc.at(permission)].Search(msg);
+        if(func_prefix)
+            return func_prefix;
+        std::string msg_reverse{msg};
+        std::reverse(msg_reverse.begin(), msg_reverse.end());
+        const plugin_func &func_suffix = command_suffix_each_perm_to_me_[perm_to_loc.at(permission)].Search(msg_reverse);
+        if(func_suffix)
+            return func_suffix;
+    }else
+    {
+        if (command_fullmatch_each_perm_[perm_to_loc.at(permission)].count(msg))
+            return command_fullmatch_each_perm_[perm_to_loc.at(permission)].at(msg);
+        const plugin_func &func_prefix = command_prefix_each_perm_[perm_to_loc.at(permission)].Search(msg);
+        if(func_prefix)
+            return func_prefix;
+        std::string msg_reverse{msg};
+        std::reverse(msg_reverse.begin(), msg_reverse.end());
+        const plugin_func &func_suffix = command_suffix_each_perm_[perm_to_loc.at(permission)].Search(msg_reverse);
+        if(func_suffix)
+            return func_suffix;
+    }
+    return no_func_avaliable_;
+}
+
+inline const std::vector<plugin_func> EventHandler::FreeHandler(const Event &event) const
+{
+    std::vector<plugin_func> ret;
+    auto perm = permission::GetUserPermission(event);
+    switch(perm)
+    {
+        case permission::SUPERUSER:
+            ret.insert(ret.end(), all_msg_handler_each_perm_[perm_to_loc.at(permission::SUPERUSER)].begin(), all_msg_handler_each_perm_[perm_to_loc.at(permission::SUPERUSER)].end());
+        case permission::WHITE_LIST:
+            ret.insert(ret.end(), all_msg_handler_each_perm_[perm_to_loc.at(permission::WHITE_LIST)].begin(), all_msg_handler_each_perm_[perm_to_loc.at(permission::WHITE_LIST)].end());
+        case permission::GROUP_OWNER:
+            ret.insert(ret.end(), all_msg_handler_each_perm_[perm_to_loc.at(permission::GROUP_OWNER)].begin(), all_msg_handler_each_perm_[perm_to_loc.at(permission::GROUP_OWNER)].end());              
+        case permission::GROUP_ADMIN:
+            ret.insert(ret.end(), all_msg_handler_each_perm_[perm_to_loc.at(permission::GROUP_ADMIN)].begin(), all_msg_handler_each_perm_[perm_to_loc.at(permission::GROUP_ADMIN)].end()); 
+        case permission::GROUP_MEMBER:
+            ret.insert(ret.end(), all_msg_handler_each_perm_[perm_to_loc.at(permission::GROUP_MEMBER)].begin(), all_msg_handler_each_perm_[perm_to_loc.at(permission::GROUP_MEMBER)].end());   
+        case permission::PRIVATE:
+            ret.insert(ret.end(), all_msg_handler_each_perm_[perm_to_loc.at(permission::PRIVATE)].begin(), all_msg_handler_each_perm_[perm_to_loc.at(permission::PRIVATE)].end());
+        case permission::NORMAL:
+            ret.insert(ret.end(), all_msg_handler_each_perm_[perm_to_loc.at(permission::NORMAL)].begin(), all_msg_handler_each_perm_[perm_to_loc.at(permission::NORMAL)].end());
+        case permission::BLACK:
+            ret.insert(ret.end(), all_msg_handler_each_perm_[perm_to_loc.at(permission::BLACK)].begin(), all_msg_handler_each_perm_[perm_to_loc.at(permission::BLACK)].end()); 
+        default:
+            break;
+    } 
+    return ret;
 }
 
 } // namespace white

@@ -1,13 +1,8 @@
-#ifndef MIGANGBOTCPP_PLUGINS_UTILITY_H_
-#define MIGANGBOTCPP_PLUGINS_UTILITY_H_
+#ifndef MIGANGBOTCPP_MESSAGE_UTILITY_H_
+#define MIGANGBOTCPP_MESSAGE_UTILITY_H_
 
+#include <string>
 #include <string_view>
-#include <algorithm>
-#include <nlohmann/json.hpp>
-#include <yaml-cpp/yaml.h>
-#include <filesystem>
-
-#include "global_config.h"
 
 namespace white
 {
@@ -40,6 +35,6 @@ inline void Strip(std::string_view &str, char ch)
     str.remove_suffix(std::min(str.size() - str.find_last_not_of(ch) - 1, str.size()));
 }
 
-} //namespace white
+} // namespace white
 
 #endif

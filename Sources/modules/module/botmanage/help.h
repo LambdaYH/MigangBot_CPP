@@ -1,21 +1,24 @@
-#ifndef PLUGINS_MODULE_BOTMANAGE_HELP_H_
-#define PLUGINS_MODULE_BOTMANAGE_HELP_H_
+#ifndef MIGANGBOTCPP_MODULES_MODULE_BOTMANAGE_HELP_H_
+#define MIGANGBOTCPP_MODULES_MODULE_BOTMANAGE_HELP_H_
 
-#include "plugins/plugin_interface.h"
+#include "modules/module_interface.h"
 
 namespace white
 {
+namespace module
+{
+
 namespace plugin_botmanage_help
 {
 constexpr auto kHelpConfigExample = "help_msg_group: <群聊中显示的帮助信息>\n"
                                     "help_msg_friend: <私聊中显示的帮助信息>\n";
 }
 
-class Help : public PluginInterface
+class Help : public Module
 {
 public:
     Help() : 
-        PluginInterface("botmanage/help.yml", plugin_botmanage_help::kHelpConfigExample), 
+        Module("botmanage/help.yml", plugin_botmanage_help::kHelpConfigExample), 
         config_(LoadConfig()),
         help_msg_group_(config_["help_msg_group"].as<std::string>()),
         help_msg_friend_(config_["help_msg_friend"].as<std::string>())
@@ -33,7 +36,6 @@ private:
 inline void Help::Register()
 {
     RegisterCommand(PREFIX, {".help", "/帮助", "。help"}, std::bind(&Help::HelpMsg, this, std::placeholders::_1, std::placeholders::_2));
-    RegisterCommand(FULLMATCH, {".help", "/帮助", "。help"}, std::bind(&Help::HelpMsg, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 inline void Help::HelpMsg(const Event &event, onebot11::ApiBot &bot)
@@ -54,6 +56,7 @@ inline void Help::HelpMsg(const Event &event, onebot11::ApiBot &bot)
     }
 }
 
+} // namespace module
 } // namespace white
 
 #endif

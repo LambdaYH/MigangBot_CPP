@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <string_view>
 #include <nlohmann/json.hpp>
 #include "event/event.h"
 #include "bot/api_bot.h"
@@ -22,9 +23,9 @@ public:
 
 public:
     template<typename F>
-    bool Insert(const std::string &key, F &&func);
+    bool Insert(const std::string_view &key, F &&func);
 
-    const plugin_func &Search(const std::string &key) const;
+    const plugin_func &Search(const std::string_view &key) const;
 private:
     struct TrieNode
     {
@@ -50,7 +51,7 @@ inline Trie::~Trie()
 }
 
 template<typename F>
-inline bool Trie::Insert(const std::string &key, F &&func)
+inline bool Trie::Insert(const std::string_view &key, F &&func)
 {
     auto cur_node = root_;
     for(auto ch : key)
@@ -61,12 +62,12 @@ inline bool Trie::Insert(const std::string &key, F &&func)
         cur_node = cur_node->childs[ch];
     }
     if(cur_node->func)
-        return false;
+        return false; 
     cur_node->func = std::forward<F>(func);
     return true;
 }
 
-inline const plugin_func &Trie::Search(const std::string &key) const
+inline const plugin_func &Trie::Search(const std::string_view &key) const
 {
     auto cur_node = root_;
     for(auto ch : key)

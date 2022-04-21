@@ -3,10 +3,12 @@
 
 #include "module_manager.h"
 
-#include "plugins/module/echo.h"
-#include "plugins/module/botmanage/help.h"
+#include "modules/module/echo.h"
+#include "modules/module/botmanage/help.h"
 
 namespace white
+{
+namespace module
 {
 
 // add your module here
@@ -16,6 +18,7 @@ inline void InitModuleList()
     AddModule<Help>();
 }
 
+} // namespace module
 } // namespace white
 
 #endif

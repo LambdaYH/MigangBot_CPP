@@ -1,7 +1,7 @@
 #ifndef MIGANGBOTCPP_MODULE_MANAGER_H_
 #define MIGANGBOTCPP_MODULE_MANAGER_H_
 
-#include "plugins/plugin_interface.h"
+#include "modules/module_interface.h"
 #include "event/event_handler.h"
 #include <vector>
 #include <memory>
@@ -20,7 +20,7 @@ public:
     template<typename T>
     void InitModule()
     {
-        if(!std::is_base_of<PluginInterface, T>::value)
+        if(!std::is_base_of<module::Module, T>::value)
             return; // add log here
         else
         {
@@ -28,6 +28,7 @@ public:
             {
                 module_container_.push_back(std::move(std::unique_ptr<T>(new T)));
                 module_container_.back()->Register();
+                LOG_INFO("已成功装载插件：{}", typeid(T).name());
             }catch(...)
             {
                 LOG_ERROR("创建[{}]时发生异常", typeid(T).name());
@@ -44,7 +45,7 @@ private:
     ModuleManager &operator=(const ModuleManager &&) = delete;
 
 private:
-    std::vector<std::unique_ptr<PluginInterface>> module_container_;
+    std::vector<std::unique_ptr<module::Module>> module_container_;
 };
 
 template<typename T>

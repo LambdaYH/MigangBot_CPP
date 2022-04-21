@@ -80,7 +80,7 @@ private:
     std::function<void(const std::string &)> notify_;
     std::function<void(const int, std::function<void(const Json &)> &&)> set_echo_function_;
     onebot11::ApiBot api_bot_;
-    std::function<bool(const Event &)> event_handler_;
+    std::function<bool(Event &)> event_handler_;
 
     bool stop_;
 };

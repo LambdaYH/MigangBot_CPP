@@ -42,13 +42,11 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "build examples")
 set(BUILD_UNITTEST OFF CACHE BOOL "build unittest")
 add_subdirectory(third-party/libhv)
 
-aux_source_directory(Sources/bot BOT_SRC)
+aux_source_directory(Sources/message MESSAGE_SRC)
 
 add_executable(${PROJECT_NAME} 
                 Sources/main.cpp
-                ${BOT_SRC}
-                ${LOGGER_SRC}
-                ${EVENT_SRC}
+                ${MESSAGE_SRC}
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
                             Sources 

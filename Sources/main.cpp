@@ -47,7 +47,10 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 constexpr auto kThreadNum = 2;
 
 YAML::Node white::global_config;
-std::filesystem::path white::kConfigDir;
+std::filesystem::path white::config::kConfigDir;
+std::string white::config::BOT_NAME;
+std::unordered_set<white::QId> white::config::SUPERUSERS;
+std::unordered_set<white::QId> white::config::WHITE_LIST;
 
 constexpr auto kGlobalConfigExample =   "Server:\n"
                                         "  Listen: 0.0.0.0\n" 
@@ -57,7 +60,8 @@ constexpr auto kGlobalConfigExample =   "Server:\n"
                                         "\n"
                                         "Bot:\n"
                                         "  Name: <YOUR_BOT_NAME>            # 机器人名字\n"
-                                        "  SuperUser: []                    # 管理员账号\n"
+                                        "  SuperUsers: []                   # 管理员账号\n"
+                                        "  WhiteList: []                    # 白名单\n"
                                         "\n"
                                         "DataBase:\n"
                                         "  Host: 127.0.0.1\n"
@@ -95,10 +99,10 @@ int main(int argc, char* argv[])
         config_file.close();
         return 1;
     }
-    white::kConfigDir = current_working_dir / "configs";
-    if(!std::filesystem::exists(white::kConfigDir))
+    white::config::kConfigDir = current_working_dir / "configs";
+    if(!std::filesystem::exists(white::config::kConfigDir))
     {
-        if(!std::filesystem::create_directory(white::kConfigDir))
+        if(!std::filesystem::create_directory(white::config::kConfigDir))
         {
             std::cerr << "[" << config_doc_path << "]，配置目录创建失败" << std::endl;
             return 1;
@@ -133,7 +137,17 @@ int main(int argc, char* argv[])
     );
 
     // 初始化模块
-    white::InitModuleList();
+    white::module::InitModuleList();
+
+    // 加载全局配置
+    white::config::BOT_NAME = white::global_config["Bot"]["Name"].as<std::string>();
+    auto superusers_yaml_node = white::global_config["Bot"]["SuperUsers"];
+    for(int i = 0; i < superusers_yaml_node.size(); ++i)
+        white::config::SUPERUSERS.insert(superusers_yaml_node[i].as<white::QId>());
+        
+    auto whitelist_yaml_node = white::global_config["Bot"]["WhiteList"];
+    for(int i = 0; i < whitelist_yaml_node.size(); ++i)
+        white::config::WHITE_LIST.insert(whitelist_yaml_node[i].as<white::QId>());
 
     white::LOG_INFO("MigangBot已初始化");
     white::LOG_INFO("监听地址: {}:{}", white::global_config["Server"]["Listen"].as<std::string>(), white::global_config["Server"]["Port"].as<unsigned short>());

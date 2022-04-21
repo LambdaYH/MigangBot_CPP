@@ -45,6 +45,8 @@ See [Github Action](https://github.com/LambdaYH/MigangBotCPP/blob/main/.github/w
 -   [ ] 加注释
 -   [x] 支持注册各类事件
 -   [ ] 加文字转图片，图片转base64
+-   [x] 实现权限控制
+-   [x] 实现only_to_me
 
 ## 如何添加插件
 
