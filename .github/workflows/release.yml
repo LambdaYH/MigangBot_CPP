@@ -56,5 +56,5 @@ jobs:
 
     - uses: ncipollo/release-action@v1
       with:
-        artifacts: "build/bin/MigangBot"
+        artifacts: "build/bin/MigangBot, assets"
         token: ${{ secrets.GITHUB_TOKEN }}

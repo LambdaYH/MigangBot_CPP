@@ -49,17 +49,23 @@ set(BUILD_EXAMPLES OFF CACHE INTERNAL "build examples")
 set(BUILD_UNITTEST OFF CACHE INTERNAL "build unittest")
 add_subdirectory(third-party/libhv)
 
+# oneTBB
 set(TBB_TEST OFF CACHE INTERNAL "Enable testing")
 add_subdirectory(third-party/oneTBB)
+
+# fmt
+add_subdirectory(third-party/fmt)
 
 aux_source_directory(Sources/message MESSAGE_SRC)
 
 add_executable(${PROJECT_NAME} 
                 Sources/main.cpp
+                third-party/cpp-base64/base64.cpp
                 ${MESSAGE_SRC}
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
                             Sources 
+                            third-party/cpp-base64
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    
 
@@ -70,6 +76,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         hv_static 
                         spdlog
                         TBB::tbb
+                        fmt
                         ${LIBMYSQLCLIENT_LIBRARIES}
                         ${OpenCV_LIBS}
 )

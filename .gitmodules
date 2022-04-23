@@ -13,3 +13,9 @@
 [submodule "third-party/oneTBB"]
 	path = third-party/oneTBB
 	url = https://github.com/oneapi-src/oneTBB.git
+[submodule "third-party/cpp-base64"]
+	path = third-party/cpp-base64
+	url = https://github.com/ReneNyffenegger/cpp-base64.git
+[submodule "third-party/fmt"]
+	path = third-party/fmt
+	url = https://github.com/fmtlib/fmt.git

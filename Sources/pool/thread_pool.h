@@ -81,10 +81,10 @@ inline void ThreadPool::Run(size_t thread_num)
                             {
                                 task();
                             }
-                            catch(...)
+                            catch(std::exception &e)
                             {
                                 // 异常处理
-                                LOG_ERROR("Some Expection Happened...");
+                                LOG_ERROR("Some Expection Happened...: {}", e.what());
                             }
                         }
                         locker.lock();
