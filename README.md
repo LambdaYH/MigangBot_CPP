@@ -54,7 +54,3 @@ See [Github Action](https://github.com/LambdaYH/MigangBotCPP/blob/main/.github/w
 
 写完后在module_list中按照样例添加即可。
 
-
-## Perfomance
-
-    Ram: Under 100MB

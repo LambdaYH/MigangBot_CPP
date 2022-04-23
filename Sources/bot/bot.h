@@ -9,8 +9,8 @@
 #include <condition_variable>
 #include <nlohmann/json.hpp>
 #include <oneapi/tbb/concurrent_unordered_map.h>
+#include <oneapi/tbb/concurrent_queue.h>
 #include <thread>
-#include <queue>
 #include <mutex>
 #include <string>
 #include <utility>
@@ -73,8 +73,8 @@ private:
     beast::flat_buffer buffer_;
     std::condition_variable cond_write_;
     std::condition_variable cond_process_;
-    std::queue<std::string> writable_msg_queue_;
-    std::queue<std::string> processable_msg_queue_;
+    tbb::concurrent_queue<std::string> writable_msg_queue_;
+    tbb::concurrent_queue<std::string> processable_msg_queue_;
     tbb::concurrent_unordered_map<int, std::function<void(const Json &)>> echo_function_;
     std::mutex mutex_write_;
     std::mutex mutex_process_;
@@ -164,10 +164,7 @@ inline void Bot::OnRead(beast::error_code ec, std::size_t bytes_transferred)
     if(ec)
         return fail(ec, "read");
 
-    {
-        std::lock_guard<std::mutex> locker(mutex_process_);
-        processable_msg_queue_.push(std::move(beast::buffers_to_string(buffer_.data())));
-    }
+    processable_msg_queue_.push(std::move(beast::buffers_to_string(buffer_.data())));
     cond_process_.notify_one();
     buffer_.consume(buffer_.size());
     DoRead();
@@ -176,10 +173,7 @@ inline void Bot::OnRead(beast::error_code ec, std::size_t bytes_transferred)
 
 inline void Bot::Notify(const std::string &msg)
 {
-    {
-        std::lock_guard<std::mutex> locker(mutex_write_);
-        writable_msg_queue_.push(msg);
-    }
+    writable_msg_queue_.push(msg);
     cond_write_.notify_one();
     LOG_DEBUG("Msg To sent: {}", msg);
 }
@@ -201,24 +195,26 @@ inline void Bot::ThreadFunctionProcess()
 {
     Event msg;
     std::unique_lock<std::mutex> locker(mutex_process_);
+    std::string msg_str;
     while(!stop_)
     {
         if(processable_msg_queue_.empty())
             cond_process_.wait(locker);
         else
         {
-            auto msg_str = std::move(processable_msg_queue_.front());
-            processable_msg_queue_.pop();
             locker.unlock();
-            LOG_DEBUG("Recieve: {}", msg_str);
-            try
+            if(processable_msg_queue_.try_pop(msg_str))
             {
-                auto msg = nlohmann::json::parse(msg_str);
-                if(EventProcess(msg))
-                    event_handler_(msg);
-            }catch(nlohmann::json::exception &e)
-            {
-                LOG_ERROR("Exception: {}", e.what());
+                LOG_DEBUG("Recieve: {}", msg_str);
+                try
+                {
+                    auto msg = nlohmann::json::parse(msg_str);
+                    if(EventProcess(msg))
+                        event_handler_(msg);
+                }catch(nlohmann::json::exception &e)
+                {
+                    LOG_ERROR("Exception: {}", e.what());
+                }
             }
             locker.lock();
         }
@@ -229,19 +225,23 @@ inline void Bot::ThreadFunctionWrite()
 {
     beast::flat_buffer buffer;
     boost::system::error_code ec;
+    std::string msg_str;
     std::unique_lock<std::mutex> locker(mutex_write_);
     while(!stop_)
     {
         if(writable_msg_queue_.empty())
             cond_write_.wait(locker);
         else{
-            std::string msg = std::move(writable_msg_queue_.front());
-            writable_msg_queue_.pop();
             locker.unlock();
-            beast::ostream(buffer) << msg;
-            ws_.text(ws_.got_text());
-            ws_.write(buffer.data(), ec);
-            buffer.consume(buffer.size());
+            if(writable_msg_queue_.try_pop(msg_str))
+            {
+                beast::ostream(buffer) << msg_str;
+                ws_.text(ws_.got_text());
+                ws_.write(buffer.data(), ec);
+                if(ec)
+                    LOG_ERROR("In ThreadFunctionWrite: {}", ec.message());
+                buffer.consume(buffer.size());
+            }
             locker.lock();
         }
     }
@@ -255,10 +255,7 @@ inline bool Bot::EventProcess(const Event &event)
         {
             auto echo_code = event.value("echo", 0);
             if(echo_function_.count(echo_code))
-            {
                 echo_function_.at(echo_code)(event["data"]);
-                // echo_function_.unsafe_erase(echo_code); // Will cause segmentation fault under high pressure
-            }
         }
         return false;
     }else if(event.contains("message"))

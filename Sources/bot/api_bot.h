@@ -98,7 +98,7 @@ private:
         }
         catch(const std::future_error& e)
         {
-            std::cerr << "Exception In EchoFunction: " << e.what() << std::endl;
+            LOG_ERROR("Exception In EchoFunction: {}", e.what());
         }
         
     }
