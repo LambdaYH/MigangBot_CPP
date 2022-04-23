@@ -87,7 +87,7 @@ inline void MySQLConnPool::Init(
     std::size_t conn_num)
 {
     sql_conn_pool_.resize(conn_num);
-    for(int i = 0; i < conn_num; ++i)
+    for(std::size_t i = 0; i < conn_num; ++i)
     {
         if(!mysql_init(&sql_conn_pool_[i]))
         {

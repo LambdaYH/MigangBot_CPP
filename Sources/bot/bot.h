@@ -83,15 +83,16 @@ private:
     std::function<bool(Event &)> event_handler_;
 
     bool stop_;
+    std::vector<std::thread> threads_;
 };
 
 inline Bot::Bot(tcp::socket&& socket, std::size_t write_thread_num, std::size_t process_thread_num) :
         ws_(std::move(socket)),
         notify_(std::bind(&Bot::Notify, this, std::placeholders::_1)),
         set_echo_function_(std::bind(&Bot::SetEchoFunction, this, std::placeholders::_1, std::placeholders::_2)),
-        stop_(false),
         api_bot_(notify_, set_echo_function_),
-        event_handler_( std::bind(&EventHandler::Handle, &EventHandler::GetInstance(), std::placeholders::_1, std::ref(api_bot_)) )
+        event_handler_( std::bind(&EventHandler::Handle, &EventHandler::GetInstance(), std::placeholders::_1, std::ref(api_bot_)) ),
+        stop_(false)
 {
     StartThread(write_thread_num, process_thread_num);
 }
@@ -101,11 +102,13 @@ inline Bot::~Bot()
     stop_ = true;
     cond_process_.notify_all();
     cond_write_.notify_all();
+    for(auto &thread : threads_)
+        thread.join();
 }
 
 inline void Bot::Run()
 {
-    net::dispatch(ws_.get_executor(),
+    net::dispatch(boost::asio::make_strand(ws_.get_executor()),
                 beast::bind_front_handler(
                     &Bot::OnRun,
                     shared_from_this()));
@@ -182,15 +185,15 @@ inline void Bot::Notify(const std::string &msg)
 
 inline void Bot::SetEchoFunction(const int echo_code, std::function<void(const Json &)> &&func)
 {
-    echo_function_.emplace(echo_code, func);
+    echo_function_[echo_code] = std::move(func);
 }
 
 inline void Bot::StartThread(std::size_t write_thread_num, std::size_t process_thread_num)
 {
     for(std::size_t i = 0; i < process_thread_num; ++i)
-        std::thread{&Bot::ThreadFunctionProcess, this}.detach();
+        threads_.push_back(std::thread{&Bot::ThreadFunctionProcess, this});
     for(std::size_t i = 0; i < write_thread_num; ++i)
-        std::thread{&Bot::ThreadFunctionWrite, this}.detach();
+        threads_.push_back(std::thread{&Bot::ThreadFunctionWrite, this});
 }
 
 inline void Bot::ThreadFunctionProcess()
@@ -207,9 +210,15 @@ inline void Bot::ThreadFunctionProcess()
             processable_msg_queue_.pop();
             locker.unlock();
             LOG_DEBUG("Recieve: {}", msg_str);
-            auto msg = nlohmann::json::parse(msg_str);
-            if(EventProcess(msg))
-                event_handler_(msg);
+            try
+            {
+                auto msg = nlohmann::json::parse(msg_str);
+                if(EventProcess(msg))
+                    event_handler_(msg);
+            }catch(nlohmann::json::exception &e)
+            {
+                LOG_ERROR("Exception: {}", e.what());
+            }
             locker.lock();
         }
     }
@@ -218,6 +227,7 @@ inline void Bot::ThreadFunctionProcess()
 inline void Bot::ThreadFunctionWrite()
 {
     beast::flat_buffer buffer;
+    boost::system::error_code ec;
     std::unique_lock<std::mutex> locker(mutex_write_);
     while(!stop_)
     {
@@ -229,7 +239,7 @@ inline void Bot::ThreadFunctionWrite()
             locker.unlock();
             beast::ostream(buffer) << msg;
             ws_.text(ws_.got_text());
-            ws_.write(buffer.data());
+            ws_.write(buffer.data(), ec);
             buffer.consume(buffer.size());
             locker.lock();
         }
@@ -252,10 +262,15 @@ inline bool Bot::EventProcess(const Event &event)
         return false;
     }else if(event.contains("message"))
     {
-        if(api_bot_.IsNeedMessage())
-            api_bot_.FeedMessage(event["message"].get<std::string>());
-        if(api_bot_.IsSomeOneNeedMessage(event["user_id"].get<QId>()))
-            api_bot_.FeedMessageTo(event["user_id"].get<QId>(), event["message"].get<std::string>());
+        QId user_id = event["user_id"].get<QId>();
+        if(event.contains("group_id"))
+        {
+            GId group_id = event["group_id"].get<GId>();
+            if(api_bot_.IsNeedMessage(group_id, user_id))
+                api_bot_.FeedMessage(group_id, user_id, event["message"].get<std::string>());
+        }
+        if(api_bot_.IsSomeOneNeedMessage(user_id))
+            api_bot_.FeedMessageTo(user_id, event["message"].get<std::string>());
     }
     return true;
 }

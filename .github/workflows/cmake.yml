@@ -40,7 +40,7 @@ jobs:
         # this build step will fail
 
     - name: Install Requirements
-      run: sudo apt install default-libmysqlclient-dev -y
+      run: sudo apt install default-libmysqlclient-dev libopencv-dev -y
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

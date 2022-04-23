@@ -12,7 +12,7 @@
 
 ### Requirements
 
-    sudo apt install default-libmysqlclient-dev -y
+    sudo apt install default-libmysqlclient-dev build-essential -y
 
 ## For Developer
 

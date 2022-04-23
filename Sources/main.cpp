@@ -73,7 +73,7 @@ constexpr auto kGlobalConfigExample =   "Server:\n"
                                         "# 不懂就不改\n"
                                         "Dev:\n"
                                         "  ThreadNum:\n"
-                                        "    Read: 1                        # 异步读取线程数\n"
+                                        "    Read: 2                        # 异步读取线程数\n"
                                         "    Process: 2                     # 处理指令线程数\n"
                                         "    Write: 2                       # 发送线程数\n"
                                         "    ThreadPool: 4                  # 处理各个命令对应操作线程池的线程数\n"
@@ -142,11 +142,11 @@ int main(int argc, char* argv[])
     // 加载全局配置
     white::config::BOT_NAME = white::global_config["Bot"]["Name"].as<std::string>();
     auto superusers_yaml_node = white::global_config["Bot"]["SuperUsers"];
-    for(int i = 0; i < superusers_yaml_node.size(); ++i)
+    for(std::size_t i = 0; i < superusers_yaml_node.size(); ++i)
         white::config::SUPERUSERS.insert(superusers_yaml_node[i].as<white::QId>());
         
     auto whitelist_yaml_node = white::global_config["Bot"]["WhiteList"];
-    for(int i = 0; i < whitelist_yaml_node.size(); ++i)
+    for(std::size_t i = 0; i < whitelist_yaml_node.size(); ++i)
         white::config::WHITE_LIST.insert(whitelist_yaml_node[i].as<white::QId>());
 
     white::LOG_INFO("MigangBot已初始化");
@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
     std::make_shared<white::listener>(ioc, tcp::endpoint{address, port}, white::global_config["Dev"]["ThreadNum"]["Write"].as<std::size_t>(), white::global_config["Dev"]["ThreadNum"]["Process"].as<std::size_t>())->Run();
     // Run the I/O service on the requested number of threads
     std::vector<std::thread> v;
-    v.reserve(thread_num);
+    v.reserve(thread_num - 1);
     for(auto i = thread_num - 1; i > 0; --i)
         v.emplace_back(
         [&ioc]
