@@ -37,19 +37,19 @@ add_subdirectory(third-party/yaml-cpp)
 
 # nlohmann/json
 set(JSON_Install OFF CACHE INTERNAL "")
-set(JSON_ImplicitConversions OFF CACHE BOOL "Enable implicit conversions.")
+set(JSON_ImplicitConversions OFF CACHE INTERNAL "Enable implicit conversions.")
 add_subdirectory(third-party/json)
 
 # spdlog
 add_subdirectory(third-party/spdlog)
 
 # libhv
-set(BUILD_SHARED OFF CACHE BOOL "build shared library")
-set(BUILD_EXAMPLES OFF CACHE BOOL "build examples")
-set(BUILD_UNITTEST OFF CACHE BOOL "build unittest")
+set(BUILD_SHARED OFF CACHE INTERNAL "build shared library")
+set(BUILD_EXAMPLES OFF CACHE INTERNAL "build examples")
+set(BUILD_UNITTEST OFF CACHE INTERNAL "build unittest")
 add_subdirectory(third-party/libhv)
 
-set(TBB_TEST OFF CACHE BOOL "Enable testing")
+set(TBB_TEST OFF CACHE INTERNAL "Enable testing")
 add_subdirectory(third-party/oneTBB)
 
 aux_source_directory(Sources/message MESSAGE_SRC)

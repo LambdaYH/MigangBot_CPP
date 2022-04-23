@@ -41,7 +41,7 @@ public:
             }
             break;
             case std::future_status::ready:
-                return future_.get();
+                break;
         }
         return future_.get();
     }

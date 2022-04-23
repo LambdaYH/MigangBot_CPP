@@ -53,3 +53,8 @@ See [Github Action](https://github.com/LambdaYH/MigangBotCPP/blob/main/.github/w
 首先写一个继承自PluginInterface的类并实现其接口，该类位于plugins/plugin_interface.h文件中。
 
 写完后在module_list中按照样例添加即可。
+
+
+## Perfomance
+
+    Ram: Under 100MB

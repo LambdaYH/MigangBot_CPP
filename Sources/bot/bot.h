@@ -8,6 +8,7 @@
 #include <boost/asio/strand.hpp>
 #include <condition_variable>
 #include <nlohmann/json.hpp>
+#include <oneapi/tbb/concurrent_unordered_map.h>
 #include <thread>
 #include <queue>
 #include <mutex>
@@ -74,7 +75,7 @@ private:
     std::condition_variable cond_process_;
     std::queue<std::string> writable_msg_queue_;
     std::queue<std::string> processable_msg_queue_;
-    std::unordered_map<int, std::function<void(const Json &)>> echo_function_;
+    tbb::concurrent_unordered_map<int, std::function<void(const Json &)>> echo_function_;
     std::mutex mutex_write_;
     std::mutex mutex_process_;
     std::function<void(const std::string &)> notify_;
@@ -185,7 +186,7 @@ inline void Bot::Notify(const std::string &msg)
 
 inline void Bot::SetEchoFunction(const int echo_code, std::function<void(const Json &)> &&func)
 {
-    echo_function_[echo_code] = std::move(func);
+    echo_function_.emplace(echo_code, std::move(func));
 }
 
 inline void Bot::StartThread(std::size_t write_thread_num, std::size_t process_thread_num)
@@ -256,7 +257,7 @@ inline bool Bot::EventProcess(const Event &event)
             if(echo_function_.count(echo_code))
             {
                 echo_function_.at(echo_code)(event["data"]);
-                echo_function_.erase(echo_code);
+                // echo_function_.unsafe_erase(echo_code); // Will cause segmentation fault under high pressure
             }
         }
         return false;
