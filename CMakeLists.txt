@@ -71,6 +71,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    
 
+
 target_link_libraries(${PROJECT_NAME} PRIVATE 
                         Threads::Threads 
                         yaml-cpp 
@@ -81,7 +82,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         fmt
                         ${LIBMYSQLCLIENT_LIBRARIES}
                         ${OpenCV_LIBS}
+                        tencentcloud-sdk-cpp-nlp
                         tencentcloud-sdk-cpp-core
+                        crypto 
+                        curl 
+                        uuid
 )
 
 IF(BUILD_TEST)

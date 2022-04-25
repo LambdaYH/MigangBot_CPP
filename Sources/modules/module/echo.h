@@ -20,8 +20,6 @@ public:
     virtual void Register();
 
     void DoEcho(const Event &event, onebot11::ApiBot &bot);
-private:
-    onebot11::ApiImpl api_impl;
 };
 
 inline void Echo::Register()

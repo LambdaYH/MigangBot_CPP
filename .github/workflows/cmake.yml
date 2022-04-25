@@ -41,13 +41,13 @@ jobs:
     - name: Install Requirements
       run: sudo apt install default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev -y
       
-    - name: tencent-cloud-sdk
+    - name: tencentcloud-sdk-cpp
       run: | 
           git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git
           cd tencentcloud-sdk-cpp
           mkdir build && cd build
-          cmake -DBUILD_SHARED_LIBS=OFF ..
-          make && make install
+          cmake -DBUILD_SHARED_LIBS=off -DBUILD_MODULES="nlp" ..
+          make && sudo make install
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
