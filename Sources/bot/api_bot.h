@@ -20,6 +20,8 @@ namespace onebot11
 
 using Json = nlohmann::json;
 
+std::time_t GetTimeStampMicro();
+
 template<typename T>
 class FutureWrapper
 {
@@ -72,10 +74,10 @@ public:
     void FeedMessage(GId group_id, QId user_id, const std::string &message);
 
 public:
-    ApiBot(std::function<void(const std::string &)> &notify, std::function<void(const int, std::function<void(const Json &)> &&)> &set_echo_function) : 
+    ApiBot(std::function<void(const std::string &)> &notify, std::function<void(const std::time_t, std::function<void(const Json &)> &&)> &set_echo_function) : 
         notify_(notify),
         set_echo_function_(set_echo_function), 
-        u_(1)
+        u_(-10000, 10000)
     {
 
     }
@@ -106,8 +108,8 @@ private:
     template<typename T>
     FutureWrapper<T> Echo(Json &msg)
     {
-        int echo_code = u_(random_engine_);
-        msg["echo"] = echo_code;
+        std::time_t echo_code = GetTimeStampMicro() + u_(random_engine_); // 用纳秒会导致接受的和发送的不一致，姑且用微秒吧
+        msg["echo"] = echo_code; // 多线程下降低冲突的可能性，加个随机数
         auto promise = std::make_shared<std::promise<T>>();
         auto func = std::bind(&ApiBot::EchoFunction<T>, this, std::weak_ptr(promise), std::placeholders::_1);
         FutureWrapper<T> ret{std::move(promise)};
@@ -117,9 +119,9 @@ private:
 private:
     onebot11::ApiImpl api_impl_;
     std::function<void(const std::string &)> &notify_;
-    std::function<void(const int, std::function<void(const Json &)> &&)> &set_echo_function_;
+    std::function<void(const std::time_t, std::function<void(const Json &)> &&)> &set_echo_function_;
     std::mt19937 random_engine_;
-    std::uniform_int_distribution<int> u_;
+    std::uniform_int_distribution<std::time_t> u_;
 
     std::unordered_map<GId, std::unordered_map<QId, std::queue<std::weak_ptr<std::promise<std::string>>>>> someone_group_message_;
     std::unordered_map<GId, std::unordered_map<QId, std::mutex>> someone_group_message_mutex_;
@@ -237,6 +239,12 @@ inline void ApiBot::delete_msg(MsgId msg_id)
 {
     Json msg = api_impl_.delete_msg(msg_id);
     notify_(msg.dump());
+}
+
+inline std::time_t GetTimeStampMicro()
+{
+    auto tp = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now());
+    return tp.time_since_epoch().count();
 }
 
 } // namespace onebot11

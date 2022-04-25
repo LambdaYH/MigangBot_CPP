@@ -64,7 +64,7 @@ private:
 
     void Notify(const std::string &msg);
 
-    void SetEchoFunction(const int echo_code, std::function<void(const Json &)> &&func);
+    void SetEchoFunction(const std::time_t echo_code, std::function<void(const Json &)> &&func);
 
     bool EventProcess(const Event &event);
 
@@ -75,11 +75,11 @@ private:
     std::condition_variable cond_process_;
     tbb::concurrent_queue<std::string> writable_msg_queue_;
     tbb::concurrent_queue<std::string> processable_msg_queue_;
-    tbb::concurrent_unordered_map<int, std::function<void(const Json &)>> echo_function_;
+    tbb::concurrent_unordered_map<std::time_t, std::function<void(const Json &)>> echo_function_;
     std::mutex mutex_write_;
     std::mutex mutex_process_;
     std::function<void(const std::string &)> notify_;
-    std::function<void(const int, std::function<void(const Json &)> &&)> set_echo_function_;
+    std::function<void(const std::time_t, std::function<void(const Json &)> &&)> set_echo_function_;
     onebot11::ApiBot api_bot_;
     std::function<bool(Event &)> event_handler_;
 
@@ -178,9 +178,9 @@ inline void Bot::Notify(const std::string &msg)
     LOG_DEBUG("Msg To sent: {}", msg);
 }
 
-inline void Bot::SetEchoFunction(const int echo_code, std::function<void(const Json &)> &&func)
+inline void Bot::SetEchoFunction(const std::time_t echo_code, std::function<void(const Json &)> &&func)
 {
-    echo_function_.emplace(echo_code, std::move(func));
+    echo_function_[echo_code] = std::move(func);
 }
 
 inline void Bot::StartThread(std::size_t write_thread_num, std::size_t process_thread_num)
@@ -253,9 +253,14 @@ inline bool Bot::EventProcess(const Event &event)
     {
         if(event.value("status", "failed") == "ok")
         {
-            auto echo_code = event.value("echo", 0);
-            if(echo_function_.count(echo_code))
+            std::time_t echo_code = 0;
+            if (event.contains("echo"))
+                echo_code = event["echo"].get<std::time_t>();
+            if (echo_function_.count(echo_code))
+            {
                 echo_function_.at(echo_code)(event["data"]);
+                echo_function_.unsafe_erase(echo_code);
+            }
         }
         return false;
     }else if(event.contains("message"))

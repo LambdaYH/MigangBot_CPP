@@ -35,6 +35,7 @@ inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)
     std::string msg = event["message"].get<std::string>();
     auto text = ExtraPlainText(msg);
     auto ret = bot.send_msg(event, std::string(text)).Ret();
+    bot.send_msg(event, std::to_string(ret));
     LOG_DEBUG("DoEcho: ret msgid: {}", ret);
 }
 

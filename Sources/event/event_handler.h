@@ -64,13 +64,13 @@ public:
 
 public:
     template<typename F>
-    bool RegisterCommand(const int command_type, const std::string_view &command, F &&func, int permission = permission::NORMAL, bool only_to_me = false);
+    bool RegisterCommand(const int command_type, const std::string &command, F &&func, int permission = permission::NORMAL, bool only_to_me = false);
 
     template<typename F>
-    bool RegisterNotice(const std::string_view &notice_type, const std::string_view &sub_type, F &&func);
+    bool RegisterNotice(const std::string &notice_type, const std::string &sub_type, F &&func);
 
     template<typename F>
-    bool RegisterRequest(const std::string_view &request_type, const std::string_view &sub_type, F &&func);
+    bool RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func);
 
     bool Handle(Event &event, onebot11::ApiBot &bot) const;
 
@@ -96,24 +96,24 @@ private:
 
 private:
     const plugin_func &MatchedHandler(Event &event) const;
-    const plugin_func &MatchHelper(int permission, const std::string_view &msg, bool only_to_me) const;
+    const plugin_func &MatchHelper(int permission, const std::string &msg, bool only_to_me) const;
     const std::vector<plugin_func> FreeHandler(const Event &event) const;
 
 private:
-    std::vector<std::unordered_map<std::string_view, plugin_func>> command_fullmatch_each_perm_;
+    std::vector<std::unordered_map<std::string, plugin_func>> command_fullmatch_each_perm_;
     std::vector<Trie> command_prefix_each_perm_;
     std::vector<Trie> command_suffix_each_perm_;
-    std::vector<std::unordered_map<std::string_view, plugin_func>> command_keyword_each_perm_;
+    std::vector<std::unordered_map<std::string, plugin_func>> command_keyword_each_perm_;
 
-    std::vector<std::unordered_map<std::string_view, plugin_func>> command_fullmatch_each_perm_to_me_;
+    std::vector<std::unordered_map<std::string, plugin_func>> command_fullmatch_each_perm_to_me_;
     std::vector<Trie> command_prefix_each_perm_to_me_;
     std::vector<Trie> command_suffix_each_perm_to_me_;
-    std::vector<std::unordered_map<std::string_view, plugin_func>> command_keyword_each_perm_to_me_;
+    std::vector<std::unordered_map<std::string, plugin_func>> command_keyword_each_perm_to_me_;
 
     std::vector<std::vector<plugin_func>> all_msg_handler_each_perm_;
 
-    std::unordered_map<std::string_view, std::unordered_map<std::string_view, std::vector<plugin_func>>> notice_handler_;
-    std::unordered_map<std::string_view, std::unordered_map<std::string_view, std::vector<plugin_func>>> request_handler_;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<plugin_func>>> notice_handler_;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<plugin_func>>> request_handler_;
     plugin_func no_func_avaliable_;
 
     std::unique_ptr<EventFilter> filter_;
@@ -121,7 +121,7 @@ private:
 };
 
 template<typename F>
-inline bool EventHandler::RegisterCommand(const int command_type, const std::string_view &command, F &&func, int permission, bool only_to_me)
+inline bool EventHandler::RegisterCommand(const int command_type, const std::string &command, F &&func, int permission, bool only_to_me)
 {
     if(!perm_to_loc.count(permission))
         return false;
@@ -163,14 +163,14 @@ inline bool EventHandler::RegisterCommand(const int command_type, const std::str
 }
 
 template<typename F>
-inline bool EventHandler::RegisterNotice(const std::string_view &notice_type, const std::string_view &sub_type, F &&func)
+inline bool EventHandler::RegisterNotice(const std::string &notice_type, const std::string &sub_type, F &&func)
 {
     notice_handler_[notice_type][sub_type].push_back(std::forward<F>(func));
     return true;
 }
 
 template<typename F>
-inline bool EventHandler::RegisterRequest(const std::string_view &request_type, const std::string_view &sub_type, F &&func)
+inline bool EventHandler::RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func)
 {
     request_handler_[request_type][sub_type].push_back(std::forward<F>(func));
     return true;
@@ -284,32 +284,33 @@ inline const plugin_func &EventHandler::MatchedHandler(Event &event) const
             }
         }
     }
+    auto msg_str = std::string(msg);
     auto perm = permission::GetUserPermission(event);
     switch(perm)
     {
         case permission::SUPERUSER:
-            if(auto &func = MatchHelper(permission::SUPERUSER, msg, only_to_me))
+            if(auto &func = MatchHelper(permission::SUPERUSER, msg_str, only_to_me))
                 return func; 
         case permission::WHITE_LIST:
-            if(auto &func = MatchHelper(permission::WHITE_LIST, msg, only_to_me))
+            if(auto &func = MatchHelper(permission::WHITE_LIST, msg_str, only_to_me))
                 return func;           
         case permission::GROUP_OWNER:
-            if(auto &func = MatchHelper(permission::GROUP_OWNER, msg, only_to_me))
+            if(auto &func = MatchHelper(permission::GROUP_OWNER, msg_str, only_to_me))
                 return func;               
         case permission::GROUP_ADMIN:
-            if(auto &func = MatchHelper(permission::GROUP_ADMIN, msg, only_to_me))
+            if(auto &func = MatchHelper(permission::GROUP_ADMIN, msg_str, only_to_me))
                 return func;   
         case permission::GROUP_MEMBER:
-            if(auto &func = MatchHelper(permission::GROUP_MEMBER, msg, only_to_me))
+            if(auto &func = MatchHelper(permission::GROUP_MEMBER, msg_str, only_to_me))
                 return func;   
         case permission::PRIVATE:
-            if(auto &func = MatchHelper(permission::PRIVATE, msg, only_to_me))
+            if(auto &func = MatchHelper(permission::PRIVATE, msg_str, only_to_me))
                 return func;   
         case permission::NORMAL:
-            if(auto &func = MatchHelper(permission::NORMAL, msg, only_to_me))
+            if(auto &func = MatchHelper(permission::NORMAL, msg_str, only_to_me))
                 return func;   
         case permission::BLACK:
-            if(auto &func = MatchHelper(permission::BLACK, msg, only_to_me))
+            if(auto &func = MatchHelper(permission::BLACK, msg_str, only_to_me))
                 return func; 
         default:
             return no_func_avaliable_;
@@ -317,7 +318,7 @@ inline const plugin_func &EventHandler::MatchedHandler(Event &event) const
     return no_func_avaliable_;
 }
 
-inline const plugin_func &EventHandler::MatchHelper(int permission, const std::string_view &msg, bool only_to_me) const
+inline const plugin_func &EventHandler::MatchHelper(int permission, const std::string &msg, bool only_to_me) const
 {
     if(only_to_me)
     {

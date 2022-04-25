@@ -5,6 +5,7 @@
 
 #include "modules/module/echo.h"
 #include "modules/module/botmanage/help.h"
+#include "modules/module/botmanage/status_info.h"
 
 namespace white
 {
@@ -16,6 +17,7 @@ inline void InitModuleList()
 {
     AddModule<Echo>();
     AddModule<Help>();
+    AddModule<StatusInfo>();
 }
 
 } // namespace module

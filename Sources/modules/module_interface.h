@@ -8,6 +8,7 @@
 #include <initializer_list>
 #include <filesystem>
 #include <fstream>
+#include <fmt/core.h>
 
 #include "modules/utility.h"
 #include "bot/api_bot.h"
@@ -34,16 +35,17 @@ inline void RegisterCommand(const int type, const std::initializer_list<std::str
     for(auto &command : commands)
     {
         auto func_cp = func;
-        EventHandler::GetInstance().RegisterCommand(type, command, std::move(func_cp), permission, only_to_me);
+        if(!EventHandler::GetInstance().RegisterCommand(type, command, std::move(func_cp), permission, only_to_me))
+            LOG_WARN("注册指令[{}]失败", command);
     }
 }
 
-inline void RegisterNotice(const std::string_view &notice_type, const std::string_view &sub_type, const plugin_func &func)
+inline void RegisterNotice(const std::string &notice_type, const std::string &sub_type, const plugin_func &func)
 {
     EventHandler::GetInstance().RegisterNotice(notice_type, sub_type, std::move(func));
 }
 
-inline void RegisterRequest(const std::string_view &request_type, const std::string_view &sub_type, const plugin_func &func)
+inline void RegisterRequest(const std::string &request_type, const std::string &sub_type, const plugin_func &func)
 {
     EventHandler::GetInstance().RegisterRequest(request_type, sub_type, std::move(func));
 }
@@ -52,7 +54,7 @@ class Module
 {
 public:
     // 如果没有配置文件，就留空
-    Module(const std::string_view &config_file, const std::string_view &config_example = "")
+    Module(const std::string_view &config_file = "", const std::string_view &config_example = "")
         : config_file_(config_file),
         config_example_(config_example)
     {}
@@ -81,7 +83,7 @@ protected:
             LOG_WARN("无法加载配置文件[{}]", config_file_);
             LOG_INFO("尝试生成配置文件");
             auto parent_path = path.parent_path();
-            if(!std::filesystem::create_directories(parent_path))
+            if(!std::filesystem::exists(parent_path) && !std::filesystem::create_directories(parent_path))
             {
                 LOG_ERROR("创建配置文件[{}]失败", config_file_);
                 return ret;

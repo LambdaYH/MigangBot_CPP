@@ -47,6 +47,7 @@ add_subdirectory(third-party/spdlog)
 set(BUILD_SHARED OFF CACHE INTERNAL "build shared library")
 set(BUILD_EXAMPLES OFF CACHE INTERNAL "build examples")
 set(BUILD_UNITTEST OFF CACHE INTERNAL "build unittest")
+set(WITH_OPENSSL ON CACHE INTERNAL "with openssl library")
 add_subdirectory(third-party/libhv)
 
 # oneTBB
@@ -66,6 +67,7 @@ add_executable(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PRIVATE
                             Sources 
                             third-party/cpp-base64
+                            ${CMAKE_BINARY_DIR}/third-party/libhv/include
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    
 
