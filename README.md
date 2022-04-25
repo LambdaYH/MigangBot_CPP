@@ -15,7 +15,7 @@
 
 ### Requirements
 
-    sudo apt install default-libmysqlclient-dev build-essential uuid-dev -y
+    sudo apt install default-libmysqlclient-dev build-essential uuid-dev libssl-dev libcurl4-openssl-dev -y
 
 ## For Developer
 

@@ -39,7 +39,7 @@ jobs:
         # NOTE: If a boost version matching all requirements cannot be found,
         # this build step will fail
     - name: Install Requirements
-      run: sudo apt install default-libmysqlclient-dev libopencv-dev uuid-dev -y
+      run: sudo apt install default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev -y
       
     - name: tencent-cloud-sdk
       run: | 
