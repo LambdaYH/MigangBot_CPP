@@ -38,9 +38,15 @@ jobs:
         
         # NOTE: If a boost version matching all requirements cannot be found,
         # this build step will fail
-
     - name: Install Requirements
-      run: sudo apt install default-libmysqlclient-dev libopencv-dev -y
+      run: sudo apt install default-libmysqlclient-dev libopencv-dev uuid-dev -y
+      
+    - name: tencent-cloud-sdk
+      run: | 
+          git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git
+          cd tencentcloud-sdk-cpp
+          mkdir build && cd build
+          make && make install
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

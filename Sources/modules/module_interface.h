@@ -23,6 +23,8 @@ namespace white
 namespace module
 {
 
+#define func(a) std::bind(&a, this, std::placeholders::_1, std::placeholders::_2)
+
 using Config = YAML::Node;
 
 inline void RegisterAllMessage(const plugin_func &&func)

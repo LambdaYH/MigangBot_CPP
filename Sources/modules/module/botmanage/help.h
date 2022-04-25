@@ -59,7 +59,7 @@ private:
 
 inline void Help::Register()
 {
-    RegisterCommand(PREFIX, {".help", "/帮助", "。help"}, std::bind(&Help::HelpMsg, this, std::placeholders::_1, std::placeholders::_2));
+    RegisterCommand(PREFIX, {".help", "/帮助", "。help"}, func(Help::HelpMsg));
 }
 
 inline void Help::HelpMsg(const Event &event, onebot11::ApiBot &bot)

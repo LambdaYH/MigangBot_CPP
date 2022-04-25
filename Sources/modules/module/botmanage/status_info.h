@@ -97,9 +97,9 @@ private:
 
 inline void StatusInfo::Register()
 {
-    RegisterCommand(FULLMATCH, {"/ping"}, std::bind(&StatusInfo::Ping, this, std::placeholders::_1, std::placeholders::_2));
-    RegisterCommand(FULLMATCH, {"status", "状态"}, std::bind(&StatusInfo::Status, this, std::placeholders::_1, std::placeholders::_2), permission::SUPERUSER);
-    RegisterCommand(FULLMATCH, {"network", "网络状况"}, std::bind(&StatusInfo::Network, this, std::placeholders::_1, std::placeholders::_2), permission::SUPERUSER);
+    RegisterCommand(FULLMATCH, {"/ping"}, func(StatusInfo::Ping));
+    RegisterCommand(FULLMATCH, {"status", "状态"}, func(StatusInfo::Status), permission::SUPERUSER);
+    RegisterCommand(FULLMATCH, {"network", "网络状况"}, func(StatusInfo::Network), permission::SUPERUSER);
 }
 
 inline void StatusInfo::Ping(const Event &event, onebot11::ApiBot &bot)

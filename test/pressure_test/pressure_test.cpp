@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     for(std::size_t i = 0; i < thread_num; ++i)
     {
         threads.push_back(std::thread{
-            [loop_count, &msg_str, &url, i = i, &count_per_thread]()
+            [loop_count, &msg_str, &url, i, &count_per_thread]()
             {
                 WebSocketClient ws;
                 ws.onopen = []() {

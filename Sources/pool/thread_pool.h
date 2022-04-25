@@ -53,10 +53,7 @@ inline ThreadPool::~ThreadPool()
 template<typename F>
 inline void ThreadPool::AddTask(F &&task)
 {
-    {
-        std::lock_guard<std::mutex> locker(mutex_);
-        tasks_queue_.push(std::forward<F>(task));
-    }
+    tasks_queue_.push(std::forward<F>(task));
     cond_.notify_one();
 }
 

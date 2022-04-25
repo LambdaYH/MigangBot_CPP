@@ -26,8 +26,8 @@ private:
 
 inline void Echo::Register()
 {
-    RegisterCommand(PREFIX, {"/echo", "/回声"}, std::bind(&Echo::DoEcho, this, std::placeholders::_1, std::placeholders::_2), permission::SUPERUSER);
-    RegisterCommand(PREFIX, {"/e"}, std::bind(&Echo::DoEcho, this, std::placeholders::_1, std::placeholders::_2), permission::NORMAL, true);
+    RegisterCommand(PREFIX, {"/echo", "/回声"}, func(Echo::DoEcho), permission::SUPERUSER);
+    RegisterCommand(PREFIX, {"/e"}, func(Echo::DoEcho), permission::NORMAL, true);
 }
 
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)

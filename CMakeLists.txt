@@ -81,6 +81,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         fmt
                         ${LIBMYSQLCLIENT_LIBRARIES}
                         ${OpenCV_LIBS}
+                        tencentcloud-sdk-cpp-core
 )
 
 IF(BUILD_TEST)
