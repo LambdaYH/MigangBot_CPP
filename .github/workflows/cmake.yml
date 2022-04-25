@@ -46,7 +46,7 @@ jobs:
           git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git
           cd tencentcloud-sdk-cpp
           mkdir build && cd build
-          cmake -DBUILD_SHARED_LIBS=OFF
+          cmake -DBUILD_SHARED_LIBS=OFF ..
           make && make install
 
     - name: Configure CMake
