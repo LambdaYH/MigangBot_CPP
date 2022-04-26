@@ -50,7 +50,6 @@ jobs:
           make && sudo make install
 
     - name: Install opencv
-    - uses: actions/checkout@v2
     - uses: Dovyski/setup-opencv-action@v1
       with:
         opencv-version: '4.5.0'
