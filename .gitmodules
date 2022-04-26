@@ -22,3 +22,6 @@
 [submodule "third-party/utfcpp"]
 	path = third-party/utfcpp
 	url = https://github.com/nemtrif/utfcpp
+[submodule "third-party/zlib"]
+	path = third-party/zlib
+	url = https://github.com/madler/zlib.git

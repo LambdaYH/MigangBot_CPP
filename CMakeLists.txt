@@ -63,6 +63,9 @@ add_subdirectory(third-party/fmt)
 # utfcpp
 add_subdirectory(third-party/utfcpp)
 
+# zlib
+add_subdirectory(third-party/zlib)
+
 aux_source_directory(Sources/message MESSAGE_SRC)
 
 add_executable(${PROJECT_NAME} 
@@ -86,7 +89,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         TBB::tbb
                         fmt
                         ${OpenCV_LIBS}
-                        ${LIBMYSQLCLIENT_LIBRARIES}
+                        libmysqlclient.a
+                        zlibstatic
                         utf8::cpp
                         tencentcloud-sdk-cpp-nlp
                         tencentcloud-sdk-cpp-core
