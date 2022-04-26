@@ -1,6 +1,7 @@
 #ifndef MIGANGBOTCPP_EVENT_HANDLER_TRIE_H_
 #define MIGANGBOTCPP_EVENT_HANDLER_TRIE_H_
 
+#include <algorithm>
 #include <string>
 #include <functional>
 #include <memory>
@@ -9,11 +10,11 @@
 #include <nlohmann/json.hpp>
 #include "event/event.h"
 #include "bot/api_bot.h"
+#include "event/search_result.h"
+#include "event/types.h"
 
 namespace white
 {
-
-using plugin_func = std::function<void(const Event &, onebot11::ApiBot &)>;
 
 class Trie
 {
@@ -28,9 +29,9 @@ public:
     template<typename F>
     bool InsertFromBack(const std::string &key, F &&func);
 
-    const plugin_func &Search(const std::string &key) const;
+    const SearchResult Search(const std::string &key) const;
 
-    const plugin_func &SearchFromBack(const std::string &key) const;
+    const SearchResult SearchFromBack(const std::string &key) const;
 
 private:
     struct TrieNode
@@ -90,38 +91,46 @@ inline bool Trie::InsertFromBack(const std::string &key, F &&func)
     return true;
 }
 
-inline const plugin_func &Trie::Search(const std::string &key) const
+inline const SearchResult Trie::Search(const std::string &key) const
 {
     auto cur_node = root_;
+    short command_size{ 0 };
     for(auto ch : key)
     {
         ch = std::tolower(ch);
         if(ch == ' ')
             break;
+        ++command_size;
         if (!cur_node->childs.count(ch))
-            return no_func_here_;
+            return {no_func_here_, 0};
         cur_node = cur_node->childs[ch];
+        if(cur_node->func) 
+            return {cur_node->func, command_size};
     }
     if(cur_node->func)
-        return cur_node->func;
-    return no_func_here_;
+        return {cur_node->func, command_size};
+    return {no_func_here_, 0};
 }
 
-inline const plugin_func &Trie::SearchFromBack(const std::string &key) const
+inline const SearchResult Trie::SearchFromBack(const std::string &key) const
 {
     auto cur_node = root_;
+    short command_size{ 0 };
     for(auto it = key.rbegin(); it != key.rend(); ++it)
     {
         auto ch = std::tolower(*it);
         if(ch == ' ')
             break;
+        --command_size;
         if (!cur_node->childs.count(ch))
-            return no_func_here_;
+            return {no_func_here_, 0};
         cur_node = cur_node->childs[ch];
+        if(cur_node->func) 
+            return {cur_node->func, command_size};
     }
-    if(cur_node->func)
-        return cur_node->func;
-    return no_func_here_;
+    if (cur_node->func) 
+        return {cur_node->func, command_size};
+    return {no_func_here_, 0};
 }
 
 } // namespace white

@@ -64,11 +64,11 @@ inline void Help::Register()
 
 inline void Help::HelpMsg(const Event &event, onebot11::ApiBot &bot)
 {
-    auto msg = event["message"].get<std::string>();
-    auto text = ExtraPlainText(msg);
+    auto msg = ExtraPlainText(event);
+    auto text = std::string_view(msg);
     Strip(text, ' ');
     auto message_type = event["message_type"].get<std::string>();
-    if(text.size() == msg.size())
+    if(text.size() == 0)
     {
         if(message_type[0] == 'g')
             bot.send_msg(event, help_msg_group_, true);

@@ -13,15 +13,26 @@
 #include <iostream>
 
 #include "base64.h"
+#include "event/event.h"
 
 namespace white
 {
 
-inline std::string_view ExtraPlainText(const std::string &str)
+inline std::string ExtraPlainText(const Event &event)
 {
-    std::string_view view{str};
-    view = view.substr(std::min(view.find_first_of(' ') + 1, view.size()));
-    return view;
+    if(event.contains("__command_size__"))
+    {
+        auto command_size = event["__command_size__"].get<short>();
+        if(command_size == 0)
+            return event["message"].get<std::string>();
+        std::string_view view = event["message"].get<std::string_view>();
+        if(command_size > 0)
+            view.remove_prefix(command_size);
+        else
+            view.remove_suffix(-command_size);
+        return std::string(view);
+    }
+    return event["message"].get<std::string>();
 }
 
 inline void ExtraPlainText(std::string_view &str)

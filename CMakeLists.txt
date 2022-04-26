@@ -97,7 +97,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         crypto
                         curl
                         uuid
-                        ${LIBMYSQLCLIENT_LIBRARIES}
 )
 
 IF(BUILD_TEST)
