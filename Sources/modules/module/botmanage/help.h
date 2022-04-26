@@ -2,7 +2,7 @@
 #define MIGANGBOTCPP_MODULES_MODULE_BOTMANAGE_HELP_H_
 
 #include "modules/module_interface.h"
-#include "message/message_segmentation.h"
+#include "message/message_segment.h"
 #include "message/utility.h"
 
 #include <unordered_set>
@@ -77,15 +77,15 @@ inline void Help::HelpMsg(const Event &event, onebot11::ApiBot &bot)
     }else if(text == "其他")
     {
         if(message_type[0] == 'g')
-            bot.send_msg(event, message_segmentation::image(TextToImg(help_msg_group_others_)));
+            bot.send_msg(event, message_segment::image(TextToImg(help_msg_group_others_)));
         else
-            bot.send_msg(event, message_segmentation::image(TextToImg(help_msg_friend_others_)));
+            bot.send_msg(event, message_segment::image(TextToImg(help_msg_friend_others_)));
     }else if(custom_help_keyword_.count(std::string(text)))
     {
         auto content = config_["自定义"][std::string(text)]["内容"].as<std::string>();
         bool is_send_in_image = config_["自定义"][std::string(text)]["图片格式"].as<bool>();
         if(is_send_in_image)
-            bot.send_msg(event, message_segmentation::image(TextToImg(content)));
+            bot.send_msg(event, message_segment::image(TextToImg(content)));
         else
             bot.send_msg(event, content);
     }

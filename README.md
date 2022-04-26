@@ -15,7 +15,7 @@
 
 ### Requirements
 
-    sudo apt install default-libmysqlclient-dev build-essential libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev -y
+    sudo apt install build-essential libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev -y(.etc)
 
 ## For Developer
 
@@ -24,6 +24,7 @@
     [Boost](https://github.com/boostorg/boost)
     Cmake
     libmysqlclient
+    tencentcloud-sdk-cpp
 
 See [Github Action](https://github.com/LambdaYH/MigangBotCPP/blob/main/.github/workflows/cmake.yml) for more Details.
 

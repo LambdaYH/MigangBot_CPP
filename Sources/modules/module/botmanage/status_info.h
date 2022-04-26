@@ -2,7 +2,7 @@
 #define MIGANGBOTCPP_MODULES_MODULE_BOTMANAGE_STATUS_INFO_H_
 
 #include "modules/module_interface.h"
-#include "message/message_segmentation.h"
+#include "message/message_segment.h"
 #include "message/utility.h"
 #include "aiorequests.h"
 

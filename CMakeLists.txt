@@ -8,10 +8,12 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(BUILD_SHARED_LIBS OFF)
+set(soname OFF)
 
 option(BUILD_TEST "build test" ON)
 
-find_package(Threads REQUIRED) # pthread
+# threads
+find_package(Threads REQUIRED)
 
 # Boost
 set(Boost_USE_MULTITHREADED ON)  
@@ -75,7 +77,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    
 
-
 target_link_libraries(${PROJECT_NAME} PRIVATE 
                         Threads::Threads 
                         yaml-cpp 
@@ -84,14 +85,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         spdlog
                         TBB::tbb
                         fmt
-                        ${LIBMYSQLCLIENT_LIBRARIES}
                         ${OpenCV_LIBS}
+                        ${LIBMYSQLCLIENT_LIBRARIES}
                         utf8::cpp
                         tencentcloud-sdk-cpp-nlp
                         tencentcloud-sdk-cpp-core
-                        crypto 
-                        curl 
+                        crypto
+                        curl
                         uuid
+                        ${LIBMYSQLCLIENT_LIBRARIES}
 )
 
 IF(BUILD_TEST)

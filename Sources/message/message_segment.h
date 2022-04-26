@@ -1,5 +1,5 @@
-#ifndef MIGANGBOTCPP_MESSAGE_MESSAGE_SEGMENTATION_H_
-#define MIGANGBOTCPP_MESSAGE_MESSAGE_SEGMENTATION_H_
+#ifndef MIGANGBOTCPP_MESSAGE_MESSAGE_SEGMENT_H_
+#define MIGANGBOTCPP_MESSAGE_MESSAGE_SEGMENT_H_
 
 #include <string>
 #include <string_view>
@@ -7,7 +7,7 @@
 
 namespace white
 {
-namespace message_segmentation
+namespace message_segment
 {
 
 inline std::string image(const std::string_view &view)
@@ -15,7 +15,7 @@ inline std::string image(const std::string_view &view)
     return fmt::format("[CQ:image,file={}]", view);
 }
 
-} // namespace message_segmentation
+} // namespace message_segment
 } // namespace white
 
 #endif

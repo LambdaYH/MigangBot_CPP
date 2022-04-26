@@ -79,7 +79,7 @@ inline std::string KeywordsExtraction::GetKeywords(const std::string &text)
     nlohmann::json resp_json = nlohmann::json::parse(resp.ToJsonString());
     resp_json = resp_json["Keywords"];
     std::string ret = "提取的关键词如下\n====================\n";
-    for (int i = 0; i < resp_json.size(); ++i)
+    for (std::size_t i = 0; i < resp_json.size(); ++i)
     {
         nlohmann::json &word = resp_json[i];
         if (word["Score"].get<double>() > 0.7)
@@ -91,7 +91,7 @@ inline std::string KeywordsExtraction::GetKeywords(const std::string &text)
     return ret;
 }
 
-} // namespace plugins
+} // namespace module
 } // namespace white
 
 #endif

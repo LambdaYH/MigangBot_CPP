@@ -82,7 +82,7 @@ inline std::string AutoSummarization::GetSummarization(const std::string &text)
     return fmt::format("提取的摘要内容如下\n====================\n{}", resp_json["Summary"].get<std::string>());
 }
 
-} // namespace plugins
+} // namespace module
 } // namespace white
 
 #endif
