@@ -4,15 +4,18 @@
 
 ## 
 
-| 模块名 | 模块功能 |
-| ----- | ------- |
-|Echo| 回声|
+| 父模块 | 子模块 | 模块功能 |
+| :----- | :----- | :------- |
+| Echo | Echo | 回声 |
+| BotManage | help | 显示帮助信息 |
+| BotManage | status_info | 显示系统/机器人状态 |
+
 
 ## For User
 
 ### Requirements
 
-    sudo apt install default-libmysqlclient-dev -y
+    sudo apt install build-essential libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev -y(.etc)
 
 ## For Developer
 
@@ -21,6 +24,7 @@
     [Boost](https://github.com/boostorg/boost)
     Cmake
     libmysqlclient
+    tencentcloud-sdk-cpp
 
 See [Github Action](https://github.com/LambdaYH/MigangBotCPP/blob/main/.github/workflows/cmake.yml) for more Details.
 
@@ -44,9 +48,12 @@ See [Github Action](https://github.com/LambdaYH/MigangBotCPP/blob/main/.github/w
 -   [x] 简化插件添加流程
 -   [ ] 加注释
 -   [x] 支持注册各类事件
+-   [ ] 加文字转图片，图片转base64
+-   [x] 实现权限控制
+-   [x] 实现only_to_me
 
 ## 如何添加插件
 
-首先写一个继承自PluginInterface的类并实现其接口，该类位于plugins/plugin_interface.h文件中。
+首先写一个继承自Module的类并实现其接口，该类位于modules/module_interface.h文件中。
 
 写完后在module_list中按照样例添加即可。

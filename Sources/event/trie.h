@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <string_view>
 #include <nlohmann/json.hpp>
 #include "event/event.h"
 #include "bot/api_bot.h"
@@ -24,7 +25,13 @@ public:
     template<typename F>
     bool Insert(const std::string &key, F &&func);
 
+    template<typename F>
+    bool InsertFromBack(const std::string &key, F &&func);
+
     const plugin_func &Search(const std::string &key) const;
+
+    const plugin_func &SearchFromBack(const std::string &key) const;
+
 private:
     struct TrieNode
     {
@@ -61,7 +68,24 @@ inline bool Trie::Insert(const std::string &key, F &&func)
         cur_node = cur_node->childs[ch];
     }
     if(cur_node->func)
-        return false;
+        return false; 
+    cur_node->func = std::forward<F>(func);
+    return true;
+}
+
+template<typename F>
+inline bool Trie::InsertFromBack(const std::string &key, F &&func)
+{
+    auto cur_node = root_;
+    for(auto it = key.rbegin(); it != key.rend(); ++it)
+    {
+        auto ch = std::tolower(*it);
+        if(!cur_node->childs.count(ch))
+            cur_node->childs.emplace(ch, std::make_shared<TrieNode>());
+        cur_node = cur_node->childs[ch];
+    }
+    if(cur_node->func)
+        return false; 
     cur_node->func = std::forward<F>(func);
     return true;
 }
@@ -72,6 +96,23 @@ inline const plugin_func &Trie::Search(const std::string &key) const
     for(auto ch : key)
     {
         ch = std::tolower(ch);
+        if(ch == ' ')
+            break;
+        if (!cur_node->childs.count(ch))
+            return no_func_here_;
+        cur_node = cur_node->childs[ch];
+    }
+    if(cur_node->func)
+        return cur_node->func;
+    return no_func_here_;
+}
+
+inline const plugin_func &Trie::SearchFromBack(const std::string &key) const
+{
+    auto cur_node = root_;
+    for(auto it = key.rbegin(); it != key.rend(); ++it)
+    {
+        auto ch = std::tolower(*it);
         if(ch == ' ')
             break;
         if (!cur_node->childs.count(ch))

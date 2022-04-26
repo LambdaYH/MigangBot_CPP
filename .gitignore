@@ -2,3 +2,5 @@ build
 bin
 .vscode
 config.yml
+dev
+null.d

@@ -1,0 +1,37 @@
+version: '0.1'
+
+services:
+  migangbot:
+    container_name: migangbot
+    restart: unless-stopped
+    image: lambdayh/migangbot:latest
+    depends_on:
+      - mariadb
+    ports:
+      - "1207:8080" # HTTP port (host:container)                # *writable* storage folder for cache, database, and sidecar files (never remove)
+
+  mariadb:
+    container_name: migangbot-db
+    restart: unless-stopped
+    image: mariadb:10.6
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    command: mysqld --innodb-buffer-pool-size=128M --transaction-isolation=READ-COMMITTED --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-connections=512 --innodb-rollback-on-timeout=OFF --innodb-lock-wait-timeout=120
+    volumes:
+      - "./database:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: MigangBot_Root_Password
+      MYSQL_DATABASE: MigangBot_DB
+      MYSQL_USER: MigangBot_User
+      MYSQL_PASSWORD: MigangBot_Password
+
+  # watchtower:
+  #   restart: unless-stopped
+  #   image: containrrr/watchtower
+  #   environment:
+  #     WATCHTOWER_CLEANUP: "true"
+  #     WATCHTOWER_POLL_INTERVAL: 7200 # checks for updates every two hours
+  #   volumes:
+  #     - "/var/run/docker.sock:/var/run/docker.sock"
+  #     - "~/.docker/config.json:/config.json" # optional, for authentication if you have a Docker Hub account

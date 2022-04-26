@@ -1,16 +1,24 @@
 [submodule "third-party/spdlog"]
 	path = third-party/spdlog
 	url = https://github.com/gabime/spdlog.git
-	tags = v1.10.0
 [submodule "third-party/json"]
 	path = third-party/json
 	url = https://github.com/nlohmann/json.git
-	tags = v3.10.5
 [submodule "third-party/yaml-cpp"]
 	path = third-party/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
-	tags = yaml-cpp-0.7.0
 [submodule "third-party/libhv"]
 	path = third-party/libhv
 	url = https://github.com/ithewei/libhv.git
-	tags = v1.2.5
+[submodule "third-party/oneTBB"]
+	path = third-party/oneTBB
+	url = https://github.com/oneapi-src/oneTBB.git
+[submodule "third-party/cpp-base64"]
+	path = third-party/cpp-base64
+	url = https://github.com/ReneNyffenegger/cpp-base64.git
+[submodule "third-party/fmt"]
+	path = third-party/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "third-party/utfcpp"]
+	path = third-party/utfcpp
+	url = https://github.com/nemtrif/utfcpp

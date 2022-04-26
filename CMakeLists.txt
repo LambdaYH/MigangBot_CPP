@@ -1,24 +1,34 @@
 cmake_minimum_required(VERSION 3.12)
-project(MigangBotCPP)
-set(CMAKE_CXX_STANDARD 17)
+project(MigangBot)
+set(CMAKE_CXX_STANDARD 20)
 
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb") #debug模式下开启-g选项
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-find_package(Threads REQUIRED) # pthread
+set(BUILD_SHARED_LIBS OFF)
+set(soname OFF)
 
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
+option(BUILD_TEST "build test" ON)
+
+# threads
+find_package(Threads REQUIRED)
 
 # Boost
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
-find_package(Boost)
+find_package(Boost REQUIRED)
 IF(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 ENDIF(Boost_FOUND)
+
+# opencv
+find_package(OpenCV REQUIRED)
+IF(OpenCV_FOUND)
+    include_directories(${OpenCV_INCLUDE_DIRS})
+ENDIF(OpenCV_FOUND)
 
 # mysql
 include(FindPkgConfig)
@@ -26,35 +36,44 @@ pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
 link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
 
 # yaml-cpp
-set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(third-party/yaml-cpp)
 
 # nlohmann/json
-set(JSON_ImplicitConversions OFF CACHE BOOL "Enable implicit conversions.")
+set(JSON_Install OFF CACHE INTERNAL "")
+set(JSON_ImplicitConversions OFF CACHE INTERNAL "Enable implicit conversions.")
 add_subdirectory(third-party/json)
 
 # spdlog
 add_subdirectory(third-party/spdlog)
 
 # libhv
-set(BUILD_SHARED OFF CACHE BOOL "build shared library")
-set(BUILD_EXAMPLES OFF CACHE BOOL "build examples")
-set(BUILD_UNITTEST OFF CACHE BOOL "build unittest")
+set(BUILD_SHARED OFF CACHE INTERNAL "build shared library")
+set(BUILD_EXAMPLES OFF CACHE INTERNAL "build examples")
+set(BUILD_UNITTEST OFF CACHE INTERNAL "build unittest")
+set(WITH_OPENSSL ON CACHE INTERNAL "with openssl library")
 add_subdirectory(third-party/libhv)
 
-aux_source_directory(Sources/bot BOT_SRC)
+# oneTBB
+set(TBB_TEST OFF CACHE INTERNAL "Enable testing")
+add_subdirectory(third-party/oneTBB)
+
+# fmt
+add_subdirectory(third-party/fmt)
+
+# utfcpp
+add_subdirectory(third-party/utfcpp)
+
+aux_source_directory(Sources/message MESSAGE_SRC)
 
 add_executable(${PROJECT_NAME} 
                 Sources/main.cpp
-                ${BOT_SRC}
-                ${LOGGER_SRC}
-                ${EVENT_SRC}
+                third-party/cpp-base64/base64.cpp
+                ${MESSAGE_SRC}
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
                             Sources 
-                            third-party/json/include
-                            third-party/yaml-cpp/include
-                            third-party/include
+                            third-party/cpp-base64
+                            ${CMAKE_BINARY_DIR}/third-party/libhv/include
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    
 
@@ -64,5 +83,19 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         nlohmann_json::nlohmann_json 
                         hv_static 
                         spdlog
+                        TBB::tbb
+                        fmt
+                        ${OpenCV_LIBS}
+                        ${LIBMYSQLCLIENT_LIBRARIES}
+                        utf8::cpp
+                        tencentcloud-sdk-cpp-nlp
+                        tencentcloud-sdk-cpp-core
+                        crypto
+                        curl
+                        uuid
                         ${LIBMYSQLCLIENT_LIBRARIES}
 )
+
+IF(BUILD_TEST)
+    add_subdirectory(test)
+ENDIF()

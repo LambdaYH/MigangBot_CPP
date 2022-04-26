@@ -8,7 +8,7 @@
 
 #include <mutex>
 #include <condition_variable>
-#include <queue>
+#include <oneapi/tbb/concurrent_queue.h>
 #include <thread>
 #include <functional>
 #include "logger/logger.h"
@@ -33,7 +33,7 @@ private:
     std::mutex mutex_;
     std::condition_variable cond_;
     bool is_close_;
-    std::queue<std::function<void()>> tasks_queue_;
+    tbb::concurrent_queue<std::function<void()>> tasks_queue_;
 };
 
 inline ThreadPool::ThreadPool(std::size_t thread_num) :
@@ -53,10 +53,7 @@ inline ThreadPool::~ThreadPool()
 template<typename F>
 inline void ThreadPool::AddTask(F &&task)
 {
-    {
-        std::lock_guard<std::mutex> locker(mutex_);
-        tasks_queue_.push(std::forward<F>(task));
-    }
+    tasks_queue_.push(std::forward<F>(task));
     cond_.notify_one();
 }
 
@@ -66,26 +63,29 @@ inline void ThreadPool::Run(size_t thread_num)
     {
         std::thread{
         [&]{
+                std::function<void()> task;
                 std::unique_lock<std::mutex> locker(mutex_);
                 while(!is_close_)
                 {
-                    if(!tasks_queue_.empty())
+                    if(tasks_queue_.empty())
+                        cond_.wait(locker);
+                    else
                     {
-                        auto task{std::move(tasks_queue_.front())};
-                        tasks_queue_.pop();
                         locker.unlock();
-                        try
+                        if(tasks_queue_.try_pop(task))
                         {
-                            task();
-                        }
-                        catch(...)
-                        {
-                            // 异常处理
-                            LOG_ERROR("Some Expection Happened...");
+                            try
+                            {
+                                task();
+                            }
+                            catch(std::exception &e)
+                            {
+                                // 异常处理
+                                LOG_ERROR("Some Expection Happened...: {}", e.what());
+                            }
                         }
                         locker.lock();
-                    }else
-                        cond_.wait(locker);
+                    }
                 }
             }
         }.detach();
