@@ -4,3 +4,4 @@ bin
 config.yml
 dev
 null.d
+.cache
