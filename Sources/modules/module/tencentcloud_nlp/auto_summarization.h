@@ -34,7 +34,7 @@ public:
     void SummarizationExtraction(const Event &event, onebot11::ApiBot &bot);
 
 private:
-    std::string GetSummarization(const std::string_view &text);
+    std::string GetSummarization(const std::string &text);
 
 private:
     std::string secret_id_;
@@ -43,17 +43,17 @@ private:
 
 inline void AutoSummarization::Register()
 {
-    RegisterCommand(PREFIX, {"摘要提取", "/摘要提取"}, func(AutoSummarization::SummarizationExtraction), permission::SUPERUSER);
+    RegisterCommand(SUFFIX, {"摘要提取", "/摘要提取"}, func(AutoSummarization::SummarizationExtraction));
 }
 
 inline void AutoSummarization::SummarizationExtraction(const Event &event, onebot11::ApiBot &bot)
 {
     auto text = ExtraPlainText(event["message"].get<std::string>());
     Strip(text);
-    bot.send_msg(event, GetSummarization(text));
+    bot.send_msg(event, GetSummarization(std::string(text)));
 }
 
-inline std::string AutoSummarization::GetSummarization(const std::string_view &text)
+inline std::string AutoSummarization::GetSummarization(const std::string &text)
 {
     using namespace TencentCloud;
     using namespace TencentCloud::Nlp::V20190408;
@@ -69,7 +69,7 @@ inline std::string AutoSummarization::GetSummarization(const std::string_view &t
 
     AutoSummarizationRequest req = AutoSummarizationRequest();
     
-    req.SetText(std::string(text));
+    req.SetText(text);
 
     auto outcome = client.AutoSummarization(req);
     if (!outcome.IsSuccess())

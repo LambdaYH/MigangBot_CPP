@@ -39,7 +39,6 @@ inline void RStrip(std::string_view &str, char ch = ' ')
     str.remove_suffix(std::min(str.size() - str.find_last_not_of(ch), str.size()));
 }
 
-// 需要修复中文
 inline void Strip(std::string_view &str, char ch = ' ')
 {
     str.remove_prefix(std::min(str.find_first_not_of(ch), str.size()));

@@ -3,21 +3,16 @@
 
 #include <string>
 #include <codecvt>
+#include "utf8.h"
 
 namespace white
 {
 
-// by @SilverCicada(https://github.com/SilverCicada)
-inline std::wstring str_to_wstr(const std::string &src)
+std::string ReverseUTF8(const std::string &str)
 {
-    static std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    return converter.from_bytes(src);
-}
-
-inline std::string wstr_to_str(const std::wstring &src)
-{
-    static std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    return converter.to_bytes(src);
+    std::u16string str_u16 = utf8::utf8to16(str);
+    std::reverse(str_u16.begin(), str_u16.end());
+    return utf8::utf16to8(str_u16);
 }
 
 } // namespace white

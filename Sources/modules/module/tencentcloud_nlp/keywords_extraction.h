@@ -34,7 +34,7 @@ public:
     void KeywordEX(const Event &event, onebot11::ApiBot &bot);
 
 private:
-    std::string GetKeywords(const std::string_view &text);
+    std::string GetKeywords(const std::string &text);
 
 private:
     std::string secret_id_;
@@ -43,32 +43,30 @@ private:
 
 inline void KeywordsExtraction::Register()
 {
-    RegisterCommand(PREFIX, {"关键词提取", "/关键词提取"}, func(KeywordsExtraction::KeywordEX), permission::SUPERUSER);
+    RegisterCommand(PREFIX, {"关键词提取", "/关键词提取"}, func(KeywordsExtraction::KeywordEX));
 }
 
 inline void KeywordsExtraction::KeywordEX(const Event &event, onebot11::ApiBot &bot)
 {
     auto text = ExtraPlainText(event["message"].get<std::string>());
     Strip(text);
-    bot.send_msg(event, GetKeywords(text));
+    bot.send_msg(event, GetKeywords(std::string(text)));
 }
 
-inline std::string KeywordsExtraction::GetKeywords(const std::string_view &text)
+inline std::string KeywordsExtraction::GetKeywords(const std::string &text)
 {
     using namespace TencentCloud;
     using namespace TencentCloud::Nlp::V20190408;
     using namespace TencentCloud::Nlp::V20190408::Model;
     Credential cred = Credential(secret_id_, secret_key_);
-
     HttpProfile httpProfile = HttpProfile();
     httpProfile.SetEndpoint("nlp.tencentcloudapi.com");
-
     ClientProfile clientProfile = ClientProfile();
     clientProfile.SetHttpProfile(httpProfile);
     NlpClient client = NlpClient(cred, "ap-guangzhou", clientProfile);
 
     KeywordsExtractionRequest req = KeywordsExtractionRequest();
-    
+
     req.SetText(std::string(text));
 
     auto outcome = client.KeywordsExtraction(req);

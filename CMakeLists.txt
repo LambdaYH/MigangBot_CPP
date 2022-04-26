@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(MigangBot)
 set(CMAKE_CXX_STANDARD 20)
 
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb") #debug模式下开启-g选项
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -57,6 +58,9 @@ add_subdirectory(third-party/oneTBB)
 # fmt
 add_subdirectory(third-party/fmt)
 
+# utfcpp
+add_subdirectory(third-party/utfcpp)
+
 aux_source_directory(Sources/message MESSAGE_SRC)
 
 add_executable(${PROJECT_NAME} 
@@ -82,6 +86,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         fmt
                         ${LIBMYSQLCLIENT_LIBRARIES}
                         ${OpenCV_LIBS}
+                        utf8::cpp
                         tencentcloud-sdk-cpp-nlp
                         tencentcloud-sdk-cpp-core
                         crypto 

@@ -139,12 +139,9 @@ inline bool EventHandler::RegisterCommand(const int command_type, const std::str
             break;
         case SUFFIX:
         {
-            std::string command_str(command);
-            auto w_command = str_to_wstr(command_str);
-            std::reverse(w_command.begin(), w_command.end());
             if(only_to_me)
-                return command_suffix_each_perm_to_me_[perm_to_loc.at(permission)].Insert(wstr_to_str(w_command), std::forward<F>(func));
-            return command_suffix_each_perm_[perm_to_loc.at(permission)].Insert(wstr_to_str(w_command), std::forward<F>(func));
+                return command_suffix_each_perm_to_me_[perm_to_loc.at(permission)].InsertFromBack(std::move(command), std::forward<F>(func));
+            return command_suffix_each_perm_[perm_to_loc.at(permission)].InsertFromBack(std::move(command), std::forward<F>(func));
             break;
         }
         case KEYWORD:
@@ -327,9 +324,7 @@ inline const plugin_func &EventHandler::MatchHelper(int permission, const std::s
         const plugin_func &func_prefix = command_prefix_each_perm_to_me_[perm_to_loc.at(permission)].Search(msg);
         if(func_prefix)
             return func_prefix;
-        std::string msg_reverse{msg};
-        std::reverse(msg_reverse.begin(), msg_reverse.end());
-        const plugin_func &func_suffix = command_suffix_each_perm_to_me_[perm_to_loc.at(permission)].Search(msg_reverse);
+        const plugin_func &func_suffix = command_suffix_each_perm_to_me_[perm_to_loc.at(permission)].SearchFromBack(msg);
         if(func_suffix)
             return func_suffix;
     }else
@@ -339,9 +334,7 @@ inline const plugin_func &EventHandler::MatchHelper(int permission, const std::s
         const plugin_func &func_prefix = command_prefix_each_perm_[perm_to_loc.at(permission)].Search(msg);
         if(func_prefix)
             return func_prefix;
-        std::string msg_reverse{msg};
-        std::reverse(msg_reverse.begin(), msg_reverse.end());
-        const plugin_func &func_suffix = command_suffix_each_perm_[perm_to_loc.at(permission)].Search(msg_reverse);
+        const plugin_func &func_suffix = command_suffix_each_perm_[perm_to_loc.at(permission)].SearchFromBack(msg);
         if(func_suffix)
             return func_suffix;
     }
