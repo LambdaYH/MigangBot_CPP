@@ -24,16 +24,16 @@ IF(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 ENDIF(Boost_FOUND)
 
+# mysql
+include(FindPkgConfig)
+pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
+link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
+
 # opencv
 find_package(OpenCV REQUIRED)
 IF(OpenCV_FOUND)
     include_directories(${OpenCV_INCLUDE_DIRS})
 ENDIF(OpenCV_FOUND)
-
-# mysql
-include(FindPkgConfig)
-pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
-link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
 
 # yaml-cpp
 add_subdirectory(third-party/yaml-cpp)
@@ -66,6 +66,15 @@ add_subdirectory(third-party/utfcpp)
 # zlib
 add_subdirectory(third-party/zlib)
 
+# tencentcloud
+set(Tencentcloud-sdk-cpp_LIBS
+    tencentcloud-sdk-cpp-nlp
+    tencentcloud-sdk-cpp-core
+    crypto
+    curl
+    uuid
+)
+
 aux_source_directory(Sources/message MESSAGE_SRC)
 
 add_executable(${PROJECT_NAME} 
@@ -86,17 +95,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         nlohmann_json::nlohmann_json 
                         hv_static 
                         spdlog
-                        TBB::tbb
                         fmt
                         ${OpenCV_LIBS}
+                        TBB::tbb
                         libmysqlclient.a
                         zlibstatic
                         utf8::cpp
-                        tencentcloud-sdk-cpp-nlp
-                        tencentcloud-sdk-cpp-core
-                        crypto
-                        curl
-                        uuid
+                        ${Tencentcloud-sdk-cpp_LIBS}
 )
 
 IF(BUILD_TEST)
