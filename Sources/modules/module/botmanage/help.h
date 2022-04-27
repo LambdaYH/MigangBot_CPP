@@ -64,9 +64,9 @@ inline void Help::Register()
 
 inline void Help::HelpMsg(const Event &event, onebot11::ApiBot &bot)
 {
-    auto msg = ExtraPlainText(event);
+    auto msg = message::ExtraPlainText(event);
     auto text = std::string_view(msg);
-    Strip(text, ' ');
+    message::Strip(text, ' ');
     auto message_type = event["message_type"].get<std::string>();
     if(text.size() == 0)
     {

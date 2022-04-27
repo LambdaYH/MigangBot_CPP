@@ -30,7 +30,7 @@ inline void Echo::Register()
 
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)
 {
-    auto text = ExtraPlainText(event);
+    auto text = message::ExtraPlainText(event);
     bot.send_msg(event, text);
 }
 

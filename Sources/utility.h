@@ -8,7 +8,7 @@
 namespace white
 {
 
-std::string ReverseUTF8(const std::string &str)
+inline std::string ReverseUTF8(const std::string &str)
 {
     std::u16string str_u16 = utf8::utf8to16(str);
     std::reverse(str_u16.begin(), str_u16.end());

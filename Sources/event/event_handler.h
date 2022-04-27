@@ -269,7 +269,7 @@ inline const plugin_func &EventHandler::MatchedHandler(Event &event) const
                     only_to_me = true;
                     msg = msg.substr(msg.find_first_of(']') + 1);
                     msg = msg.substr(msg.find_first_not_of(' '));
-                    event["message"] = std::string(msg);
+                    event["__to_me__"] = true;
                 }
             }
         }

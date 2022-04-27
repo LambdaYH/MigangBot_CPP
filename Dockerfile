@@ -1,6 +1,10 @@
-FROM gcc:11.3.0
+FROM debian:bookworm
+RUN  sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list \
+    && sed -i s@/deb.debian.org/@/mirrors.aliyun.com/@g /etc/apt/sources.list \
+    && sed -i s@/security.debian.org/@/mirrors.aliyun.com/@g /etc/apt/sources.list
 RUN     apt update \
     &&  apt install -y \
+                    build-essential \
                     git \
                     cmake \
                     libcurl4-openssl-dev \
@@ -10,18 +14,19 @@ RUN     apt update \
                     libopencv-dev \
                     libboost-dev
 WORKDIR /build_temp
+COPY . /build_temp
 RUN     git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git \
     &&  cd tencentcloud-sdk-cpp \
     &&  mkdir build && cd build \
     &&  cmake -DBUILD_SHARED_LIBS=off -DBUILD_MODULES="nlp" .. \
-    &&  make && make install
-WORKDIR /build_temp/migangbot_build
-COPY . /build_temp/migangbot_build
-RUN     cmake -DCMAKE_BUILD_TYPE=Release . \
-    &&  make
-WORKDIR /MigangBot
-RUN     cp /build_temp/migangbot_build/bin/MigangBot . \
-    &&  cp /build_temp/migangbot_build/assets/ -r . \
+    &&  make && make install \
+    &&  cd /build_temp \
+    &&  cmake -DCMAKE_BUILD_TYPE=Release . \
+    &&  make \
+    &&  mkdir /MigangBot \
+    &&  cp /build_temp/bin/MigangBot /MigangBot \
+    &&  cp /build_temp/assets/ -r /MigangBot \
     &&  rm -rf /build_temp/
+WORKDIR /MigangBot
 ENTRYPOINT ./MigangBot
 EXPOSE 8080
