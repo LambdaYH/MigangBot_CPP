@@ -118,6 +118,7 @@ inline void MySQLConnPool::Init(
         sql_conn_to_id_.emplace(&sql_conn_pool_[i], i);
         sql_conn_id_queue_.push(i);
     }
+    LOG_INFO("已初始化数据库连接池，连接数：{}", sql_conn_id_queue_.size());
 }
 
 inline MySQLConnPool::~MySQLConnPool()

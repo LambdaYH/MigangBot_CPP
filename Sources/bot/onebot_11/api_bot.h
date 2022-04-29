@@ -1,5 +1,5 @@
-#ifndef MIGANGBOTCPP_BOT_API_BOT_H_
-#define MIGANGBOTCPP_BOT_API_BOT_H_
+#ifndef MIGANGBOTCPP_BOT_ONEBOT_11_API_BOT_H_
+#define MIGANGBOTCPP_BOT_ONEBOT_11_API_BOT_H_
 
 #include <functional>
 #include <future>
@@ -10,6 +10,7 @@
 
 #include "type.h"
 #include "api/onebot_11/api_impl.h"
+#include "bot/onebot_11/future_wrapper.h"
 #include "event/event.h"
 #include "logger/logger.h"
 
@@ -22,43 +23,14 @@ using Json = nlohmann::json;
 
 std::time_t GetTimeStampMicro();
 
-template<typename T>
-class FutureWrapper
-{
-public:
-    FutureWrapper(std::shared_ptr<std::promise<T>> &&p) : promise_(std::move(p)), future_(promise_->get_future()) {}
-
-    T Ret()
-    {
-        auto status = future_.wait_for(std::chrono::seconds(30));
-        switch(status)
-        {
-            case std::future_status::timeout:
-            case std::future_status::deferred:
-            {
-                if constexpr (std::is_same<T, MsgId>::value)
-                    return 0;
-                else if constexpr (std::is_same<T, std::string>::value)
-                    return "";
-            }
-            break;
-            case std::future_status::ready:
-                break;
-        }
-        return future_.get();
-    }
-private:
-    std::shared_ptr<std::promise<T>> promise_;
-    std::future<T> future_;
-};
-
 class ApiBot
 {
 public:
-    FutureWrapper<MsgId>    send_private_msg(const Event &event, const uint64_t user_id, const std::string &message, bool auto_escape = false);
-    FutureWrapper<MsgId>    send_group_msg(const Event &event, const uint64_t group_id, const std::string &message, bool at_sender = false, bool auto_escape = false);
-    FutureWrapper<MsgId>    send_msg(const Event &event, const std::string &message, bool at_sender = false, bool auto_escape = false);
-    void                    delete_msg(int32_t msg_id);
+    FutureWrapper<MsgId>        send_private_msg(const QId user_id, const std::string &message, bool auto_escape = false);
+    FutureWrapper<MsgId>        send_group_msg(const GId group_id, const std::string &message, bool auto_escape = false);
+    FutureWrapper<MsgId>        send_msg(const Event &event, const std::string &message, bool at_sender = false, bool auto_escape = false);
+    FutureWrapper<GroupInfo>    get_group_info(const GId group_id, bool no_cache = false);
+    void                        delete_msg(MsgId msg_id);
 
 public:
     std::string WaitForNextMessage(const Event &event);
@@ -96,6 +68,12 @@ private:
             if constexpr (std::is_same<T, MsgId>::value)
             {
                 shared_p->set_value(value.value("message_id", 0));
+            }else if constexpr (std::is_same<T, GroupInfo>::value)
+            {
+                shared_p->set_value({value["group_id"].get<GId>(), 
+                                    value["group_name"].get<std::string>(),
+                                    value["member_count"].get<int>(),
+                                    value["max_member_count"].get<int>()});
             }
         }
         catch(const std::future_error& e)
@@ -207,17 +185,17 @@ inline void ApiBot::FeedMessage(GId group_id, QId user_id, const std::string &me
         someone_group_message_.erase(group_id);
 }
 
-inline FutureWrapper<MsgId> ApiBot::send_private_msg(const Event &event, const uint64_t user_id, const std::string &message, bool auto_escape)
+inline FutureWrapper<MsgId> ApiBot::send_private_msg(const uint64_t user_id, const std::string &message, bool auto_escape)
 {
-    Json msg = api_impl_.send_private_msg(event.value("user_id", 0), message, event.value("group_id", 0), auto_escape);
+    Json msg = api_impl_.send_private_msg(user_id, message, auto_escape);
     auto ret = Echo<MsgId>(msg);
     notify_(msg.dump());
     return ret;
 }
 
-inline FutureWrapper<MsgId> ApiBot::send_group_msg(const Event &event, const uint64_t group_id, const std::string &message, bool at_sender, bool auto_escape)
+inline FutureWrapper<MsgId> ApiBot::send_group_msg(const uint64_t group_id, const std::string &message, bool auto_escape)
 {
-    Json msg = api_impl_.send_group_msg(event.value("group_id", 0), at_sender ? fmt::format("[CQ:at,qq={}]{}", event.value("user_id", 0), message) : message, auto_escape);
+    Json msg = api_impl_.send_group_msg(group_id, message, auto_escape);
     auto ret = Echo<MsgId>(msg);
     notify_(msg.dump());
     return ret;
@@ -231,6 +209,14 @@ inline FutureWrapper<MsgId> ApiBot::send_msg(const Event &event, const std::stri
     else
         msg = api_impl_.send_msg<false>(event.value("user_id", 0), event.value("group_id", 0), message, auto_escape);
     auto ret = Echo<MsgId>(msg);
+    notify_(msg.dump());
+    return ret;
+}
+
+inline FutureWrapper<GroupInfo> ApiBot::get_group_info(const GId group_id, bool no_cache)
+{
+    Json msg = api_impl_.get_group_info(group_id, no_cache);
+    auto ret = Echo<GroupInfo>(msg);
     notify_(msg.dump());
     return ret;
 }

@@ -96,13 +96,35 @@ inline void Strip(std::string_view &str, char ch = ' ')
     str.remove_suffix(std::min(str.size() - str.find_last_not_of(ch) - 1, str.size()));
 }
 
+inline std::string LStrip(const std::string &str, char ch = ' ')
+{
+    auto view = std::string_view(str);
+    view.remove_prefix(std::min(view.find_first_not_of(ch), view.size()));
+    return std::string(view);
+}
+
+inline std::string RStrip(const std::string &str, char ch = ' ')
+{
+    auto view = std::string_view(str);
+    view.remove_suffix(std::min(view.size() - view.find_last_not_of(ch) - 1, view.size()));
+    return std::string(view);
+}
+
+inline std::string Strip(const std::string &str, char ch = ' ')
+{
+    auto view = std::string_view(str);
+    view.remove_prefix(std::min(view.find_first_not_of(ch), view.size()));
+    view.remove_suffix(std::min(view.size() - view.find_last_not_of(ch) - 1, view.size()));
+    return std::string(view);
+}
+
 } // namespace message
 
 // https://docs.opencv.org/3.4/d9/dfa/classcv_1_1freetype_1_1FreeType2.html#af059d49b806b916ffdd6380b9eb2f59a
 inline std::string TextToImg(const std::string &text)
 {
     int font_height = 24;
-    auto path = std::filesystem::current_path().parent_path();
+    auto path = std::filesystem::current_path();
     auto font_path = path / "assets" / "fonts" / "SourceHanSansHWSC-Regular.otf";
     int img_height = 0, img_width = 0;
     auto freetype2 = cv::freetype::createFreeType2();

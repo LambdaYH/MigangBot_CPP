@@ -11,7 +11,7 @@
 #include <fmt/core.h>
 
 #include "modules/utility.h"
-#include "bot/api_bot.h"
+#include "bot/onebot_11/api_bot.h"
 #include "event/event_handler.h"
 #include "event/event.h"
 #include "logger/logger.h"

@@ -8,7 +8,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(BUILD_SHARED_LIBS OFF)
-set(soname OFF)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 option(BUILD_TEST "build test" ON)
 
@@ -66,7 +66,8 @@ add_subdirectory(third-party/utfcpp)
 # zlib
 add_subdirectory(third-party/zlib)
 
-# tencentcloud
+# tencentcloud-sdk-cpp
+set(BUILD_MODULES CACHE INTERNAL "nlp")
 set(Tencentcloud-sdk-cpp_LIBS
     tencentcloud-sdk-cpp-nlp
     tencentcloud-sdk-cpp-core

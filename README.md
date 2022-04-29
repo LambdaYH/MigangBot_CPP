@@ -9,13 +9,7 @@
 | Echo | Echo | 回声 |
 | BotManage | help | 显示帮助信息 |
 | BotManage | status_info | 显示系统/机器人状态 |
-
-
-## For User
-
-### Requirements
-
-    sudo apt install build-essential libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev -y(.etc)
+| BotManage | feedback | 用户可以发送留言给维护者，维护者也可以进行回复 |
 
 ## For Developer
 
@@ -29,6 +23,16 @@
 See [Github Action](https://github.com/LambdaYH/MigangBotCPP/blob/main/.github/workflows/cmake.yml) for more Details.
 
 ### Step
+
+#### Debian or Ubuntu
+
+    sudo apt install git cmake build-essential default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev ninja-build -y
+
+    git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git
+    cd tencentcloud-sdk-cpp
+    mkdir build && cd build
+    cmake -DBUILD_SHARED_LIBS=off -DBUILD_MODULES="nlp" ..
+    make && sudo make install
 
     git clone https://github.com/LambdaYH/MigangBotCPP
     cd MigangBotCPP

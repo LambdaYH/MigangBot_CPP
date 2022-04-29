@@ -2,7 +2,7 @@
 #define MIGANGBOTCPP_EVENT_TYPES_H_
 
 #include "event/event.h"
-#include "bot/api_bot.h"
+#include "bot/onebot_11/api_bot.h"
 #include <string>
 
 namespace white {

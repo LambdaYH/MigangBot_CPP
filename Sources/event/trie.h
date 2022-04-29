@@ -9,7 +9,7 @@
 #include <string_view>
 #include <nlohmann/json.hpp>
 #include "event/event.h"
-#include "bot/api_bot.h"
+#include "bot/onebot_11/api_bot.h"
 #include "event/search_result.h"
 #include "event/types.h"
 

@@ -15,7 +15,7 @@
 #include "event/event.h"
 #include "pool/thread_pool.h"
 #include "logger/logger.h"
-#include "bot/api_bot.h"
+#include "bot/onebot_11/api_bot.h"
 #include "utility.h"
 #include "permission/permission.h"
 #include "event/types.h"

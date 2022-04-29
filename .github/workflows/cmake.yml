@@ -1,4 +1,4 @@
-name: CMake & Release?
+name: cmake & Release
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  GENERATOR: Ninja
 
 jobs:
   build:
@@ -27,14 +28,17 @@ jobs:
       with:
         submodules: true
 
+    - name: Install Requirements
+      run: sudo apt install default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev ninja-build -y
+
     - name: Install boost
-      uses: MarkusJx/install-boost@v2.1.0
+      uses: MarkusJx/install-boost@v2.2.0
       id: install-boost
       with:
         # REQUIRED: Specify the required boost version
         # A list of supported versions can be found here: 
         # https://github.com/actions/boost-versions/blob/main/versions-manifest.json
-        boost_version: 1.78.0
+        boost_version: 1.79.0
         # OPTIONAL: Specify a platform version
         platform_version: 20.04
         # OPTIONAL: Specify a toolset
@@ -42,26 +46,19 @@ jobs:
         
         # NOTE: If a boost version matching all requirements cannot be found,
         # this build step will fail
-    - name: Install Requirements
-      run: sudo apt install default-libmysqlclient-dev uuid-dev libssl-dev libcurl4-openssl-dev -y
       
     - name: tencentcloud-sdk-cpp
       run: | 
-        git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git
-        cd tencentcloud-sdk-cpp
-        mkdir build && cd build
-        cmake -DBUILD_SHARED_LIBS=off -DBUILD_MODULES="nlp" ..
-        make && sudo make install
-
-    - name: Install opencv
-      uses: Dovyski/setup-opencv-action@v1
-      with:
-        opencv-version: '4.5.0'
+          git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git
+          cd tencentcloud-sdk-cpp
+          mkdir build && cd build
+          cmake -DBUILD_SHARED_LIBS=off -DBUILD_MODULES="nlp" ..
+          make && sudo make install
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -G "${{env.GENERATOR}}"
       env:
         BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
 
@@ -73,6 +70,8 @@ jobs:
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
+        name: ${{github.ref}}-OpenCV4.2(Ubuntu20.04)
         files: |
           build/bin/MigangBot
           assets/
+      
