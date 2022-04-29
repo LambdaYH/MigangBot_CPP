@@ -36,6 +36,7 @@ See [Github Action](https://github.com/LambdaYH/MigangBotCPP/blob/main/.github/w
 
     git clone https://github.com/LambdaYH/MigangBotCPP
     cd MigangBotCPP
+    git submodule update --init
     mkdir build && cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..
     make
