@@ -1,4 +1,4 @@
-name: cmake & Release
+name: Cmake & Release
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
       run: sudo apt install default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev ninja-build -y
 
     - name: Install boost
-      uses: MarkusJx/install-boost@v2.2.0
+      uses: MarkusJx/install-boost@v2.3.0
       id: install-boost
       with:
         # REQUIRED: Specify the required boost version
