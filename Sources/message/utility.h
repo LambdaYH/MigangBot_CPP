@@ -2,6 +2,7 @@
 #define MIGANGBOTCPP_MESSAGE_UTILITY_H_
 
 #include <cstddef>
+#include <opencv2/core.hpp>
 #include <string>
 #include <string_view>
 #include <sstream>
@@ -148,13 +149,20 @@ inline std::string TextToImg(const std::string &text)
     int border = 10;
     img_height = lines.size() * font_height;
     int gap = 5;
-    cv::Mat img(img_height + border * 2 + gap * (lines.size() - 1), img_width + border * 2, CV_8UC3, cv::Scalar(253, 253, 245)); // B-G-R in opencv
-    int start_y = border;
+    auto real_width = img_width + border * 4;
+    auto real_height = img_height + border * 4 + gap * (lines.size() - 1);
+    cv::Mat img(real_height, real_width, CV_8UC3, cv::Scalar(239, 204, 175)); // B-G-R in opencv
+    cv::Mat roi = img(cv::Rect(border, border, real_width - 2 * border, real_height - 2 * border));
+    cv::Mat mask(roi.size(), CV_8UC3, cv::Scalar(255, 255, 255));
+    double alpha = 0.6;
+    // https://stackoverflow.com/questions/24480751/how-to-create-a-semi-transparent-shape
+    cv::addWeighted(mask, alpha, roi, 1.0 - alpha, 0.0, roi);
+    int start_y = border * 2;
     for(auto &line : lines)
     {
         freetype2->putText(img, 
                             line, 
-                            cv::Point{border, start_y}, 
+                            cv::Point{border * 2, start_y}, 
                             font_height, 
                             cv::Scalar(0, 0, 0), 
                             -1, 
