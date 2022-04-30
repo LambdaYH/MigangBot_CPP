@@ -79,7 +79,7 @@ inline void ThreadPool::Run(size_t thread_num)
                     catch(std::exception &e)
                     {
                         // 异常处理
-                        LOG_ERROR("Some Expection Happened...: {}", e.what());
+                        LOG_ERROR("Some Expection Happened: {}", e.what());
                     }
                 }
             }

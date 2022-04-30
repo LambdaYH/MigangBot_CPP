@@ -179,7 +179,35 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) const
             // message
             case 's':
             {
-                LOG_INFO("Bot[{}] 收到一条消息: {}", event["self_id"].get<QId>(), event.value("message", "Unknown message"));
+                if(event["message_type"].get<std::string>()[0] == 'p')
+                {
+                    if(event["sub_type"].get<std::string>()[0] == 'f')
+                        LOG_INFO("Bot[{}]收到来自好友[{}({})]的消息: {}", 
+                            event["self_id"].get<QId>(), 
+                            event["sender"].value("nickname", ""),
+                            event["sender"].value("user_id", 0),
+                            event.value("message", "Unknown message")
+                        );
+                }else
+                {
+                    if(event["anonymous"] != nullptr)
+                    {
+                        LOG_INFO("Bot[{}]收到来自群[{}]的匿名消息: {}", 
+                            event["self_id"].get<QId>(), 
+                            event["group_id"].get<GId>(),
+                            event.value("message", "Unknown message")
+                        );
+                    }else
+                    {
+                        LOG_INFO("Bot[{}]收到来自群[{}]成员[{}({})]的消息: {}", 
+                            event["self_id"].get<QId>(), 
+                            event["group_id"].get<GId>(),
+                            event["sender"].value("nickname", ""),
+                            event["sender"].value("user_id", 0),
+                            event.value("message", "Unknown message")
+                        );
+                    }   
+                }
                 auto func = MatchedHandler(event);
                 if(func)
                     pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝

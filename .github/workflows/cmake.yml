@@ -29,7 +29,9 @@ jobs:
         submodules: true
 
     - name: Install Requirements
-      run: sudo apt install default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev ninja-build -y
+      run: |
+        sudo apt update 
+        sudo apt install default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev ninja-build -y
 
     - name: Install boost
       uses: MarkusJx/install-boost@v2.3.0
