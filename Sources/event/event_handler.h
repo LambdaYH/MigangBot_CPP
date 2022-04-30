@@ -1,6 +1,7 @@
 #ifndef MIGANGBOTCPP_EVENT_HANDLER_EVENT_HANDLER_H_
 #define MIGANGBOTCPP_EVENT_HANDLER_EVENT_HANDLER_H_
 
+#include <memory>
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -47,7 +48,7 @@ public:
 
     void Init(std::size_t thread_num)
     {
-        pool_.reset(new ThreadPool(thread_num));
+        pool_ = std::make_unique<ThreadPool>(thread_num);
     }
 
     void InitFilter(std::unique_ptr<EventFilter> &&filter)

@@ -1,7 +1,9 @@
 #ifndef MIGANGBOTCPP_BOT_BOT_H_
 #define MIGANGBOTCPP_BOT_BOT_H_
 
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio/dispatch.hpp>
@@ -15,6 +17,7 @@
 #include <string>
 #include <utility>
 #include <functional>
+#include <queue>
 
 #include "bot/onebot_11/api_bot.h"
 #include "version.h"
@@ -41,7 +44,7 @@ class Bot : public std::enable_shared_from_this<Bot>
 {
 public:
     explicit 
-    Bot(tcp::socket&& socket, std::size_t write_thread_num = 4, std::size_t process_thread_num = 4);
+    Bot(tcp::socket&& socket);
     ~Bot();
 
     void Run();
@@ -56,11 +59,12 @@ public:
     void OnRead(beast::error_code ec, std::size_t bytes_transferred);
 
 private:
-    void StartThread(std::size_t write_thread_num, std::size_t process_thread_num);
 
-    void ThreadFunctionWrite();
+    void OnSend(const std::string &message);
 
-    void ThreadFunctionProcess();
+    void OnWrite(beast::error_code ec, std::size_t);
+
+    void Process(const std::string &message);
 
     void Notify(const std::string &msg);
 
@@ -71,45 +75,34 @@ private:
 private:
     beast::websocket::stream<boost::beast::tcp_stream> ws_;
     beast::flat_buffer buffer_;
-    std::condition_variable cond_write_;
-    std::condition_variable cond_process_;
-    tbb::concurrent_queue<std::string> writable_msg_queue_;
-    tbb::concurrent_queue<std::string> processable_msg_queue_;
+    std::queue<std::string> writable_msg_queue_;
     tbb::concurrent_unordered_map<std::time_t, std::function<void(const Json &)>> echo_function_;
-    std::mutex mutex_write_;
-    std::mutex mutex_process_;
     std::function<void(const std::string &)> notify_;
     std::function<void(const std::time_t, std::function<void(const Json &)> &&)> set_echo_function_;
     onebot11::ApiBot api_bot_;
     std::function<bool(Event &)> event_handler_;
 
     bool stop_;
-    std::vector<std::thread> threads_;
 };
 
-inline Bot::Bot(tcp::socket&& socket, std::size_t write_thread_num, std::size_t process_thread_num) :
+inline Bot::Bot(tcp::socket&& socket) :
         ws_(std::move(socket)),
         notify_(std::bind(&Bot::Notify, this, std::placeholders::_1)),
         set_echo_function_(std::bind(&Bot::SetEchoFunction, this, std::placeholders::_1, std::placeholders::_2)),
         api_bot_(notify_, set_echo_function_),
-        event_handler_( std::bind(&EventHandler::Handle, &EventHandler::GetInstance(), std::placeholders::_1, std::ref(api_bot_)) ),
-        stop_(false)
+        event_handler_( std::bind(&EventHandler::Handle, &EventHandler::GetInstance(), std::placeholders::_1, std::ref(api_bot_)) )
 {
-    StartThread(write_thread_num, process_thread_num);
+
 }
 
 inline Bot::~Bot()
 {
-    stop_ = true;
-    cond_process_.notify_all();
-    cond_write_.notify_all();
-    for(auto &thread : threads_)
-        thread.join();
+
 }
 
 inline void Bot::Run()
 {
-    net::dispatch(boost::asio::make_strand(ws_.get_executor()),
+    net::dispatch(ws_.get_executor(),
                 beast::bind_front_handler(
                     &Bot::OnRun,
                     shared_from_this()));
@@ -164,18 +157,28 @@ inline void Bot::OnRead(beast::error_code ec, std::size_t bytes_transferred)
     if(ec)
         return fail(ec, "read");
 
-    processable_msg_queue_.push(std::move(beast::buffers_to_string(buffer_.data())));
-    cond_process_.notify_one();
+    auto msg_str = beast::buffers_to_string(buffer_.data());
     buffer_.consume(buffer_.size());
+    net::post(
+        ws_.get_executor(),
+        beast::bind_front_handler(
+            &Bot::Process,
+            shared_from_this(),
+            msg_str
+        )
+    );
     DoRead();
 }
 
 
 inline void Bot::Notify(const std::string &msg)
 {
-    writable_msg_queue_.push(msg);
-    cond_write_.notify_one();
-    LOG_DEBUG("Msg To sent: {}", msg);
+    net::post(
+        ws_.get_executor(),
+        beast::bind_front_handler(
+            &Bot::OnSend,
+            shared_from_this(),
+            msg));
 }
 
 inline void Bot::SetEchoFunction(const std::time_t echo_code, std::function<void(const Json &)> &&func)
@@ -183,68 +186,55 @@ inline void Bot::SetEchoFunction(const std::time_t echo_code, std::function<void
     echo_function_[echo_code] = std::move(func);
 }
 
-inline void Bot::StartThread(std::size_t write_thread_num, std::size_t process_thread_num)
+inline void Bot::Process(const std::string &message)
 {
-    for(std::size_t i = 0; i < process_thread_num; ++i)
-        threads_.push_back(std::thread{&Bot::ThreadFunctionProcess, this});
-    for(std::size_t i = 0; i < write_thread_num; ++i)
-        threads_.push_back(std::thread{&Bot::ThreadFunctionWrite, this});
-}
-
-inline void Bot::ThreadFunctionProcess()
-{
-    Event msg;
-    std::unique_lock<std::mutex> locker(mutex_process_);
-    std::string msg_str;
-    while(!stop_)
+    LOG_DEBUG("Recieve: {}", message);
+    try
     {
-        if(processable_msg_queue_.empty())
-            cond_process_.wait(locker);
-        else
-        {
-            locker.unlock();
-            if(processable_msg_queue_.try_pop(msg_str))
-            {
-                LOG_DEBUG("Recieve: {}", msg_str);
-                try
-                {
-                    auto msg = nlohmann::json::parse(msg_str);
-                    if(EventProcess(msg))
-                        event_handler_(msg);
-                }catch(nlohmann::json::exception &e)
-                {
-                    LOG_ERROR("Exception: {}", e.what());
-                }
-            }
-            locker.lock();
-        }
+        auto msg = nlohmann::json::parse(message);
+        if(EventProcess(msg))
+            event_handler_(msg);
+    }catch(nlohmann::json::exception &e)
+    {
+        LOG_ERROR("Exception: {}", e.what());
     }
 }
 
-inline void Bot::ThreadFunctionWrite()
+inline void Bot::OnSend(const std::string &message)
 {
-    beast::flat_buffer buffer;
-    boost::system::error_code ec;
-    std::string msg_str;
-    std::unique_lock<std::mutex> locker(mutex_write_);
-    while(!stop_)
-    {
-        if(writable_msg_queue_.empty())
-            cond_write_.wait(locker);
-        else{
-            locker.unlock();
-            if(writable_msg_queue_.try_pop(msg_str))
-            {
-                beast::ostream(buffer) << msg_str;
-                ws_.text(ws_.got_text());
-                ws_.write(buffer.data(), ec);
-                if(ec)
-                    LOG_ERROR("In ThreadFunctionWrite: {}", ec.message());
-                buffer.consume(buffer.size());
-            }
-            locker.lock();
-        }
-    }
+    writable_msg_queue_.push(message);
+
+    // Are we already writing?
+    if(writable_msg_queue_.size() > 1)
+        return;
+
+    // We are not currently writing, so send this immediately
+    ws_.async_write(
+        net::buffer(writable_msg_queue_.front()),
+        beast::bind_front_handler(
+            &Bot::OnWrite,
+            shared_from_this()
+        )
+    );
+}
+
+inline void Bot::OnWrite(beast::error_code ec, std::size_t bytes_transferred)
+{
+    if(ec)
+        return fail(ec, "write");
+
+    // Remove the string from the queue
+    writable_msg_queue_.pop();
+
+    // Send the next message if any
+    if(!writable_msg_queue_.empty())
+        ws_.async_write(
+            net::buffer(writable_msg_queue_.front()),
+            beast::bind_front_handler(
+                &Bot::OnWrite,
+                shared_from_this()
+            )
+        );
 }
 
 inline bool Bot::EventProcess(const Event &event)

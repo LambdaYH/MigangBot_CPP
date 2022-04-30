@@ -27,13 +27,9 @@ class listener : public std::enable_shared_from_this<listener>
 public:
     listener(
         net::io_context& ioc,
-        tcp::endpoint endpoint,
-        std::size_t write_thread_num,
-        std::size_t process_thread_num)
+        tcp::endpoint endpoint)
         : ioc_(ioc)
         , acceptor_(ioc)
-        , write_thread_num_(write_thread_num)
-        , process_thread_num_(process_thread_num)
     {
         beast::error_code ec;
 
@@ -96,7 +92,7 @@ private:
         if(ec)
             Fail(ec, "accept");
         else
-            std::make_shared<white::Bot>(std::move(socket), write_thread_num_, process_thread_num_)->Run();
+            std::make_shared<white::Bot>(std::move(socket))->Run();
         
         // Accept another connection
         DoAccept();
@@ -104,9 +100,7 @@ private:
 private:
     net::io_context& ioc_;
     tcp::acceptor acceptor_;
-
-    std::size_t write_thread_num_;
-    std::size_t process_thread_num_;
+    
 };
 
 } // namespace white
