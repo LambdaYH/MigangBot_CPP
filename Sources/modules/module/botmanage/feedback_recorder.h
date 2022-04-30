@@ -18,7 +18,7 @@ public:
     {
         sql::MySQLWrapper sql_wrapper;
         std::string query = "CREATE TABLE IF NOT EXISTS Feedbacks\n"
-                            "(feedbackID   INT     NOT NULL,\n"
+                            "(feedbackID   INT    NOT NULL AUTO_INCREMENT,\n"
                             "time         TEXT    NOT NULL,\n"
                             "UID           INT    NOT NULL,\n"
                             "GID           INT    NOT NULL,\n"
@@ -52,15 +52,12 @@ public:
     bool RecordFeedBack(const std::string &time, QId uid, GId gid, const std::string &content)
     {
         sql::MySQLWrapper sql_wrapper;
-        auto feedback_id = GetLastID() + 1;
-        auto query = fmt::format("REPLACE INTO Feedbacks\n"
+        auto query = fmt::format("INSERT INTO Feedbacks(time, UID, GID, content)\n"
                                 "VALUES(\n"
-                                    "{},\n"
                                     "\"{}\",\n"
                                     "{},\n"
                                     "{},\n"
                                     "\"{}\")",  
-                                feedback_id,
                                 time,
                                 uid,
                                 gid,
