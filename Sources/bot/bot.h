@@ -66,6 +66,8 @@ private:
 
     void Process(const std::string &message);
 
+    void OnProcess(const std::string &message);
+
     void Notify(const std::string &msg);
 
     void SetEchoFunction(const std::time_t echo_code, std::function<void(const Json &)> &&func);
@@ -81,8 +83,7 @@ private:
     std::function<void(const std::time_t, std::function<void(const Json &)> &&)> set_echo_function_;
     onebot11::ApiBot api_bot_;
     std::function<bool(Event &)> event_handler_;
-
-    bool stop_;
+    
 };
 
 inline Bot::Bot(tcp::socket&& socket) :
@@ -157,16 +158,15 @@ inline void Bot::OnRead(beast::error_code ec, std::size_t bytes_transferred)
     if(ec)
         return fail(ec, "read");
 
-    auto msg_str = beast::buffers_to_string(buffer_.data());
-    buffer_.consume(buffer_.size());
     net::post(
         ws_.get_executor(),
         beast::bind_front_handler(
             &Bot::Process,
             shared_from_this(),
-            msg_str
+            beast::buffers_to_string(buffer_.data())
         )
     );
+    buffer_.consume(buffer_.size());
     DoRead();
 }
 
@@ -187,6 +187,11 @@ inline void Bot::SetEchoFunction(const std::time_t echo_code, std::function<void
 }
 
 inline void Bot::Process(const std::string &message)
+{
+    EventHandler::GetInstance().AddTask(std::bind(&Bot::OnProcess, this, message));
+}
+
+inline void Bot::OnProcess(const std::string &message)
 {
     LOG_DEBUG("Recieve: {}", message);
     try
@@ -241,16 +246,13 @@ inline bool Bot::EventProcess(const Event &event)
 {
     if(event.contains("retcode"))
     {
-        if(event.value("status", "failed") == "ok")
+        std::time_t echo_code = 0;
+        if (event.contains("echo"))
+            echo_code = event["echo"].get<std::time_t>();
+        if (echo_function_.count(echo_code))
         {
-            std::time_t echo_code = 0;
-            if (event.contains("echo"))
-                echo_code = event["echo"].get<std::time_t>();
-            if (echo_function_.count(echo_code))
-            {
-                echo_function_.at(echo_code)(event["data"]);
-                echo_function_.unsafe_erase(echo_code);
-            }
+            echo_function_.at(echo_code)(event["data"]);
+            echo_function_.unsafe_erase(echo_code);
         }
         return false;
     }else if(event.contains("message"))

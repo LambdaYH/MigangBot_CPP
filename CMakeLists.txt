@@ -76,12 +76,9 @@ set(Tencentcloud-sdk-cpp_LIBS
     uuid
 )
 
-aux_source_directory(Sources/message MESSAGE_SRC)
-
 add_executable(${PROJECT_NAME} 
                 Sources/main.cpp
                 third-party/cpp-base64/base64.cpp
-                ${MESSAGE_SRC}
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
                             Sources 

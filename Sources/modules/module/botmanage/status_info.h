@@ -25,7 +25,7 @@ namespace status_info
 {
     inline std::string GetLatency(const Event &event)
     {
-        return fmt::format("[延迟] {:0.2f}s", GetTimeStampMs() / 1000.0 - event["time"].get<double>());
+        return fmt::format("[延迟] {:0.2f}s", datetime::GetTimeStampMs() / 1000.0 - event["time"].get<double>());
     }
     
     inline std::string GetMemoryStatus()

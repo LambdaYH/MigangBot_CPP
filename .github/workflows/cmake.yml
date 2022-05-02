@@ -75,5 +75,6 @@ jobs:
         name: ${{github.ref}}-OpenCV4.2(Ubuntu20.04)
         files: |
           build/bin/MigangBot
-          assets/
+          Resources/assets
+          Resources/configs
       

@@ -12,6 +12,8 @@
 #include "modules/module/tencentcloud_nlp/auto_summarization.h"
 #include "modules/module/tencentcloud_nlp/keywords_extraction.h"
 
+#include "modules/module/eorzea_zhanbu/eorzea_zhanbu.h"
+
 namespace white
 {
 namespace module
@@ -30,6 +32,9 @@ inline void InitModuleList()
     // tencentcloud_nlp
     AddModule<AutoSummarization>();
     AddModule<KeywordsExtraction>();
+
+    // eorzea_zhan
+    AddModule<EorzeaZhanbu>();
 }
 
 } // namespace module

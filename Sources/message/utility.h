@@ -18,6 +18,7 @@
 
 #include "base64.h"
 #include "event/event.h"
+#include "global_config.h"
 
 namespace white
 {
@@ -121,12 +122,20 @@ inline std::string Strip(const std::string &str, char ch = ' ')
 
 } // namespace message
 
+    // https://stackoverflow.com/questions/29772271/c-opencv-convert-mat-to-base64-and-vice-versa
+inline std::string ImageTobase64(const cv::Mat &image)
+{
+    std::vector<uchar> buf;
+    cv::imencode(".jpg", image, buf);
+    auto *enc_msg = reinterpret_cast<unsigned char*>(buf.data());
+    return "base64://" + base64_encode(enc_msg, buf.size());
+}
+
 // https://docs.opencv.org/3.4/d9/dfa/classcv_1_1freetype_1_1FreeType2.html#af059d49b806b916ffdd6380b9eb2f59a
 inline std::string TextToImg(const std::string &text)
 {
     int font_height = 24;
-    auto path = std::filesystem::current_path();
-    auto font_path = path / "assets" / "fonts" / "SourceHanSansHWSC-Regular.otf";
+    auto font_path = config::kAssetsDir / "fonts" / "SourceHanSansHWSC-Regular.otf";
     int img_height = 0, img_width = 0;
     auto freetype2 = cv::freetype::createFreeType2();
     freetype2->loadFontData(font_path, 0);
@@ -171,12 +180,7 @@ inline std::string TextToImg(const std::string &text)
         );
         start_y += font_height + gap;
     }
-    // https://stackoverflow.com/questions/29772271/c-opencv-convert-mat-to-base64-and-vice-versa
-    std::vector<uchar> buf;
-    cv::imencode(".jpg", img, buf);
-    auto *enc_msg = reinterpret_cast<unsigned char*>(buf.data());
-    std::string encoded = base64_encode(enc_msg, buf.size());
-    return "base64://" + encoded;
+    return "base64://" + ImageTobase64(img);
 }
 
 } // namespace white

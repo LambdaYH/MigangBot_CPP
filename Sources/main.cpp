@@ -37,9 +37,6 @@
 #include "global_config.h"
 #include "database/mysql_conn.h"
 
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
@@ -48,6 +45,7 @@ constexpr auto kThreadNum = 2;
 
 YAML::Node white::global_config;
 std::filesystem::path white::config::kConfigDir;
+std::filesystem::path white::config::kAssetsDir;
 std::string white::config::BOT_NAME;
 std::unordered_set<white::QId> white::config::SUPERUSERS;
 std::unordered_set<white::QId> white::config::WHITE_LIST;
@@ -98,6 +96,7 @@ int main(int argc, char* argv[])
         return 1;
     }
     white::config::kConfigDir = current_working_dir / "configs";
+    white::config::kAssetsDir = current_working_dir / "assets";
     if(!std::filesystem::exists(white::config::kConfigDir))
     {
         if(!std::filesystem::create_directory(white::config::kConfigDir))

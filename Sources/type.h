@@ -11,6 +11,11 @@ using MsgId = int32_t;
 using QId   = uint64_t;
 using GId   = uint64_t;
 
+struct MessageID
+{
+    MsgId message_id;
+};
+
 struct GroupInfo
 {
     GId group_id;

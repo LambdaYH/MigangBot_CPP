@@ -23,6 +23,8 @@ extern std::unordered_set<QId> SUPERUSERS;
 
 extern std::unordered_set<QId> WHITE_LIST;
 
+extern std::filesystem::path kAssetsDir;
+
 } // namespace global_config
 } // namespace white
 

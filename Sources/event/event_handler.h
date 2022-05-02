@@ -68,6 +68,8 @@ public:
 
     bool Handle(Event &event, onebot11::ApiBot &bot) const;
 
+    template<typename F>
+    void AddTask(F &&func);
 
 private:
     EventHandler() :
@@ -437,6 +439,12 @@ inline const std::vector<plugin_func> EventHandler::FreeHandler(const Event &eve
             break;
     } 
     return ret;
+}
+
+template<typename F>
+inline void EventHandler::AddTask(F &&func)
+{
+    pool_->AddTask(std::forward<F>(func));
 }
 
 } // namespace white

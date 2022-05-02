@@ -52,7 +52,7 @@ inline void FeedBack::Send(const Event &event, onebot11::ApiBot &bot)
         bot.send_msg(event, fmt::format("格式错误，请发送[.send + 您的留言]"), true);
         return;
     }
-    auto time_now = datatime::GetCurrentTime();
+    auto time_now = datetime::GetCurrentTime();
     auto whites = config::SUPERUSERS;
     if(event.contains("group_id"))
     {

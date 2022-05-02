@@ -25,7 +25,6 @@ public:
 inline void Echo::Register()
 {
     RegisterCommand(PREFIX, {"/echo", "/回声"}, func(Echo::DoEcho), permission::NORMAL);
-    RegisterCommand(PREFIX, {"/e"}, func(Echo::DoEcho), permission::NORMAL, true);
 }
 
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)

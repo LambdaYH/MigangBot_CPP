@@ -23,8 +23,8 @@ public:
             case std::future_status::timeout:
             case std::future_status::deferred:
             {
-                if constexpr (std::is_same<T, MsgId>::value)
-                    return 0;
+                if constexpr (std::is_same<T, MessageID>::value)
+                    return {0};
                 else if constexpr (std::is_same<T, std::string>::value)
                     return "";
                 else if constexpr (std::is_same<T, GroupInfo>::value)
