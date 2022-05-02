@@ -37,9 +37,6 @@
 #include "global_config.h"
 #include "database/mysql_conn.h"
 
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
@@ -48,6 +45,7 @@ constexpr auto kThreadNum = 2;
 
 YAML::Node white::global_config;
 std::filesystem::path white::config::kConfigDir;
+std::filesystem::path white::config::kAssetsDir;
 std::string white::config::BOT_NAME;
 std::unordered_set<white::QId> white::config::SUPERUSERS;
 std::unordered_set<white::QId> white::config::WHITE_LIST;
@@ -73,9 +71,7 @@ constexpr auto kGlobalConfigExample =   "Server:\n"
                                         "# 不懂就不改\n"
                                         "Dev:\n"
                                         "  ThreadNum:\n"
-                                        "    Read: 2                        # 异步读取线程数\n"
-                                        "    Process: 2                     # 处理指令线程数\n"
-                                        "    Write: 2                       # 发送线程数\n"
+                                        "    I/O: 2                         # 异步I/O线程数\n"
                                         "    ThreadPool: 4                  # 处理各个命令对应操作线程池的线程数\n"
                                         "  SqlPool: 5                       # 数据库连接池连接数";
 
@@ -100,6 +96,7 @@ int main(int argc, char* argv[])
         return 1;
     }
     white::config::kConfigDir = current_working_dir / "configs";
+    white::config::kAssetsDir = current_working_dir / "assets";
     if(!std::filesystem::exists(white::config::kConfigDir))
     {
         if(!std::filesystem::create_directory(white::config::kConfigDir))
@@ -154,10 +151,10 @@ int main(int argc, char* argv[])
 
     // 开始监听
     // The io_context is required for all I/O
-    auto const thread_num = white::global_config["Dev"]["ThreadNum"]["Read"].as<int>();
+    auto const thread_num = white::global_config["Dev"]["ThreadNum"]["I/O"].as<int>();
     net::io_context ioc{thread_num};
     // Create and launch a listening port
-    std::make_shared<white::listener>(ioc, tcp::endpoint{address, port}, white::global_config["Dev"]["ThreadNum"]["Write"].as<std::size_t>(), white::global_config["Dev"]["ThreadNum"]["Process"].as<std::size_t>())->Run();
+    std::make_shared<white::listener>(ioc, tcp::endpoint{address, port})->Run();
     // Run the I/O service on the requested number of threads
     std::vector<std::thread> v;
     v.reserve(thread_num - 1);

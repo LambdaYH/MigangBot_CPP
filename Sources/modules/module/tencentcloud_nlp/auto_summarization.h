@@ -2,6 +2,7 @@
 #define MIGANGBOTCPP_MODULES_MODULE_TENCENTCLOUD_NLP_AUTO_SUMMARIZATION_H_
 
 #include "modules/module_interface.h"
+#include <any>
 #include <functional>
 #include <queue>
 #include <condition_variable>
@@ -13,6 +14,7 @@
 #include <tencentcloud/nlp/v20190408/NlpClient.h>
 #include <tencentcloud/nlp/v20190408/model/AutoSummarizationRequest.h>
 #include <tencentcloud/nlp/v20190408/model/AutoSummarizationResponse.h>
+#include <unordered_map>
 
 #include "modules/module/tencentcloud_nlp/config.h"
 
@@ -43,14 +45,13 @@ private:
 
 inline void AutoSummarization::Register()
 {
-    RegisterCommand(SUFFIX, {"摘要提取", "/摘要提取"}, func(AutoSummarization::SummarizationExtraction));
+    RegisterCommand(PREFIX, {"摘要提取", "/摘要提取"}, func(AutoSummarization::SummarizationExtraction));
 }
 
 inline void AutoSummarization::SummarizationExtraction(const Event &event, onebot11::ApiBot &bot)
 {
-    auto text = ExtraPlainText(event["message"].get<std::string>());
-    Strip(text);
-    bot.send_msg(event, GetSummarization(std::string(text)));
+    auto msg = message::ExtraPlainText(event);
+    bot.send_msg(event, GetSummarization(msg));
 }
 
 inline std::string AutoSummarization::GetSummarization(const std::string &text)

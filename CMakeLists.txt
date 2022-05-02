@@ -8,7 +8,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(BUILD_SHARED_LIBS OFF)
-set(soname OFF)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 option(BUILD_TEST "build test" ON)
 
@@ -24,16 +24,16 @@ IF(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 ENDIF(Boost_FOUND)
 
+# mysql
+include(FindPkgConfig)
+pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
+link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
+
 # opencv
 find_package(OpenCV REQUIRED)
 IF(OpenCV_FOUND)
     include_directories(${OpenCV_INCLUDE_DIRS})
 ENDIF(OpenCV_FOUND)
-
-# mysql
-include(FindPkgConfig)
-pkg_check_modules(LIBMYSQLCLIENT REQUIRED mysqlclient)
-link_directories(${LIBMYSQLCLIENT_LIBRARY_DIRS})
 
 # yaml-cpp
 add_subdirectory(third-party/yaml-cpp)
@@ -63,12 +63,22 @@ add_subdirectory(third-party/fmt)
 # utfcpp
 add_subdirectory(third-party/utfcpp)
 
-aux_source_directory(Sources/message MESSAGE_SRC)
+# zlib
+add_subdirectory(third-party/zlib)
+
+# tencentcloud-sdk-cpp
+set(BUILD_MODULES CACHE INTERNAL "nlp")
+set(Tencentcloud-sdk-cpp_LIBS
+    tencentcloud-sdk-cpp-nlp
+    tencentcloud-sdk-cpp-core
+    crypto
+    curl
+    uuid
+)
 
 add_executable(${PROJECT_NAME} 
                 Sources/main.cpp
                 third-party/cpp-base64/base64.cpp
-                ${MESSAGE_SRC}
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
                             Sources 
@@ -83,17 +93,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         nlohmann_json::nlohmann_json 
                         hv_static 
                         spdlog
-                        TBB::tbb
                         fmt
                         ${OpenCV_LIBS}
-                        ${LIBMYSQLCLIENT_LIBRARIES}
+                        TBB::tbb
+                        libmysqlclient.a
+                        zlibstatic
                         utf8::cpp
-                        tencentcloud-sdk-cpp-nlp
-                        tencentcloud-sdk-cpp-core
-                        crypto
-                        curl
-                        uuid
-                        ${LIBMYSQLCLIENT_LIBRARIES}
+                        ${Tencentcloud-sdk-cpp_LIBS}
 )
 
 IF(BUILD_TEST)

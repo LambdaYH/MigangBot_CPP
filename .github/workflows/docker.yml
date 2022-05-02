@@ -9,6 +9,9 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -25,5 +28,6 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v2
         with:
+          context: .
           push: true
           tags: lambdayh/migangbot:latest

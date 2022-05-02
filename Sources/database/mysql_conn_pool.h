@@ -1,13 +1,13 @@
 #ifndef MIGANGBOTCPP_DATABASE_MYSQL_CONN_POOL_H_
 #define MIGANGBOTCPP_DATABASE_MYSQL_CONN_POOL_H_
 
-#include <queue>
 #include <mutex>
 #include <string>
 #include <condition_variable>
 #include <mysql/mysql.h>
 #include <unordered_map>
 #include <utility>
+#include <oneapi/tbb/concurrent_queue.h>
 
 #include "logger/logger.h"
 
@@ -48,34 +48,22 @@ private:
 
 private:
     std::vector<MYSQL> sql_conn_pool_;
-    std::queue<std::size_t> sql_conn_id_queue_;
-    std::mutex sql_conn_id_queue_mutex_;
-    std::condition_variable sql_conn_id_queue_cond_;
+    tbb::concurrent_bounded_queue<std::size_t> sql_conn_id_queue_;
     std::unordered_map<MYSQL*, std::size_t> sql_conn_to_id_;
 
 };
 
 inline MYSQL &MySQLConnPool::GetConn()
 {
-    std::size_t id = 0;
-    {
-        std::unique_lock<std::mutex> locker(sql_conn_id_queue_mutex_);
-        while(sql_conn_id_queue_.empty())
-            sql_conn_id_queue_cond_.wait(locker);
-        id = sql_conn_id_queue_.front();
-        sql_conn_id_queue_.pop();
-    }
+    std::size_t id;
+    sql_conn_id_queue_.pop(id);
     return sql_conn_pool_[id];
 }
 
 inline void MySQLConnPool::FreeConn(MYSQL &conn)
 {
     std::size_t id = sql_conn_to_id_[&conn];
-    {
-        std::lock_guard<std::mutex> locker(sql_conn_id_queue_mutex_);
-        sql_conn_id_queue_.push(id);
-    }
-    sql_conn_id_queue_cond_.notify_one();
+    sql_conn_id_queue_.push(id);
 }
 
 inline void MySQLConnPool::Init(        
@@ -118,6 +106,7 @@ inline void MySQLConnPool::Init(
         sql_conn_to_id_.emplace(&sql_conn_pool_[i], i);
         sql_conn_id_queue_.push(i);
     }
+    LOG_INFO("已初始化数据库连接池，连接数：{}", sql_conn_id_queue_.size());
 }
 
 inline MySQLConnPool::~MySQLConnPool()

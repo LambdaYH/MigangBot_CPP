@@ -41,7 +41,7 @@ public:
 
     Json handle_quick_operation_request_group(const Event &event, const std::string &sub_type, const std::string &reason, bool approve) const;
 
-    Json send_private_msg(const QId user_id, const std::string &message, const QId group_id, bool auto_escape = false) const;
+    Json send_private_msg(const QId user_id, const std::string &message, bool auto_escape = false) const;
 
     Json send_group_msg(const QId group_id, const std::string &message, bool auto_escape = false) const;
 
@@ -248,13 +248,12 @@ inline Json ApiImpl::handle_quick_operation_request_group(const Event &event, co
     return msg;
 }
 
-inline Json ApiImpl::send_private_msg(const QId user_id, const std::string &message, const QId group_id, bool auto_escape) const
+inline Json ApiImpl::send_private_msg(const QId user_id, const std::string &message, bool auto_escape) const
 {
     Event msg;
     msg["action"] = "send_private_msg";
     msg["params"] = {
         {"user_id"      , user_id},
-        {"group_id"     , group_id},
         {"message"      , message},
         {"auto_escape"  , auto_escape},
     };

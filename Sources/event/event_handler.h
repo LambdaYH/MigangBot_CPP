@@ -1,6 +1,7 @@
 #ifndef MIGANGBOTCPP_EVENT_HANDLER_EVENT_HANDLER_H_
 #define MIGANGBOTCPP_EVENT_HANDLER_EVENT_HANDLER_H_
 
+#include <memory>
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -15,22 +16,15 @@
 #include "event/event.h"
 #include "pool/thread_pool.h"
 #include "logger/logger.h"
-#include "bot/api_bot.h"
+#include "bot/onebot_11/api_bot.h"
 #include "utility.h"
 #include "permission/permission.h"
+#include "event/types.h"
 
 #include <iostream>
 
 namespace white
 {
-
-using plugin_func = std::function<void(const Event &, onebot11::ApiBot &)>;
-
-constexpr auto FULLMATCH = 0;
-constexpr auto PREFIX = 1;
-constexpr auto SUFFIX = 2;
-constexpr auto KEYWORD = 3;
-constexpr auto ALLMSG = 4;
 
 const std::unordered_map<int, int> perm_to_loc{
     {permission::BLACK,         0},
@@ -54,7 +48,7 @@ public:
 
     void Init(std::size_t thread_num)
     {
-        pool_.reset(new ThreadPool(thread_num));
+        pool_ = std::make_unique<ThreadPool>(thread_num);
     }
 
     void InitFilter(std::unique_ptr<EventFilter> &&filter)
@@ -74,6 +68,8 @@ public:
 
     bool Handle(Event &event, onebot11::ApiBot &bot) const;
 
+    template<typename F>
+    void AddTask(F &&func);
 
 private:
     EventHandler() :
@@ -96,7 +92,7 @@ private:
 
 private:
     const plugin_func &MatchedHandler(Event &event) const;
-    const plugin_func &MatchHelper(int permission, const std::string &msg, bool only_to_me) const;
+    const SearchResult MatchHelper(int permission, const std::string &msg, bool only_to_me) const;
     const std::vector<plugin_func> FreeHandler(const Event &event) const;
 
 private:
@@ -185,7 +181,35 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) const
             // message
             case 's':
             {
-                LOG_INFO("Bot[{}] 收到一条消息: {}", event["self_id"].get<QId>(), event.value("message", "Unknown message"));
+                if(event["message_type"].get<std::string>()[0] == 'p')
+                {
+                    if(event["sub_type"].get<std::string>()[0] == 'f')
+                        LOG_INFO("Bot[{}]收到来自好友[{}({})]的消息: {}", 
+                            event["self_id"].get<QId>(), 
+                            event["sender"].value("nickname", ""),
+                            event["sender"].value("user_id", 0),
+                            event.value("message", "Unknown message")
+                        );
+                }else
+                {
+                    if(event["anonymous"] != nullptr)
+                    {
+                        LOG_INFO("Bot[{}]收到来自群[{}]的匿名消息: {}", 
+                            event["self_id"].get<QId>(), 
+                            event["group_id"].get<GId>(),
+                            event.value("message", "Unknown message")
+                        );
+                    }else
+                    {
+                        LOG_INFO("Bot[{}]收到来自群[{}]成员[{}({})]的消息: {}", 
+                            event["self_id"].get<QId>(), 
+                            event["group_id"].get<GId>(),
+                            event["sender"].value("nickname", ""),
+                            event["sender"].value("user_id", 0),
+                            event.value("message", "Unknown message")
+                        );
+                    }   
+                }
                 auto func = MatchedHandler(event);
                 if(func)
                     pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝
@@ -276,7 +300,7 @@ inline const plugin_func &EventHandler::MatchedHandler(Event &event) const
                     only_to_me = true;
                     msg = msg.substr(msg.find_first_of(']') + 1);
                     msg = msg.substr(msg.find_first_not_of(' '));
-                    event["message"] = std::string(msg);
+                    event["__to_me__"] = true;
                 }
             }
         }
@@ -286,59 +310,107 @@ inline const plugin_func &EventHandler::MatchedHandler(Event &event) const
     switch(perm)
     {
         case permission::SUPERUSER:
-            if(auto &func = MatchHelper(permission::SUPERUSER, msg_str, only_to_me))
-                return func; 
+        {
+            auto func_ret = MatchHelper(permission::SUPERUSER, msg_str, only_to_me);
+            if (func_ret.func)
+            {
+                event["__command_size__"] = func_ret.command_size;
+                return func_ret.func;
+            }
+        }
         case permission::WHITE_LIST:
-            if(auto &func = MatchHelper(permission::WHITE_LIST, msg_str, only_to_me))
-                return func;           
+        {
+            auto func_ret = MatchHelper(permission::WHITE_LIST, msg_str, only_to_me);
+            if (func_ret.func)
+            {
+                event["__command_size__"] = func_ret.command_size;
+                return func_ret.func;
+            }
+        }       
         case permission::GROUP_OWNER:
-            if(auto &func = MatchHelper(permission::GROUP_OWNER, msg_str, only_to_me))
-                return func;               
+        {
+            auto func_ret = MatchHelper(permission::GROUP_OWNER, msg_str, only_to_me);
+            if (func_ret.func)
+            {
+                event["__command_size__"] = func_ret.command_size;
+                return func_ret.func;
+            }
+        }            
         case permission::GROUP_ADMIN:
-            if(auto &func = MatchHelper(permission::GROUP_ADMIN, msg_str, only_to_me))
-                return func;   
+        {
+            auto func_ret = MatchHelper(permission::GROUP_ADMIN, msg_str, only_to_me);
+            if (func_ret.func)
+            {
+                event["__command_size__"] = func_ret.command_size;
+                return func_ret.func;
+            }
+        } 
         case permission::GROUP_MEMBER:
-            if(auto &func = MatchHelper(permission::GROUP_MEMBER, msg_str, only_to_me))
-                return func;   
+        {
+            auto func_ret = MatchHelper(permission::GROUP_MEMBER, msg_str, only_to_me);
+            if (func_ret.func)
+            {
+                event["__command_size__"] = func_ret.command_size;
+                return func_ret.func;
+            }
+        }
         case permission::PRIVATE:
-            if(auto &func = MatchHelper(permission::PRIVATE, msg_str, only_to_me))
-                return func;   
+        {
+            auto func_ret = MatchHelper(permission::PRIVATE, msg_str, only_to_me);
+            if (func_ret.func)
+            {
+                event["__command_size__"] = func_ret.command_size;
+                return func_ret.func;
+            }
+        }
         case permission::NORMAL:
-            if(auto &func = MatchHelper(permission::NORMAL, msg_str, only_to_me))
-                return func;   
+        {
+            auto func_ret = MatchHelper(permission::NORMAL, msg_str, only_to_me);
+            if (func_ret.func)
+            {
+                event["__command_size__"] = func_ret.command_size;
+                return func_ret.func;
+            }
+        }   
         case permission::BLACK:
-            if(auto &func = MatchHelper(permission::BLACK, msg_str, only_to_me))
-                return func; 
+        {
+            auto func_ret = MatchHelper(permission::BLACK, msg_str, only_to_me);
+            if (func_ret.func)
+            {
+                event["__command_size__"] = func_ret.command_size;
+                return func_ret.func;
+            }
+        }
         default:
             return no_func_avaliable_;
     }   
     return no_func_avaliable_;
 }
 
-inline const plugin_func &EventHandler::MatchHelper(int permission, const std::string &msg, bool only_to_me) const
+inline const SearchResult EventHandler::MatchHelper(int permission, const std::string &msg, bool only_to_me) const
 {
     if(only_to_me)
     {
         if (command_fullmatch_each_perm_to_me_[perm_to_loc.at(permission)].count(msg))
-            return command_fullmatch_each_perm_to_me_[perm_to_loc.at(permission)].at(msg);
-        const plugin_func &func_prefix = command_prefix_each_perm_to_me_[perm_to_loc.at(permission)].Search(msg);
-        if(func_prefix)
-            return func_prefix;
-        const plugin_func &func_suffix = command_suffix_each_perm_to_me_[perm_to_loc.at(permission)].SearchFromBack(msg);
-        if(func_suffix)
-            return func_suffix;
+            return {command_fullmatch_each_perm_to_me_[perm_to_loc.at(permission)].at(msg), 0};
+        auto &func_prefix_result = command_prefix_each_perm_to_me_[perm_to_loc.at(permission)].Search(msg);
+        if(func_prefix_result.func)
+            return func_prefix_result;
+        auto &func_suffix_result = command_suffix_each_perm_to_me_[perm_to_loc.at(permission)].SearchFromBack(msg);
+        if(func_suffix_result.func)
+            return func_suffix_result;
     }else
     {
         if (command_fullmatch_each_perm_[perm_to_loc.at(permission)].count(msg))
-            return command_fullmatch_each_perm_[perm_to_loc.at(permission)].at(msg);
-        const plugin_func &func_prefix = command_prefix_each_perm_[perm_to_loc.at(permission)].Search(msg);
-        if(func_prefix)
-            return func_prefix;
-        const plugin_func &func_suffix = command_suffix_each_perm_[perm_to_loc.at(permission)].SearchFromBack(msg);
-        if(func_suffix)
-            return func_suffix;
+            return {command_fullmatch_each_perm_[perm_to_loc.at(permission)].at(msg), 0};
+        auto &func_prefix_result = command_prefix_each_perm_[perm_to_loc.at(permission)].Search(msg);
+        if(func_prefix_result.func)
+            return func_prefix_result;
+        auto &func_suffix_result = command_suffix_each_perm_[perm_to_loc.at(permission)].SearchFromBack(msg);
+        if(func_suffix_result.func)
+            return func_suffix_result;
     }
-    return no_func_avaliable_;
+    return {no_func_avaliable_, 0};
 }
 
 inline const std::vector<plugin_func> EventHandler::FreeHandler(const Event &event) const
@@ -367,6 +439,12 @@ inline const std::vector<plugin_func> EventHandler::FreeHandler(const Event &eve
             break;
     } 
     return ret;
+}
+
+template<typename F>
+inline void EventHandler::AddTask(F &&func)
+{
+    pool_->AddTask(std::forward<F>(func));
 }
 
 } // namespace white

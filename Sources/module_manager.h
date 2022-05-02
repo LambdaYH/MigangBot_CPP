@@ -31,7 +31,7 @@ public:
                 LOG_INFO("已成功装载模块：{}", typeid(T).name());
             }catch(std::exception &e)
             {
-                LOG_ERROR("创建[{}]时发生异常: {}", typeid(T).name(), e.what());
+                LOG_ERROR("加载[{}]时发生异常: {}", typeid(T).name(), e.what());
             }
         }
     }

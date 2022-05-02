@@ -25,14 +25,12 @@ public:
 inline void Echo::Register()
 {
     RegisterCommand(PREFIX, {"/echo", "/回声"}, func(Echo::DoEcho), permission::NORMAL);
-    RegisterCommand(PREFIX, {"/e"}, func(Echo::DoEcho), permission::NORMAL, true);
 }
 
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)
 {
-    std::string msg = event["message"].get<std::string>();
-    auto text = ExtraPlainText(msg);
-    bot.send_msg(event, std::string(text));
+    auto text = message::ExtraPlainText(event);
+    bot.send_msg(event, text);
 }
 
 } // namespace module

@@ -14,9 +14,9 @@ namespace sql
 class MySQLConn
 {
 public:
-    MYSQL *operator()()
+    MYSQL& operator()()
     {
-        return &sql_conn_;
+        return sql_conn_;
     }
 
 public:
