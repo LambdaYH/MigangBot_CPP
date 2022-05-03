@@ -91,6 +91,14 @@ target_include_directories(${PROJECT_NAME} PRIVATE
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    
 
+set(Lexbor_Libs
+    lexbor-html_static
+    lexbor-core_static 
+    lexbor-dom_static
+    lexbor-tag_static 
+    lexbor-ns_static  
+)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE 
                         Threads::Threads 
                         yaml-cpp 
@@ -105,7 +113,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         utf8::cpp
                         ${Tencentcloud-sdk-cpp_LIBS}
                         hiredis_static
-                        lexbor-html_static
+                        ${Lexbor_Libs}
 )
 
 IF(BUILD_TEST)
