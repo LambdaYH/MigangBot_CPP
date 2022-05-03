@@ -8,21 +8,11 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(BUILD_SHARED_LIBS OFF)
-set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 option(BUILD_TEST "build test" ON)
 
 # threads
 find_package(Threads REQUIRED)
-
-# Boost
-set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
-find_package(Boost REQUIRED)
-IF(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
-ENDIF(Boost_FOUND)
 
 # mysql
 include(FindPkgConfig)

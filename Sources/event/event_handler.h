@@ -46,7 +46,7 @@ public:
         return event_handler;
     }
 
-    void Init(std::size_t thread_num)
+    void Init(std::size_t thread_num = std::thread::hardware_concurrency())
     {
         pool_ = std::make_unique<ThreadPool>(thread_num);
     }

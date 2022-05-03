@@ -4,7 +4,7 @@
 namespace white
 {
 
-constexpr auto MIGANGBOTCPP_VERSION = "0.01alpha";
+constexpr auto kMigangBotVersion = "0.01alpha";
 
 } // namespace white
 

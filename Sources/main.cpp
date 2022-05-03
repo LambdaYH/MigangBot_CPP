@@ -1,22 +1,5 @@
-//
-// Copyright (c) 2016-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
-// Official repository: https://github.com/boostorg/beast
-//
-
-//------------------------------------------------------------------------------
-//
-// Example: WebSocket server, asynchronous
-//
-//------------------------------------------------------------------------------
-
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/asio/dispatch.hpp>
-#include <boost/asio/strand.hpp>
+#include <hv/WebSocketServer.h>
+#include <hv/hlog.h>
 #include <algorithm>
 #include <cstdlib>
 #include <functional>
@@ -29,19 +12,13 @@
 #include <yaml-cpp/yaml.h>
 #include <filesystem>
 
+#include "bot/bot.h"
 #include "event/event_handler.h"
 #include "event/onebot_11/event_filter.h"
-#include "listener.h"
 #include "module_list.h"
 #include "logger/logger.h"
 #include "global_config.h"
 #include "database/mysql_conn.h"
-
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-
-// thread number of async_read
-constexpr auto kThreadNum = 2;
 
 YAML::Node white::global_config;
 std::filesystem::path white::config::kConfigDir;
@@ -68,11 +45,10 @@ constexpr auto kGlobalConfigExample =   "Server:\n"
                                         "  Username: <YOUR_USERNAME>        # 数据库用户名\n"
                                         "  Password: <YOUR_PASSWORD>        # 数据库密码\n"
                                         "\n"
-                                        "# 不懂就不改\n"
+                                        "# 不懂就不改，0表示默认值\n"
                                         "Dev:\n"
                                         "  ThreadNum:\n"
-                                        "    I/O: 2                         # 异步I/O线程数\n"
-                                        "    ThreadPool: 4                  # 处理各个命令对应操作线程池的线程数\n"
+                                        "    ThreadPool: 0                  # 处理各个命令对应操作线程池的线程数\n"
                                         "  SqlPool: 5                       # 数据库连接池连接数";
 
 template<typename T>
@@ -111,7 +87,7 @@ int main(int argc, char* argv[])
     white::global_config = YAML::LoadFile(config_doc_path);
 
     // 初始化websocket
-    auto const address = net::ip::make_address(white::global_config["Server"]["Listen"].as<std::string>());
+    auto const address = white::global_config["Server"]["Listen"].as<std::string>();
     auto const port = static_cast<unsigned short>(white::global_config["Server"]["Port"].as<unsigned short>());
 
     // 初始化日志
@@ -120,7 +96,11 @@ int main(int argc, char* argv[])
     white::LOG_INIT(log_file, log_level);
 
     // 初始化事件处理器
-    white::EventHandler::GetInstance().Init(white::global_config["Dev"]["ThreadNum"]["ThreadPool"].as<std::size_t>());
+    auto thread_pool_thread = white::global_config["Dev"]["ThreadNum"]["ThreadPool"].as<std::size_t>();
+    if(thread_pool_thread > 0)
+        white::EventHandler::GetInstance().Init(white::global_config["Dev"]["ThreadNum"]["ThreadPool"].as<std::size_t>());
+    else
+        white::EventHandler::GetInstance().Init();
     InitEventFilter<white::onebot11::EventFilterOnebot11>();
 
     // 初始化数据库连接池
@@ -147,24 +127,43 @@ int main(int argc, char* argv[])
         white::config::WHITE_LIST.insert(whitelist_yaml_node[i].as<white::QId>());
 
     white::LOG_INFO("MigangBot已初始化");
-    white::LOG_INFO("监听地址: {}:{}", white::global_config["Server"]["Listen"].as<std::string>(), white::global_config["Server"]["Port"].as<unsigned short>());
+    white::LOG_INFO("监听地址: {}:{}", address, port);
+    
+    hv::HttpService http;
+    http.GET("/ping", [](const HttpContextPtr& ctx) {
+        return ctx->send("pong");
+    });
 
-    // 开始监听
-    // The io_context is required for all I/O
-    auto const thread_num = white::global_config["Dev"]["ThreadNum"]["I/O"].as<int>();
-    net::io_context ioc{thread_num};
-    // Create and launch a listening port
-    std::make_shared<white::listener>(ioc, tcp::endpoint{address, port})->Run();
-    // Run the I/O service on the requested number of threads
-    std::vector<std::thread> v;
-    v.reserve(thread_num - 1);
-    for(auto i = thread_num - 1; i > 0; --i)
-        v.emplace_back(
-        [&ioc]
-        {
-            ioc.run();
-        });
-    ioc.run();
+    hv::WebSocketService ws;
+    ws.onopen = [](const WebSocketChannelPtr& channel, const std::string& url)
+    {
+        white::LOG_DEBUG("onopen: GET {}", url);
+        white::Bot* bot = channel->newContext<white::Bot>();
+        bot->Run(channel);
+    };
+    ws.onmessage = [](const WebSocketChannelPtr& channel, const std::string& msg)
+    {
+        white::Bot* bot = channel->getContext<white::Bot>();
+        white::LOG_DEBUG("Get Message: {}", msg);
+        bot->OnRead(msg);
+    };
+    ws.onclose = [](const WebSocketChannelPtr& channel)
+    {
+        white::LOG_DEBUG("onClose");
+        channel->deleteContext<white::Bot>();
+    };
+
+    hlog_disable();
+    websocket_server_t server;
+    server.port = port;
+    strcpy(server.host, address.c_str());
+    server.service = &http;
+    server.ws = &ws;
+    
+    websocket_server_run(&server, 0);
+
+    while (getchar() != '\n');
+    websocket_server_stop(&server);
 
     return EXIT_SUCCESS;
 }

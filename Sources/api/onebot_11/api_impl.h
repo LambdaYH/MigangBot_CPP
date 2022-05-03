@@ -4,8 +4,6 @@
 #include "event/event.h"
 #include "type.h"
 #include <nlohmann/json.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
 #include <iostream>
 #include <string>
 
@@ -15,11 +13,6 @@ namespace onebot11
 {
 using Json = nlohmann::json;
 using Event = Json;
-
-inline void ErrorHanding(boost::beast::error_code ec, char const* what)
-{
-    std::cerr << what << ": " << ec.message() << "\n";
-}
 
 class ApiImpl : std::enable_shared_from_this<ApiImpl>
 {
