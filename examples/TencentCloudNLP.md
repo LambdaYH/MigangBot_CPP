@@ -1,4 +1,6 @@
-## 需要先去https://console.cloud.tencent.com/cam/capi申请api，在配置文件中填写secret_key和secret_id
+## 直接调用腾讯云nlpapi的一些小玩意
+
+需要先去[](https://console.cloud.tencent.com/cam/capi)申请api，在配置文件中填写secret_key和secret_id
 
 ## 摘要
 
