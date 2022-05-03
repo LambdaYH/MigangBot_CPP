@@ -4,13 +4,14 @@
 
 ## 
 
-| 父模块 | 子模块 | 模块功能 |
-| :----- | :----- | :------- |
-| Echo | Echo | 回声 |
-| BotManage | help | 显示帮助信息 |
-| BotManage | status_info | 显示系统/机器人状态 |
-| BotManage | feedback | 用户可以发送留言给维护者，维护者也可以进行回复 |
-| EorzeaZhanbu | EorzeaZhanbu | 艾欧泽亚占卜 |
+| 父模块 | 子模块 | 模块功能 | 例子 |
+| :----- | :----- | :------- | :------- |
+| Echo | Echo | 回声 | [示例](examples/echo.md) |
+| BotManage | help | 显示帮助信息 | [示例](examples/botmanage_help.md) |
+| BotManage | status_info | 显示系统/机器人状态 | [示例](examples/botmanage_status_info.md) |
+| TencentCloudNLP | AutoSummarization | 使用腾讯云NLP API进行摘要提取 | [示例](examples/TencentCloudNLP.md) | 
+| TencentCloudNLP | KeywordsExtraction | 使用腾讯云NLP API进行关键词提取 | [示例](examples/TencentCloudNLP.md) | 
+| EorzeaZhanbu | EorzeaZhanbu | 艾欧泽亚占卜 | [示例](examples/eorzea_zhanbu.md) | 
 
 ## For Developer
 

@@ -1,8 +1,3 @@
-/*
- * @Author       : mark
- * @Date         : 2020-06-25
- * @copyleft Apache 2.0
- */ 
 #ifndef MIGANGBOTCPP_POOL_THREADPOOL_H_
 #define MIGANGBOTCPP_POOL_THREADPOOL_H_
 
@@ -15,8 +10,6 @@
 #include "logger/logger.h"
 
 namespace white {
-    
-// unique_lock vs mutex : https://stackoverflow.com/questions/37945859/mutex-lock-vs-unique-lock
 
 class ThreadPool
 {

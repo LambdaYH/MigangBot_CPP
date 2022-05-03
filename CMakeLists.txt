@@ -65,6 +65,11 @@ add_subdirectory(third-party/zlib)
 # hiredis
 add_subdirectory(third-party/hiredis)
 
+# lexbor
+set(LEXBOR_BUILD_SHARED OFF CACHE INTERNAL "")
+set(LEXBOR_BUILD_SEPARATELY ON CACHE INTERNAL "")
+add_subdirectory(third-party/lexbor)
+
 # tencentcloud-sdk-cpp
 set(BUILD_MODULES CACHE INTERNAL "nlp")
 set(Tencentcloud-sdk-cpp_LIBS
@@ -100,6 +105,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         utf8::cpp
                         ${Tencentcloud-sdk-cpp_LIBS}
                         hiredis_static
+                        lexbor-html_static
 )
 
 IF(BUILD_TEST)

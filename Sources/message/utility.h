@@ -180,7 +180,7 @@ inline std::string TextToImg(const std::string &text)
         );
         start_y += font_height + gap;
     }
-    return "base64://" + ImageTobase64(img);
+    return ImageTobase64(img);
 }
 
 } // namespace white

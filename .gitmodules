@@ -28,3 +28,6 @@
 [submodule "third-party/hiredis"]
 	path = third-party/hiredis
 	url = https://github.com/redis/hiredis.git
+[submodule "third-party/lexbor"]
+	path = third-party/lexbor
+	url = https://github.com/lexbor/lexbor.git
