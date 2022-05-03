@@ -33,9 +33,9 @@ public:
     }
     virtual void Register();
 
+private:
     void SummarizationExtraction(const Event &event, onebot11::ApiBot &bot);
 
-private:
     std::string GetSummarization(const std::string &text);
 
 private:

@@ -8,7 +8,8 @@ RUN     apt update \
                     libssl-dev \
                     uuid-dev \
                     default-libmysqlclient-dev \
-                    libopencv-dev
+                    libopencv-dev \
+                    redis-server
 WORKDIR /build_temp
 COPY . /build_temp
 RUN     git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git \

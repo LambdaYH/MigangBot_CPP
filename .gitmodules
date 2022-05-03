@@ -25,3 +25,6 @@
 [submodule "third-party/zlib"]
 	path = third-party/zlib
 	url = https://github.com/madler/zlib.git
+[submodule "third-party/hiredis"]
+	path = third-party/hiredis
+	url = https://github.com/redis/hiredis.git

@@ -27,9 +27,9 @@ namespace module
 
 using Config = YAML::Node;
 
-inline void RegisterAllMessage(const plugin_func &&func)
+inline void RegisterAllMessage(const plugin_func &&func, int permission = permission::NORMAL)
 {
-    EventHandler::GetInstance().RegisterCommand(ALLMSG, "", std::move(func));
+    EventHandler::GetInstance().RegisterCommand(ALLMSG, "", std::move(func), permission);
 }
 
 inline void RegisterCommand(const int type, const std::initializer_list<std::string> &commands, const plugin_func &func, int permission = permission::NORMAL, bool only_to_me = false)

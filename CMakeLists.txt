@@ -7,6 +7,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_compile_options(-fdiagnostics-color=always)
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    add_compile_options(-fcolor-diagnostics)
+endif()
+
 set(BUILD_SHARED_LIBS OFF)
 
 option(BUILD_TEST "build test" ON)
@@ -56,6 +62,9 @@ add_subdirectory(third-party/utfcpp)
 # zlib
 add_subdirectory(third-party/zlib)
 
+# hiredis
+add_subdirectory(third-party/hiredis)
+
 # tencentcloud-sdk-cpp
 set(BUILD_MODULES CACHE INTERNAL "nlp")
 set(Tencentcloud-sdk-cpp_LIBS
@@ -90,6 +99,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         zlibstatic
                         utf8::cpp
                         ${Tencentcloud-sdk-cpp_LIBS}
+                        hiredis_static
 )
 
 IF(BUILD_TEST)

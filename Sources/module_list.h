@@ -14,6 +14,8 @@
 
 #include "modules/module/eorzea_zhanbu/eorzea_zhanbu.h"
 
+#include "modules/module/bilibili_parser/bilibili_parser.h"
+
 namespace white
 {
 namespace module
@@ -35,6 +37,9 @@ inline void InitModuleList()
 
     // eorzea_zhan
     AddModule<EorzeaZhanbu>();
+
+    // bilibili_parser
+    AddModule<BilibiliParser>();
 }
 
 } // namespace module

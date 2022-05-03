@@ -18,7 +18,8 @@
 #include "module_list.h"
 #include "logger/logger.h"
 #include "global_config.h"
-#include "database/mysql_conn.h"
+#include "database/mysql_conn_pool.h"
+#include "database/redis_conn_pool.h"
 
 YAML::Node white::global_config;
 std::filesystem::path white::config::kConfigDir;
@@ -45,11 +46,16 @@ constexpr auto kGlobalConfigExample =   "Server:\n"
                                         "  Username: <YOUR_USERNAME>        # 数据库用户名\n"
                                         "  Password: <YOUR_PASSWORD>        # 数据库密码\n"
                                         "\n"
+                                        "Redis:\n"
+                                        "  Host: 127.0.0.1\n"
+                                        "  Port: 6379\n"
+                                        "\n"
                                         "# 不懂就不改，0表示默认值\n"
                                         "Dev:\n"
                                         "  ThreadNum:\n"
                                         "    ThreadPool: 0                  # 处理各个命令对应操作线程池的线程数\n"
-                                        "  SqlPool: 5                       # 数据库连接池连接数";
+                                        "  SqlPool: 5                       # 数据库连接池连接数\n"
+                                        "  RedisPool: 5                     # Redis连接池连接数";
 
 template<typename T>
 inline void InitEventFilter()
@@ -113,6 +119,12 @@ int main(int argc, char* argv[])
         white::global_config["Dev"]["SqlPool"].as<std::size_t>()
     );
 
+    // 初始化Redis连接池
+    white::redis::RedisConnPool::GetInstance().Init(
+        white::global_config["Redis"]["Host"].as<std::string>(),
+        white::global_config["Redis"]["Port"].as<unsigned int>(),
+        white::global_config["Dev"]["RedisPool"].as<std::size_t>()
+    );
     // 初始化模块
     white::module::InitModuleList();
 

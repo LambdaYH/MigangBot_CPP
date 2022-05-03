@@ -46,7 +46,9 @@ public:
             custom_help_keyword_.insert(config_["自定义"]["关键词"][i].as<std::string>());
     }
     virtual void Register();
+private:
     void HelpMsg(const Event &event, onebot11::ApiBot &bot);
+    
 private:
     Config config_;
 

@@ -4,6 +4,7 @@
 #include <memory>
 #include <hv/requests.h>
 #include <future>
+#include <string>
 #include <iostream>
 
 namespace white
@@ -42,14 +43,14 @@ inline Response aiorequest(http_method method, const char* url, const std::size_
     return aiorequest(req);
 }
 
-inline Response Get(const char* url, std::size_t timeout = 30, const http_headers& headers = DefaultHeaders)
+inline Response Get(const std::string &url, std::size_t timeout = 30, const http_headers& headers = DefaultHeaders)
 {
-    return aiorequest(HTTP_GET, url, timeout, NoBody, headers);
+    return aiorequest(HTTP_GET, url.c_str(), timeout, NoBody, headers);
 }
 
-inline Response Post(const char* url, std::size_t timeout = 30, const http_body& body = NoBody, const http_headers& headers = DefaultHeaders)
+inline Response Post(const std::string &url, std::size_t timeout = 30, const http_body& body = NoBody, const http_headers& headers = DefaultHeaders)
 {
-    return aiorequest(HTTP_POST, url, timeout, body, headers);
+    return aiorequest(HTTP_POST, url.c_str(), timeout, body, headers);
 }
 
 } // namespace aiorequests

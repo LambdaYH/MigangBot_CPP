@@ -74,9 +74,10 @@ public:
         RegisterCommand(PREFIX, {"/zhanbu", "/占卜", "、占卜"}, func(EorzeaZhanbu::Zhanbu), permission::NORMAL);
     }
 
-    void Zhanbu(const Event &event, onebot11::ApiBot &bot);
-
 private:
+
+    void Zhanbu(const Event &event, onebot11::ApiBot &bot);
+    
     std::string GetEorzeaZhanbu(const QId uid);
 
     std::tuple<std::string, std::string, std::string, std::string, std::string, std::string> 

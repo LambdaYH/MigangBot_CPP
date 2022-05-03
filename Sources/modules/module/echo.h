@@ -19,6 +19,7 @@ public:
     Echo() : Module() {}
     virtual void Register();
 
+private:
     void DoEcho(const Event &event, onebot11::ApiBot &bot);
 };
 

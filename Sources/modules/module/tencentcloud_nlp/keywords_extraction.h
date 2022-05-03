@@ -31,9 +31,9 @@ public:
     }
     virtual void Register();
 
+private:
     void KeywordEX(const Event &event, onebot11::ApiBot &bot);
 
-private:
     std::string GetKeywords(const std::string &text);
 
 private:

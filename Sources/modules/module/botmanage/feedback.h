@@ -31,9 +31,11 @@ public:
         RegisterCommand(PREFIX, {".reply", "。reply"}, func(FeedBack::Reply), permission::SUPERUSER);
         RegisterCommand(PREFIX, {".feedbacklist", "。feedbacklist"}, func(FeedBack::List), permission::SUPERUSER);
     }
+private:
     void Send(const Event &event, onebot11::ApiBot &bot);
     void Reply(const Event &event, onebot11::ApiBot &bot);
     void List(const Event &event, onebot11::ApiBot &bot);
+    
 private:
     FeedbackRecorder record_;
 };
