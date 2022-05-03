@@ -67,7 +67,7 @@ add_subdirectory(third-party/hiredis)
 
 # lexbor
 set(LEXBOR_BUILD_SHARED OFF CACHE INTERNAL "")
-set(LEXBOR_BUILD_SEPARATELY ON CACHE INTERNAL "")
+set(LEXBOR_BUILD_SEPARATELY OFF CACHE INTERNAL "")
 add_subdirectory(third-party/lexbor)
 
 # tencentcloud-sdk-cpp
@@ -91,14 +91,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    
 
-set(Lexbor_Libs
-    lexbor-html_static
-    lexbor-core_static 
-    lexbor-dom_static
-    lexbor-tag_static 
-    lexbor-ns_static  
-)
-
 target_link_libraries(${PROJECT_NAME} PRIVATE 
                         Threads::Threads 
                         yaml-cpp 
@@ -113,7 +105,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         utf8::cpp
                         ${Tencentcloud-sdk-cpp_LIBS}
                         hiredis_static
-                        ${Lexbor_Libs}
+                        lexbor_static
 )
 
 IF(BUILD_TEST)
