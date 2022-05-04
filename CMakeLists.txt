@@ -65,10 +65,8 @@ add_subdirectory(third-party/zlib)
 # hiredis
 add_subdirectory(third-party/hiredis)
 
-# lexbor
-set(LEXBOR_BUILD_SHARED OFF CACHE INTERNAL "")
-set(LEXBOR_BUILD_SEPARATELY OFF CACHE INTERNAL "")
-add_subdirectory(third-party/lexbor)
+# libxml2
+add_subdirectory(third-party/libxml2)
 
 # tencentcloud-sdk-cpp
 set(BUILD_MODULES CACHE INTERNAL "nlp")
@@ -81,14 +79,15 @@ set(Tencentcloud-sdk-cpp_LIBS
 )
 
 add_executable(${PROJECT_NAME} 
-                Sources/main.cpp
+                source/main.cpp
                 third-party/cpp-base64/base64.cpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
-                            Sources 
+                            source 
                             third-party/cpp-base64
                             ${CMAKE_BINARY_DIR}/third-party/libhv/include
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
+                            ${LIBXML2_HDRS}
 )    
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -101,11 +100,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         ${OpenCV_LIBS}
                         TBB::tbb
                         libmysqlclient.a
+                        LibXml2
                         zlibstatic
                         utf8::cpp
                         ${Tencentcloud-sdk-cpp_LIBS}
                         hiredis_static
-                        lexbor_static
 )
 
 IF(BUILD_TEST)
