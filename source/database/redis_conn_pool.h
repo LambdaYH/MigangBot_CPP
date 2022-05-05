@@ -34,14 +34,15 @@ public:
         const unsigned int port,
         std::size_t conn_num);
 
-private:
-    RedisConnPool() {}
-    ~RedisConnPool();
-
+public:
     RedisConnPool(const RedisConnPool &) = delete;
     RedisConnPool &operator=(const RedisConnPool &) = delete;
     RedisConnPool(const RedisConnPool &&) = delete;
     RedisConnPool &operator=(const RedisConnPool &&) = delete;
+
+private:
+    RedisConnPool() {}
+    ~RedisConnPool();
 
 private:
     std::string host_;

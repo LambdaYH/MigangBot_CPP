@@ -1,5 +1,5 @@
-#ifndef MIGANGBOT_EVENT_HANDLER_EVENT_FILTER_H_
-#define MIGANGBOT_EVENT_HANDLER_EVENT_FILTER_H_
+#ifndef MIGANGBOT_EVENT_EVENT_FILTER_H_
+#define MIGANGBOT_EVENT_EVENT_FILTER_H_
 
 #include <nlohmann/json.hpp>
 #include "event/event.h"

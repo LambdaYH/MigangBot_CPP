@@ -22,7 +22,7 @@ RUN     git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git \
     &&  make \
     &&  mkdir /MigangBot \
     &&  cp /build_temp/bin/MigangBot /MigangBot \
-    &&  cp /build_temp/assets/ -r /MigangBot \
+    &&  cp /build_temp/resources/* -r /MigangBot \
     &&  rm -rf /build_temp/
 WORKDIR /MigangBot
 ENTRYPOINT ./MigangBot

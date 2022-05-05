@@ -1,6 +1,7 @@
-#ifndef MIGANGBOT_EVENT_HANDLER_EVENT_HANDLER_H_
-#define MIGANGBOT_EVENT_HANDLER_EVENT_HANDLER_H_
+#ifndef MIGANGBOT_EVENT_EVENT_HANDLER_H_
+#define MIGANGBOT_EVENT_EVENT_HANDLER_H_
 
+#include <initializer_list>
 #include <memory>
 #include <unordered_map>
 #include <string>
@@ -8,10 +9,12 @@
 #include <array>
 #include <algorithm>
 #include <nlohmann/json.hpp>
+#include <jpcre2.hpp>
 
 #include "event/trie.h"
 #include "event/event_filter.h"
 #include "event/event.h"
+#include "event/regex_matcher.h"
 #include "pool/thread_pool.h"
 #include "logger/logger.h"
 #include "bot/onebot_11/api_bot.h"
@@ -56,23 +59,27 @@ public:
     template<typename F>
     bool RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func);
 
-    bool Handle(Event &event, onebot11::ApiBot &bot) const;
+    template<typename F>
+    bool RegisterRegex(const std::initializer_list<std::string> &patterns, F &&func, int permission = permission::NORMAL);
+
+    bool Handle(Event &event, onebot11::ApiBot &bot);
 
     template<typename F>
     void AddTask(F &&func);
 
-private:
-    EventHandler() {}
-    ~EventHandler() {}
-
+public:
     EventHandler(const EventHandler &) = delete;
     EventHandler &operator=(const EventHandler &) = delete;
     EventHandler(const EventHandler &&) = delete;
     EventHandler &operator=(const EventHandler &&) = delete;
 
 private:
-    const plugin_func &MatchedHandler(Event &event) const;
-    const SearchResult MatchHelper(int permission, const std::string &msg, bool only_to_me) const;
+    EventHandler() {}
+    ~EventHandler() {}
+
+private:
+    const plugin_func &MatchedHandler(Event &event, const std::string &message) const;
+    const SearchResult MatchHelper(int permission, const std::string &message, bool only_to_me) const;
 
 private:
     std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize> command_fullmatch_each_perm_;
@@ -85,6 +92,8 @@ private:
     std::array<Trie, kCommandArraySize> command_suffix_each_perm_to_me_;
     std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize> command_keyword_each_perm_to_me_;
 
+    std::array<std::vector<RegexMatcher>, kCommandArraySize> command_regex_each_perm_;
+
     std::array<std::vector<plugin_func>, kCommandArraySize> all_msg_handler_each_perm_;
 
     std::unordered_map<std::string, std::unordered_map<std::string, std::vector<plugin_func>>> notice_handler_;
@@ -94,6 +103,8 @@ private:
     std::unique_ptr<EventFilter> filter_;
     std::unique_ptr<ThreadPool> pool_;
 };
+
+
 
 template<typename F>
 inline bool EventHandler::RegisterCommand(const int command_type, const std::string &command, F &&func, int permission, bool only_to_me)
@@ -146,7 +157,14 @@ inline bool EventHandler::RegisterRequest(const std::string &request_type, const
     return true;
 }
 
-inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) const
+template<typename F>
+inline bool EventHandler::RegisterRegex(const std::initializer_list<std::string> &patterns, F &&func, int permission)
+{
+    command_regex_each_perm_[permission].push_back(RegexMatcher(patterns, std::forward<F>(func)));
+    return true;
+}
+
+inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot)
 {
     if(filter_ && !filter_->operator()(event))
         return false;
@@ -187,36 +205,62 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) const
                         );
                     }   
                 }
-                auto func = MatchedHandler(event);
+                auto message = event["message"].get<std::string>();
+                auto func = MatchedHandler(event, message);
                 if(func)
                     pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝
                 else
                 {
-                    auto perm = permission::GetUserPermission(event);
-                    switch(perm)
+                    // check_regex
+                    // check all
+                    switch(permission::GetUserPermission(event))
                     {
                         case permission::SUPERUSER:
+                            for(auto &regex_matcher : command_regex_each_perm_[permission::SUPERUSER])
+                                if(regex_matcher.Check(message))
+                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
                             for(const auto &func : all_msg_handler_each_perm_[permission::SUPERUSER])
                                 pool_->AddTask(std::bind(func, event, std::ref(bot)));
                         case permission::WHITE_LIST:
+                            for(auto &regex_matcher : command_regex_each_perm_[permission::WHITE_LIST])
+                                if(regex_matcher.Check(message))
+                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
                             for(const auto &func : all_msg_handler_each_perm_[permission::WHITE_LIST])
                                 pool_->AddTask(std::bind(func, event, std::ref(bot)));
                         case permission::GROUP_OWNER:
+                            for(auto &regex_matcher : command_regex_each_perm_[permission::GROUP_OWNER])
+                                if(regex_matcher.Check(message))
+                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
                             for(const auto &func : all_msg_handler_each_perm_[permission::GROUP_OWNER])
                                 pool_->AddTask(std::bind(func, event, std::ref(bot)));
                         case permission::GROUP_ADMIN:
+                            for(auto &regex_matcher : command_regex_each_perm_[permission::GROUP_ADMIN])
+                                if(regex_matcher.Check(message))
+                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
                             for(const auto &func : all_msg_handler_each_perm_[permission::GROUP_ADMIN])
                                 pool_->AddTask(std::bind(func, event, std::ref(bot)));
                         case permission::GROUP_MEMBER:
+                            for(auto &regex_matcher : command_regex_each_perm_[permission::GROUP_MEMBER])
+                                if(regex_matcher.Check(message))
+                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
                             for(const auto &func : all_msg_handler_each_perm_[permission::GROUP_MEMBER])
                                 pool_->AddTask(std::bind(func, event, std::ref(bot)));
                         case permission::PRIVATE:
+                            for(auto &regex_matcher : command_regex_each_perm_[permission::PRIVATE])
+                                if(regex_matcher.Check(message))
+                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
                             for(const auto &func : all_msg_handler_each_perm_[permission::PRIVATE])
                                 pool_->AddTask(std::bind(func, event, std::ref(bot)));
                         case permission::NORMAL:
+                            for(auto &regex_matcher : command_regex_each_perm_[permission::NORMAL])
+                                if(regex_matcher.Check(message))
+                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
                             for(const auto &func : all_msg_handler_each_perm_[permission::NORMAL])
                                 pool_->AddTask(std::bind(func, event, std::ref(bot)));
                         case permission::BLACK:
+                            for(auto &regex_matcher : command_regex_each_perm_[permission::BLACK])
+                                if(regex_matcher.Check(message))
+                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
                             for(const auto &func : all_msg_handler_each_perm_[permission::BLACK])
                                 pool_->AddTask(std::bind(func, event, std::ref(bot)));
                         default:
@@ -281,13 +325,13 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) const
     return true;
 }
 
-inline const plugin_func &EventHandler::MatchedHandler(Event &event) const
+inline const plugin_func &EventHandler::MatchedHandler(Event &event, const std::string &message) const
 {
+    if(message.empty())
+        return no_func_avaliable_;
     if(event.is_null())
         return no_func_avaliable_;
-    auto msg = event["message"].get<std::string_view>();
-    if(msg.empty())
-        return no_func_avaliable_;
+    std::string_view msg(message);
     bool only_to_me = false;
     if(msg.starts_with("[CQ:at"))
     {
@@ -391,26 +435,26 @@ inline const plugin_func &EventHandler::MatchedHandler(Event &event) const
     return no_func_avaliable_;
 }
 
-inline const SearchResult EventHandler::MatchHelper(int permission, const std::string &msg, bool only_to_me) const
+inline const SearchResult EventHandler::MatchHelper(int permission, const std::string &message, bool only_to_me) const
 {
     if(only_to_me)
     {
-        if (command_fullmatch_each_perm_to_me_[permission].count(msg))
-            return {command_fullmatch_each_perm_to_me_[permission].at(msg), 0};
-        auto &func_prefix_result = command_prefix_each_perm_to_me_[permission].Search(msg);
+        if (command_fullmatch_each_perm_to_me_[permission].count(message))
+            return {command_fullmatch_each_perm_to_me_[permission].at(message), 0};
+        auto &func_prefix_result = command_prefix_each_perm_to_me_[permission].Search(message);
         if(func_prefix_result.func)
             return func_prefix_result;
-        auto &func_suffix_result = command_suffix_each_perm_to_me_[permission].SearchFromBack(msg);
+        auto &func_suffix_result = command_suffix_each_perm_to_me_[permission].SearchFromBack(message);
         if(func_suffix_result.func)
             return func_suffix_result;
     }else
     {
-        if (command_fullmatch_each_perm_[permission].count(msg))
-            return {command_fullmatch_each_perm_[permission].at(msg), 0};
-        auto &func_prefix_result = command_prefix_each_perm_[permission].Search(msg);
+        if (command_fullmatch_each_perm_[permission].count(message))
+            return {command_fullmatch_each_perm_[permission].at(message), 0};
+        auto &func_prefix_result = command_prefix_each_perm_[permission].Search(message);
         if(func_prefix_result.func)
             return func_prefix_result;
-        auto &func_suffix_result = command_suffix_each_perm_[permission].SearchFromBack(msg);
+        auto &func_suffix_result = command_suffix_each_perm_[permission].SearchFromBack(message);
         if(func_suffix_result.func)
             return func_suffix_result;
     }

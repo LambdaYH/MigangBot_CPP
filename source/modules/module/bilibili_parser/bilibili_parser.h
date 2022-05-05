@@ -44,7 +44,11 @@ public:
     }
     virtual void Register()
     {
-        RegisterAllMessage(func(BilibiliParser::Parser), permission::GROUP_MEMBER);
+        RegisterRegex({R"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)",
+                        R"((av|AV)\d+)",
+                        R"((BV|bv)([a-zA-Z0-9])+)"
+                        }, 
+                    func(BilibiliParser::Parser), permission::GROUP_MEMBER);
     }
 
 private:
