@@ -24,14 +24,16 @@ public:
         return *logger_;
     }
     void Init(const std::string &log_file, const std::string &level = "INFO");
-private:
-    Logger() {}
-    ~Logger() {}
 
+public:
     Logger(const Logger &) = delete;
     Logger &operator=(const Logger &) = delete;
     Logger(const Logger &&) = delete;
     Logger &operator=(const Logger &&) = delete;
+
+private:
+    Logger() {}
+    ~Logger() {}
 
 private:
     std::shared_ptr<spdlog::logger> logger_;

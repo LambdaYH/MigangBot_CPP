@@ -52,6 +52,11 @@ inline void RegisterRequest(const std::string &request_type, const std::string &
     EventHandler::GetInstance().RegisterRequest(request_type, sub_type, std::move(func));
 }
 
+inline void RegisterRegex(const std::initializer_list<std::string> &patterns, const plugin_func &func, int permission = permission::NORMAL)
+{
+    EventHandler::GetInstance().RegisterRegex(patterns, std::move(func), permission);
+}
+
 class Module
 {
 public:

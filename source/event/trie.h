@@ -1,5 +1,5 @@
-#ifndef MIGANGBOT_EVENT_HANDLER_TRIE_H_
-#define MIGANGBOT_EVENT_HANDLER_TRIE_H_
+#ifndef MIGANGBOT_EVENT_TRIE_H_
+#define MIGANGBOT_EVENT_TRIE_H_
 
 #include <algorithm>
 #include <string>

@@ -35,14 +35,15 @@ public:
             }
         }
     }
-private:
-    ModuleManager() {}
-    ~ModuleManager() {}
-
+public:
     ModuleManager(const ModuleManager &) = delete;
     ModuleManager &operator=(const ModuleManager &) = delete;
     ModuleManager(const ModuleManager &&) = delete;
     ModuleManager &operator=(const ModuleManager &&) = delete;
+
+private:
+    ModuleManager() {}
+    ~ModuleManager() {}
 
 private:
     std::vector<std::unique_ptr<module::Module>> module_container_;

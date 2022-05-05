@@ -34,3 +34,9 @@
 [submodule "third-party/pugixml"]
 	path = third-party/pugixml
 	url = https://github.com/zeux/pugixml.git
+[submodule "third-party/pcre2"]
+	path = third-party/pcre2
+	url = https://github.com/PCRE2Project/pcre2.git
+[submodule "third-party/jpcre2"]
+	path = third-party/jpcre2
+	url = https://github.com/jpcre2/jpcre2.git

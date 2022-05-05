@@ -70,8 +70,12 @@ add_subdirectory(third-party/hiredis)
 add_subdirectory(third-party/pugixml)
 
 # tidy-html5
-set(BUILD_SHARED_LIB OFF)
+set(BUILD_SHARED_LIB OFF CACHE INTERNAL "")
 add_subdirectory(third-party/tidy-html5)
+
+# pcre2 (for fast regex)
+set(PCRE2_SUPPORT_JIT ON CACHE INTERNAL "")
+add_subdirectory(third-party/pcre2)
 
 # tencentcloud-sdk-cpp
 set(BUILD_MODULES CACHE INTERNAL "nlp")
@@ -91,8 +95,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
                             source 
                             third-party/cpp-base64
                             ${CMAKE_BINARY_DIR}/third-party/libhv/include
+                            third-party/jpcre2/src
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
-                            ${LIBXML2_HDRS}
 )    
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -111,6 +115,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         hiredis_static
                         tidy-static
                         pugixml-static
+                        pcre2-8-static
 )
 
 IF(BUILD_TEST)

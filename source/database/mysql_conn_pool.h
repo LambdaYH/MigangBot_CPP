@@ -37,14 +37,15 @@ public:
         const unsigned int port,
         std::size_t conn_num);
 
-private:
-    MySQLConnPool() {}
-    ~MySQLConnPool();
-
+public:
     MySQLConnPool(const MySQLConnPool &) = delete;
     MySQLConnPool &operator=(const MySQLConnPool &) = delete;
     MySQLConnPool(const MySQLConnPool &&) = delete;
     MySQLConnPool &operator=(const MySQLConnPool &&) = delete;
+
+private:
+    MySQLConnPool() {}
+    ~MySQLConnPool();
 
 private:
     std::vector<MYSQL> sql_conn_pool_;
