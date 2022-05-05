@@ -10,7 +10,10 @@
 #include <fmt/chrono.h>
 #include <algorithm>
 #include <random>
+#include "fmt/format.h"
 #include "utf8.h"
+#include <tidy.h>
+#include <tidybuffio.h>
 
 namespace white
 {
@@ -109,6 +112,46 @@ inline std::string unescape(const std::string& data)
     ret = std::regex_replace(ret, std::regex("&lt;"), "<");
     ret = std::regex_replace(ret, std::regex("&gt;"), ">");
     return ret;
+}
+
+// convert html to xml
+// https://blog.laplante.io/2013/02/parsing-html-with-C/
+inline std::string CleanHTML(const std::string &html){
+    // Initialize a Tidy document
+    TidyDoc tidyDoc = tidyCreate();
+    TidyBuffer tidyOutputBuffer = {0};
+ 
+    // Configure Tidy
+    // The flags tell Tidy to output XML and disable showing warnings
+    bool configSuccess = tidyOptSetBool(tidyDoc, TidyXmlOut, yes)
+        && tidyOptSetBool(tidyDoc, TidyQuiet, yes)
+        && tidyOptSetBool(tidyDoc, TidyNumEntities, yes)
+        && tidyOptSetBool(tidyDoc, TidyShowWarnings, no);
+ 
+    int tidyResponseCode = -1;
+ 
+    // Parse input
+    if (configSuccess)
+        tidyResponseCode = tidyParseString(tidyDoc, html.c_str());
+ 
+    // Process HTML
+    if (tidyResponseCode >= 0)
+        tidyResponseCode = tidyCleanAndRepair(tidyDoc);
+ 
+    // Output the HTML to our buffer
+    if (tidyResponseCode >= 0)
+        tidyResponseCode = tidySaveBuffer(tidyDoc, &tidyOutputBuffer);
+ 
+    // Any errors from Tidy?
+    if (tidyResponseCode < 0)
+        throw fmt::format("Tidy encountered an error while parsing an HTML response. Tidy response code: {}", tidyResponseCode);
+ 
+    // Grab the result from the buffer and then free Tidy's memory
+    std::string tidyResult = (char*)tidyOutputBuffer.bp;
+    tidyBufFree(&tidyOutputBuffer);
+    tidyRelease(tidyDoc);
+ 
+    return tidyResult;
 }
 
 } // namespace html

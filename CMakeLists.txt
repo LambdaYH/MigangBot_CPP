@@ -14,6 +14,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 option(BUILD_TEST "build test" ON)
 
@@ -65,8 +66,12 @@ add_subdirectory(third-party/zlib)
 # hiredis
 add_subdirectory(third-party/hiredis)
 
-# libxml2
-add_subdirectory(third-party/libxml2)
+# pugixml
+add_subdirectory(third-party/pugixml)
+
+# tidy-html5
+set(BUILD_SHARED_LIB OFF)
+add_subdirectory(third-party/tidy-html5)
 
 # tencentcloud-sdk-cpp
 set(BUILD_MODULES CACHE INTERNAL "nlp")
@@ -100,11 +105,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         ${OpenCV_LIBS}
                         TBB::tbb
                         libmysqlclient.a
-                        LibXml2
                         zlibstatic
                         utf8::cpp
                         ${Tencentcloud-sdk-cpp_LIBS}
                         hiredis_static
+                        tidy-static
+                        pugixml-static
 )
 
 IF(BUILD_TEST)

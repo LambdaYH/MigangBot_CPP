@@ -1,13 +1,14 @@
 #ifndef MIGANGBOT_MODULES_MODULE_BILIBILI_PARSER_BILIBILI_PARSER_H_
 #define MIGANGBOT_MODULES_MODULE_BILIBILI_PARSER_BILIBILI_PARSERU_H_
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <unordered_set>
 #include <vector>
 #include <regex>
 #include <hv/httpdef.h>
-#include <libxml/HTMLparser.h>
+#include <pugixml.hpp>
 
 #include "event/types.h"
 #include "logger/logger.h"
@@ -138,7 +139,7 @@ inline std::string BilibiliParser::GetBilibiliVideoDetail(std::string &url, cons
         AddInCacheNotRepeat(url, group_id);
         return cache;
     }
-    static std::smatch aid, bvid;
+    std::smatch aid, bvid;
     if(std::regex_search(url, aid, aid_pattern_))
         url = fmt::format("https://api.bilibili.com/x/web-interface/view?aid={}", aid[0].str().substr(2));
     else if(std::regex_search(url, bvid, bvid_pattern_))
@@ -171,7 +172,7 @@ inline std::string BilibiliParser::GetBilibiliVideoDetail(std::string &url, cons
             "URL:{}",
             title,
             author,
-            message::Strip(description, ' ').empty() ? description : ("\n" + description),
+            message::Strip(description, ' ').empty() ? description : fmt::format("\n{}", description),
             message_segment::image(img_url),
             link
         );
@@ -195,7 +196,58 @@ inline std::string BilibiliParser::GetBilibiliBangumiDetail(const std::string &u
         LOG_WARN("BilibiliParser: 无法解析Bangumi: {}", url);
         return "";
     }
-    auto body = r->Body();
+    pugi::xml_document doc;
+    doc.load_string(html::CleanHTML(r->Body()).c_str());
+    // link
+    std::smatch ep_ss_id;
+    static std::regex ep_ss_pattern(R"((ss|ep)\d+)");
+    std::regex_search(url, ep_ss_id, ep_ss_pattern);
+    auto link = std::regex_replace(doc.child("html").child("head").find_child_by_attribute("property", "og:url").attribute("content").value(), 
+                                    ep_ss_pattern, 
+                                    ep_ss_id[0].str());
+    if(IsInCache(link, group_id))
+        return "";
+
+    // title
+    auto media_module_node = doc.select_node("//*[@id=\"media_module\"]").node();
+    auto title_main = media_module_node.parent().child("h1").first_child().value();
+    auto pub_wrapper_node = media_module_node.find_child_by_attribute("class", "media-right").find_child_by_attribute("class", "pub-wrapper");
+    auto title = fmt::format("{} [{}-{}]",
+                        media_module_node.parent().child("h1").attribute("title").value(),
+                        pub_wrapper_node.find_child_by_attribute("class", "home-link").first_child().value(),
+                        pub_wrapper_node.find_child_by_attribute("class", "pub-info").first_child().value()
+                    );
+
+    // desciption
+    auto description = "";
+    for(const auto &node : media_module_node.find_child_by_attribute("class", "media-right").children())
+    {
+        auto t = node.find_child_by_attribute("class", "media-desc webkit-ellipsis");
+        if(!t.empty())
+        {
+            description = t.find_child_by_attribute("class", "absolute").first_child().value();
+            break;
+        }
+    }
+
+    // cover image
+    auto cover_image = doc.child("html").child("head").find_child_by_attribute("property", "og:image").attribute("content").value();
+
+    auto msg = fmt::format(
+                        "[标题] {}\n"
+                        "[简介] {}\n"
+                        "[封面] {}\n"
+                        "URL:{}\n",
+                        title,
+                        message::Strip(description, ' ').empty() ? description : fmt::format("\n{}", description),
+                        message_segment::image(cover_image),
+                        link
+                    );
+
+    AddInCache(url, msg);
+    AddInCacheNotRepeat(link, group_id);
+    AddInCacheNotRepeat(url, group_id);
+    return msg;
 }
 
 inline std::string BilibiliParser::GetLiveSummary(const std::string &url, const GId group_id)
@@ -265,7 +317,7 @@ inline std::string BilibiliParser::ExtractDetails(const std::string &url, const 
         return GetBilibiliVideoDetail(r_url, group_id);
     }else if(start_with_what(r_url, bangumi_keywords_))
     {
-
+        return GetBilibiliBangumiDetail(r_url, group_id);
     }else if(start_with_what(r_url, live_keywords_))
     {
         return GetLiveSummary(r_url, group_id);
@@ -276,7 +328,7 @@ inline std::string BilibiliParser::ExtractDetails(const std::string &url, const 
 inline void BilibiliParser::Parser(const Event &event, onebot11::ApiBot &bot)
 {
     auto msg = std::regex_replace(message::ExtraPlainText(event), std::regex(R"(\\)"), "");
-    static std::smatch match;
+    std::smatch match;
     std::unordered_set<std::string> url_list_set;
     while(std::regex_search(msg, match, pattern_))
     {

@@ -10,16 +10,17 @@ namespace white
 namespace permission
 {
 
-constexpr auto BLACK = -999;
-constexpr auto NORMAL = 0;
-constexpr auto PRIVATE = 1;
-constexpr auto GROUP_MEMBER = 2;
-constexpr auto GROUP_ADMIN = 3;
-constexpr auto GROUP_OWNER = 4;
-constexpr auto WHITE_LIST = 5;
-constexpr auto SUPERUSER = 999;
+// 在event_handler中用于vector索引，禁止越界
+constexpr auto BLACK = 0;
+constexpr auto NORMAL = 1;
+constexpr auto PRIVATE = 2;
+constexpr auto GROUP_MEMBER = 3;
+constexpr auto GROUP_ADMIN = 4;
+constexpr auto GROUP_OWNER = 5;
+constexpr auto WHITE_LIST = 6;
+constexpr auto SUPERUSER = 7;
 
-int GetUserPermission(const Event &event)
+inline const auto GetUserPermission(const Event &event)
 {
     QId user_id = event["user_id"].get<QId>();
     if(config::SUPERUSERS.count(user_id))

@@ -15,6 +15,7 @@
 #include <sys/sysinfo.h>
 #include <hv/requests.h>
 #include <filesystem>
+#include <mutex>
 
 
 namespace white
@@ -89,6 +90,7 @@ public:
     std::string GetCPUStatus();
 
 private:
+    std::mutex mutex_;
     unsigned long long last_total_user_;
     unsigned long long last_total_user_low;
     unsigned long long last_total_sys_;
@@ -148,10 +150,13 @@ inline std::string StatusInfo::GetCPUStatus()
         percent *= 100;
     }
 
-    last_total_user_ = total_user;
-    last_total_user_low = total_user_low;
-    last_total_sys_ = total_sys;
-    last_total_idle_ = total_idle;
+    {
+        std::lock_guard<std::mutex> locker(mutex_);
+        last_total_user_ = total_user;
+        last_total_user_low = total_user_low;
+        last_total_sys_ = total_sys;
+        last_total_idle_ = total_idle;
+    }
 
     return fmt::format("[CPU] 使用率：{:0.1f}%", percent);
 }
