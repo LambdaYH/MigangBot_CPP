@@ -7,6 +7,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_compile_options(-fdiagnostics-color=always)
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    add_compile_options(-fcolor-diagnostics)
+endif()
+
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
@@ -14,15 +20,6 @@ option(BUILD_TEST "build test" ON)
 
 # threads
 find_package(Threads REQUIRED)
-
-# Boost
-set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
-find_package(Boost REQUIRED)
-IF(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
-ENDIF(Boost_FOUND)
 
 # mysql
 include(FindPkgConfig)
@@ -66,6 +63,16 @@ add_subdirectory(third-party/utfcpp)
 # zlib
 add_subdirectory(third-party/zlib)
 
+# hiredis
+add_subdirectory(third-party/hiredis)
+
+# pugixml
+add_subdirectory(third-party/pugixml)
+
+# tidy-html5
+set(BUILD_SHARED_LIB OFF)
+add_subdirectory(third-party/tidy-html5)
+
 # tencentcloud-sdk-cpp
 set(BUILD_MODULES CACHE INTERNAL "nlp")
 set(Tencentcloud-sdk-cpp_LIBS
@@ -77,14 +84,15 @@ set(Tencentcloud-sdk-cpp_LIBS
 )
 
 add_executable(${PROJECT_NAME} 
-                Sources/main.cpp
+                source/main.cpp
                 third-party/cpp-base64/base64.cpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
-                            Sources 
+                            source 
                             third-party/cpp-base64
                             ${CMAKE_BINARY_DIR}/third-party/libhv/include
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
+                            ${LIBXML2_HDRS}
 )    
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -100,6 +108,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         zlibstatic
                         utf8::cpp
                         ${Tencentcloud-sdk-cpp_LIBS}
+                        hiredis_static
+                        tidy-static
+                        pugixml-static
 )
 
 IF(BUILD_TEST)

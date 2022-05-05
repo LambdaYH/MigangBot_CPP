@@ -9,7 +9,7 @@ RUN     apt update \
                     uuid-dev \
                     default-libmysqlclient-dev \
                     libopencv-dev \
-                    libboost-dev
+                    redis-server
 WORKDIR /build_temp
 COPY . /build_temp
 RUN     git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git \

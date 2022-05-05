@@ -32,22 +32,6 @@ jobs:
       run: |
         sudo apt update 
         sudo apt install default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev ninja-build -y
-
-    - name: Install boost
-      uses: MarkusJx/install-boost@v2.3.0
-      id: install-boost
-      with:
-        # REQUIRED: Specify the required boost version
-        # A list of supported versions can be found here: 
-        # https://github.com/actions/boost-versions/blob/main/versions-manifest.json
-        boost_version: 1.79.0
-        # OPTIONAL: Specify a platform version
-        platform_version: 20.04
-        # OPTIONAL: Specify a toolset
-        toolset: gcc
-        
-        # NOTE: If a boost version matching all requirements cannot be found,
-        # this build step will fail
       
     - name: tencentcloud-sdk-cpp
       run: | 
@@ -75,6 +59,6 @@ jobs:
         name: ${{github.ref}}-OpenCV4.2(Ubuntu20.04)
         files: |
           build/bin/MigangBot
-          Resources/assets
-          Resources/configs
+          resources/assets
+          resources/configs
       

@@ -4,21 +4,25 @@
 
 ## 
 
-| 父模块 | 子模块 | 模块功能 |
-| :----- | :----- | :------- |
-| Echo | Echo | 回声 |
-| BotManage | help | 显示帮助信息 |
-| BotManage | status_info | 显示系统/机器人状态 |
-| BotManage | feedback | 用户可以发送留言给维护者，维护者也可以进行回复 |
-| EorzeaZhanbu | EorzeaZhanbu | 艾欧泽亚占卜 |
+| 父模块 | 子模块 | 模块功能 | 例子 |
+| :----- | :----- | :------- | :------- |
+| Echo | Echo | 回声 | [示例](examples/echo.md) |
+| BotManage | help | 显示帮助信息 | [示例](examples/botmanage_help.md) |
+| BotManage | status_info | 显示系统/机器人状态 | [示例](examples/botmanage_status_info.md) |
+| TencentCloudNLP | AutoSummarization | 使用腾讯云NLP API进行摘要提取 | [示例](examples/TencentCloudNLP.md) | 
+| TencentCloudNLP | KeywordsExtraction | 使用腾讯云NLP API进行关键词提取 | [示例](examples/TencentCloudNLP.md) | 
+| EorzeaZhanbu | EorzeaZhanbu | 艾欧泽亚占卜 | [示例](examples/eorzea_zhanbu.md) | 
+| BilibiliParser | BilibiliParser | 对群内的B站番剧/视频/直播等信息进行解析 | [示例](examples/bilibiliparser.md) | 
+
+## For User
+
+    libopencv
 
 ## For Developer
 
 ### Requirements
 
-    [Boost](https://github.com/boostorg/boost)
     Cmake
-    libmysqlclient
     tencentcloud-sdk-cpp
 
 See [Github Action](https://github.com/LambdaYH/MigangBot/blob/main/.github/workflows/cmake.yml) for more Details.
@@ -27,7 +31,7 @@ See [Github Action](https://github.com/LambdaYH/MigangBot/blob/main/.github/work
 
 #### Debian or Ubuntu
 
-    sudo apt install git cmake build-essential default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev ninja-build -y
+    sudo apt install git cmake build-essential default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev -y
 
     git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git
     cd tencentcloud-sdk-cpp
@@ -41,12 +45,22 @@ See [Github Action](https://github.com/LambdaYH/MigangBot/blob/main/.github/work
     mkdir build && cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..
     make
-    
-    将Resources下文件/文件夹置于二进制文件同目录
-    装数据库
-    建用户建数据库
-    更改配置
-    启动
+
+#### Use after build
+
+    mkdir path/to/bot/root
+    cp ./bin/MigangBot path/to/bot/root
+    cp ../resources/* path/to/bot/root -r
+    sudo chmod +x path/to/bot/root/MigangBot
+
+    sudo apt install mariadb-server
+    mysql_secure_installation
+    mysql -uroot
+    create database Your_Database_name;
+    CREATE USER 'Your Databse User' IDENTIFIED BY 'enter_a_password_here';
+    GRANT ALL ON Your_Database_name.* TO 'Your Databse User' IDENTIFIED BY 'enter_a_password_here';
+
+    sudo apt install redis-server
 
 ## Todo
 
