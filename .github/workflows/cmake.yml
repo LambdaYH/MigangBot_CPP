@@ -52,13 +52,20 @@ jobs:
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
+    - name: Make a compressed package
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        mkdir MigangBot
+        sudo chmod +x build/bin/MigangBot
+        cp build/bin/MigangBot MigangBot/
+        cp resources/assets/ MigangBot/ -r
+        cp resources/configs/ MigangBot/ -r
+        tar -czf MigangBot_Opencv4.2.tar.gz MigangBot
+
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        name: ${{github.ref}}-OpenCV4.2(Ubuntu20.04)
         files: |
-          build/bin/MigangBot
-          resources/assets
-          resources/configs
+          MigangBot_Opencv4.2.tar.gz
       
