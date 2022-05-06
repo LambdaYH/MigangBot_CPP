@@ -4,8 +4,10 @@
 #include <vector>
 #include <string_view>
 #include <initializer_list>
+
 #include <jpcre2.hpp>
-#include "event/types.h"
+
+#include "event/type.h"
 
 namespace white
 {

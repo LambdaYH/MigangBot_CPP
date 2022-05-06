@@ -2,6 +2,7 @@
 #define MIGANGBOT_BOT_ONEBOT_11_FUTURE_WRAPPER_H_
 
 #include <future>
+
 #include "type.h"
 
 namespace white

@@ -2,10 +2,7 @@
 #define MIGANGBOT_MODULES_MODULE_ECHO_H_
 
 #include "modules/module_interface.h"
-#include <functional>
-#include <queue>
-#include <condition_variable>
-#include <mutex>
+
 #include <string_view>
 
 namespace white
@@ -25,7 +22,7 @@ private:
 
 inline void Echo::Register()
 {
-    RegisterCommand(PREFIX, {"/echo", "/回声"}, func(Echo::DoEcho), permission::NORMAL);
+    RegisterCommand(PREFIX, {"/echo", "/回声"}, ACT(Echo::DoEcho), permission::NORMAL);
 }
 
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)

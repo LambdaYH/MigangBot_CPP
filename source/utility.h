@@ -7,11 +7,12 @@
 #include <codecvt>
 #include <chrono>
 #include <ctime>
-#include <fmt/chrono.h>
 #include <algorithm>
 #include <random>
-#include "fmt/format.h"
-#include "utf8.h"
+
+#include <fmt/chrono.h>
+#include <fmt/format.h>
+#include <utf8.h>
 #include <tidy.h>
 #include <tidybuffio.h>
 

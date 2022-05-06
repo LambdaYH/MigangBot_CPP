@@ -2,19 +2,18 @@
 #define MIGANGBOT_MODULES_MODULE_TENCENTCLOUD_NLP_AUTO_SUMMARIZATION_H_
 
 #include "modules/module_interface.h"
+
 #include <any>
-#include <functional>
-#include <queue>
-#include <condition_variable>
 #include <mutex>
 #include <string_view>
+#include <unordered_map>
+
 #include <tencentcloud/core/Credential.h>
 #include <tencentcloud/core/profile/ClientProfile.h>
 #include <tencentcloud/core/profile/HttpProfile.h>
 #include <tencentcloud/nlp/v20190408/NlpClient.h>
 #include <tencentcloud/nlp/v20190408/model/AutoSummarizationRequest.h>
 #include <tencentcloud/nlp/v20190408/model/AutoSummarizationResponse.h>
-#include <unordered_map>
 
 #include "modules/module/tencentcloud_nlp/config.h"
 
@@ -45,7 +44,7 @@ private:
 
 inline void AutoSummarization::Register()
 {
-    RegisterCommand(PREFIX, {"摘要提取", "/摘要提取"}, func(AutoSummarization::SummarizationExtraction));
+    RegisterCommand(PREFIX, {"摘要提取", "/摘要提取"}, ACT(AutoSummarization::SummarizationExtraction));
 }
 
 inline void AutoSummarization::SummarizationExtraction(const Event &event, onebot11::ApiBot &bot)
@@ -79,7 +78,7 @@ inline std::string AutoSummarization::GetSummarization(const std::string &text)
         return "";
     }
     AutoSummarizationResponse resp = outcome.GetResult();
-    nlohmann::json resp_json = nlohmann::json::parse(resp.ToJsonString());
+    auto resp_json = Json::parse(resp.ToJsonString());
     return fmt::format("提取的摘要内容如下\n====================\n{}", resp_json["Summary"].get<std::string>());
 }
 

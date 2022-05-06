@@ -1,10 +1,7 @@
 #ifndef MIGANGBOT_BOT_BOT_H_
 #define MIGANGBOT_BOT_BOT_H_
 
-#include <hv/WebSocketServer.h>
 #include <condition_variable>
-#include <nlohmann/json.hpp>
-#include <oneapi/tbb/concurrent_unordered_map.h>
 #include <thread>
 #include <mutex>
 #include <string>
@@ -12,16 +9,18 @@
 #include <functional>
 #include <queue>
 
-#include "bot/onebot_11/api_bot.h"
+#include <hv/WebSocketServer.h>
+#include <nlohmann/json.hpp>
+#include <oneapi/tbb/concurrent_unordered_map.h>
+
 #include "version.h"
 #include "global_config.h"
 #include "event/event.h"
 #include "event/event_handler.h"
+#include "bot/onebot_11/api_bot.h"
 
 namespace white
 {
-
-using Json = nlohmann::json;
 
 class Bot : public std::enable_shared_from_this<Bot>
 {
@@ -33,6 +32,11 @@ public:
     void Run(const WebSocketChannelPtr& channel);
 
     void OnRead(const std::string &msg);
+
+    const auto &GetBot()
+    {
+        return api_bot_;
+    }
 
 private:
     void OnRun();
@@ -109,10 +113,10 @@ inline void Bot::OnProcess(const std::string &message)
 {
     try
     {
-        auto msg = nlohmann::json::parse(message);
+        auto msg = Json::parse(message);
         if(EventProcess(msg))
             event_handler_(msg);
-    }catch(nlohmann::json::exception &e)
+    }catch(Json::exception &e)
     {
         LOG_ERROR("Exception: {}", e.what());
     }

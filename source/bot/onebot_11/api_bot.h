@@ -1,26 +1,24 @@
 #ifndef MIGANGBOT_BOT_ONEBOT_11_API_BOT_H_
 #define MIGANGBOT_BOT_ONEBOT_11_API_BOT_H_
 
-#include <functional>
 #include <future>
 #include <mutex>
 #include <queue>
 #include <random>
 #include <chrono>
-#include <bot/convert_to_string.h>
+#include <functional>
 
 #include "type.h"
 #include "api/onebot_11/api_impl.h"
 #include "bot/onebot_11/future_wrapper.h"
 #include "event/event.h"
 #include "logger/logger.h"
+#include "bot/convert_to_string.h"
 
 namespace white
 {
 namespace onebot11
 {
-
-using Json = nlohmann::json;
 
 std::time_t GetTimeStampMicro();
 

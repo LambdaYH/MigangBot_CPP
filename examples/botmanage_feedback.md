@@ -6,6 +6,6 @@
 
 ![](images/botmanage_feedback_reply.png)
 
-## .feedbacklist id xxx (回复特定留言)(仅superuser可用)
+## .feedbacklist id xxx (查看特定留言)(仅superuser可用)
 
 ![](images/botmanage_feedback_feedbacklist.png)

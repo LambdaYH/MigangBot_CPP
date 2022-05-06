@@ -1,11 +1,12 @@
 #ifndef MIGANGBOT_LOGGER_LOGGER_H_
 #define MIGANGBOT_LOGGER_LOGGER_H_
 
+#include <memory>
+#include <unordered_map>
+
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/daily_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
-#include <memory>
-#include <unordered_map>
 
 namespace white
 {
@@ -58,17 +59,40 @@ inline void Logger::Init(const std::string &log_file, const std::string &level)
     logger_->set_pattern("[%Y-%m-%d %H:%M:%S][%l]: %v");
 }
 
-#define LOG_INIT(log_file, level) Logger::GetInstance().Init(log_file, level)
+inline void LOG_INIT(const std::string &log_file, const std::string &level)
+{
+    Logger::GetInstance().Init(log_file, level);
+}
 
-#define LOG_DEBUG(...) Logger::GetInstance().GetLogger().debug(__VA_ARGS__)
+template<typename... Args>
+inline void LOG_DEBUG(spdlog::format_string_t<Args...> fmt, Args &&... args)
+{
+    Logger::GetInstance().GetLogger().debug(fmt, std::forward<Args>(args)...);
+}
 
-#define LOG_INFO(...) Logger::GetInstance().GetLogger().info(__VA_ARGS__)
+template<typename... Args>
+inline void LOG_INFO(spdlog::format_string_t<Args...> fmt, Args &&... args)
+{
+    Logger::GetInstance().GetLogger().info(fmt, std::forward<Args>(args)...);
+}
 
-#define LOG_WARN(...) Logger::GetInstance().GetLogger().warn(__VA_ARGS__)
+template<typename... Args>
+inline void LOG_WARN(spdlog::format_string_t<Args...> fmt, Args &&... args)
+{
+    Logger::GetInstance().GetLogger().warn(fmt, std::forward<Args>(args)...);
+}
 
-#define LOG_ERROR(...) Logger::GetInstance().GetLogger().error(__VA_ARGS__)
+template<typename... Args>
+inline void LOG_ERROR(spdlog::format_string_t<Args...> fmt, Args &&... args)
+{
+    Logger::GetInstance().GetLogger().error(fmt, std::forward<Args>(args)...);
+}
 
-#define LOG_CRITICAL(...) Logger::GetInstance().GetLogger().critical(__VA_ARGS__)
+template<typename... Args>
+inline void LOG_CRITICAL(spdlog::format_string_t<Args...> fmt, Args &&... args)
+{
+    Logger::GetInstance().GetLogger().critical(fmt, std::forward<Args>(args)...);
+}
 
 } // namespace white
 

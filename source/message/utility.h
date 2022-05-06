@@ -2,21 +2,23 @@
 #define MIGANGBOT_MESSAGE_UTILITY_H_
 
 #include <cstddef>
-#include <opencv2/core.hpp>
+
 #include <string>
 #include <string_view>
 #include <sstream>
 #include <algorithm>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/freetype.hpp>
-#include <opencv2/imgcodecs.hpp>
 #include <filesystem>
 #include <iostream>
 #include <regex>
 #include <vector>
 
-#include "base64.h"
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/freetype.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <base64.h>
+
 #include "event/event.h"
 #include "global_config.h"
 

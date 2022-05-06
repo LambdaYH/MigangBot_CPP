@@ -2,11 +2,9 @@
 #define MIGANGBOT_MODULES_MODULE_TENCENTCLOUD_NLP_KEYWORDS_EXTRACTION_H_
 
 #include "modules/module_interface.h"
-#include <functional>
-#include <queue>
-#include <condition_variable>
-#include <mutex>
+
 #include <string_view>
+
 #include <tencentcloud/core/Credential.h>
 #include <tencentcloud/core/profile/ClientProfile.h>
 #include <tencentcloud/core/profile/HttpProfile.h>
@@ -43,7 +41,7 @@ private:
 
 inline void KeywordsExtraction::Register()
 {
-    RegisterCommand(PREFIX, {"关键词提取", "/关键词提取"}, func(KeywordsExtraction::KeywordEX));
+    RegisterCommand(PREFIX, {"关键词提取", "/关键词提取"}, ACT(KeywordsExtraction::KeywordEX));
 }
 
 inline void KeywordsExtraction::KeywordEX(const Event &event, onebot11::ApiBot &bot)
@@ -75,12 +73,12 @@ inline std::string KeywordsExtraction::GetKeywords(const std::string &text)
         return "";
     }
     KeywordsExtractionResponse resp = outcome.GetResult();
-    nlohmann::json resp_json = nlohmann::json::parse(resp.ToJsonString());
+    auto resp_json = Json::parse(resp.ToJsonString());
     resp_json = resp_json["Keywords"];
     std::string ret = "提取的关键词如下\n====================\n";
     for (std::size_t i = 0; i < resp_json.size(); ++i)
     {
-        nlohmann::json &word = resp_json[i];
+        Json &word = resp_json[i];
         if (word["Score"].get<double>() > 0.7)
             ret += word["Word"].get<std::string>() + " ";
         else

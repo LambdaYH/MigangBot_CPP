@@ -1,18 +1,17 @@
 #ifndef MIGANGBOT_MODULES_PLUGIN_INTERFACE_H_
 #define MIGANGBOT_MODULES_PLUGIN_INTERFACE_H_
 
-#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 #include <functional>
 #include <initializer_list>
 #include <filesystem>
 #include <fstream>
+
+#include <nlohmann/json.hpp>
 #include <fmt/core.h>
 
-#include "bot/onebot_11/api_bot.h"
 #include "event/event_handler.h"
-#include "event/event.h"
 #include "logger/logger.h"
 #include "message/utility.h"
 #include "permission/permission.h"
@@ -23,7 +22,7 @@ namespace white
 namespace module
 {
 
-#define func(a) std::bind(&a, this, std::placeholders::_1, std::placeholders::_2)
+#define ACT(a) (std::bind(&a, this, std::placeholders::_1, std::placeholders::_2))
 
 using Config = YAML::Node;
 

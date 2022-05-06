@@ -2,7 +2,10 @@
 #define MIGANGBOT_TYPE_H_
 
 #include <stdint.h>
+
 #include <string>
+
+#include <nlohmann/json.hpp>
 
 namespace white
 {
@@ -10,6 +13,7 @@ namespace white
 using MsgId = int32_t;
 using QId   = uint64_t;
 using GId   = uint64_t;
+using Json  = nlohmann::json;
 
 struct MessageID
 {

@@ -1,14 +1,14 @@
 #ifndef MIGANGBOT_MODULES_MODULE_EORZEA_ZHANBU_EORZEA_ZHANBU_H_
 #define MIGANGBOT_MODULES_MODULE_EORZEA_ZHANBU_EORZEA_ZHANBU_H_
 
-#include "fmt/core.h"
-#include "global_config.h"
 #include "modules/module_interface.h"
+
 #include <filesystem>
 #include <string_view>
 #include <vector>
 #include <unordered_map>
 
+#include "global_config.h"
 #include "aiorequests.h"
 #include "modules/module/eorzea_zhanbu/zhanbu_recorder.h"
 #include "modules/module/eorzea_zhanbu/zhanbu_utils.h"
@@ -71,7 +71,7 @@ public:
     }
     virtual void Register()
     {
-        RegisterCommand(PREFIX, {"/zhanbu", "/占卜", "、占卜"}, func(EorzeaZhanbu::Zhanbu), permission::NORMAL);
+        RegisterCommand(PREFIX, {"/zhanbu", "/占卜", "、占卜"}, ACT(EorzeaZhanbu::Zhanbu), permission::NORMAL);
     }
 
 private:

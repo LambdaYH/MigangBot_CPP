@@ -1,9 +1,10 @@
 #ifndef MIGANGBOT_EVENT_SEARCH_RESULT_H_
 #define MIGANGBOT_EVENT_SEARCH_RESULT_H_
 
-#include "event/types.h"
-#include "bot/onebot_11/api_bot.h"
 #include <string>
+
+#include "event/type.h"
+#include "bot/onebot_11/api_bot.h"
 
 namespace white {
 

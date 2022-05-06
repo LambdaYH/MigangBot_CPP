@@ -1,8 +1,9 @@
-#include "hv/WebSocketClient.h"
-#include "nlohmann/json.hpp"
 #include <thread>
 #include <vector>
 #include <algorithm>
+
+#include "hv/WebSocketClient.h"
+#include "nlohmann/json.hpp"
 
 using namespace hv;
 

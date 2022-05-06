@@ -1,5 +1,7 @@
 #ifndef MIGANGBOT_MODULES_MODULE_BILIBILI_PARSER_BILIBILI_PARSER_H_
-#define MIGANGBOT_MODULES_MODULE_BILIBILI_PARSER_BILIBILI_PARSERU_H_
+#define MIGANGBOT_MODULES_MODULE_BILIBILI_PARSER_BILIBILI_PARSER_H_
+
+#include "modules/module_interface.h"
 
 #include <algorithm>
 #include <string>
@@ -7,13 +9,13 @@
 #include <unordered_set>
 #include <vector>
 #include <regex>
+
 #include <hv/httpdef.h>
 #include <pugixml.hpp>
 
-#include "event/types.h"
+#include "event/type.h"
 #include "logger/logger.h"
 #include "message/utility.h"
-#include "modules/module_interface.h"
 #include "database/redis_wrapper.h"
 #include "aiorequests.h"
 #include "permission/permission.h"
@@ -48,7 +50,7 @@ public:
                         R"((av|AV)\d+)",
                         R"((BV|bv)([a-zA-Z0-9])+)"
                         }, 
-                    func(BilibiliParser::Parser), permission::GROUP_MEMBER);
+                    ACT(BilibiliParser::Parser), permission::GROUP_MEMBER);
     }
 
 private:
@@ -62,7 +64,7 @@ private:
 
     std::string GetLiveSummary(const std::string &url, const GId group_id);
 
-    nlohmann::json GetJson(const std::string &url);
+    Json GetJson(const std::string &url);
     
 
 private:
@@ -127,11 +129,11 @@ inline std::string GetRealUrl(const std::string &url)
     return url;
 }
 
-inline nlohmann::json BilibiliParser::GetJson(const std::string &url)
+inline Json BilibiliParser::GetJson(const std::string &url)
 {
     auto r = aiorequests::Get(url, 15, header_);
     if(!r)
-        return nlohmann::json();
+        return Json();
     return r->GetJson();
 }
 

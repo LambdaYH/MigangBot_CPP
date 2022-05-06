@@ -2,10 +2,11 @@
 #define MIGANGBOT_MODULES_MODULE_BOTMANAGE_HELP_H_
 
 #include "modules/module_interface.h"
-#include "message/message_segment.h"
-#include "message/utility.h"
 
 #include <unordered_set>
+
+#include "message/message_segment.h"
+#include "message/utility.h"
 
 namespace white
 {
@@ -61,7 +62,7 @@ private:
 
 inline void Help::Register()
 {
-    RegisterCommand(PREFIX, {".help", "/帮助", "。help"}, func(Help::HelpMsg));
+    RegisterCommand(PREFIX, {".help", "/帮助", "。help"}, ACT(Help::HelpMsg));
 }
 
 inline void Help::HelpMsg(const Event &event, onebot11::ApiBot &bot)

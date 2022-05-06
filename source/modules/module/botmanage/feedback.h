@@ -1,16 +1,18 @@
 #ifndef MIGANGBOT_MODULES_MODULE_FEEDBACK_H_
 #define MIGANGBOT_MODULES_MODULE_FEEDBACK_H_
 
-#include "global_config.h"
 #include "modules/module_interface.h"
+
+#include <cctype>
+
+#include <unordered_set>
+
+#include "global_config.h"
 #include "message/message_segment.h"
 #include "message/utility.h"
 #include "modules/module/botmanage/feedback_recorder.h"
 #include "spdlog/fmt/bundled/core.h"
 #include "utility.h"
-
-#include <cctype>
-#include <unordered_set>
 
 namespace white
 {
@@ -27,9 +29,9 @@ public:
     }
     virtual void Register()
     {
-        RegisterCommand(PREFIX, {".send", "。send"}, func(FeedBack::Send));
-        RegisterCommand(PREFIX, {".reply", "。reply"}, func(FeedBack::Reply), permission::SUPERUSER);
-        RegisterCommand(PREFIX, {".feedbacklist", "。feedbacklist"}, func(FeedBack::List), permission::SUPERUSER);
+        RegisterCommand(PREFIX, {".send", "。send"}, ACT(FeedBack::Send));
+        RegisterCommand(PREFIX, {".reply", "。reply"}, ACT(FeedBack::Reply), permission::SUPERUSER);
+        RegisterCommand(PREFIX, {".feedbacklist", "。feedbacklist"}, ACT(FeedBack::List), permission::SUPERUSER);
     }
 private:
     void Send(const Event &event, onebot11::ApiBot &bot);

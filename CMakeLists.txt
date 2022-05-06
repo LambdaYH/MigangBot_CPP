@@ -96,6 +96,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
                             third-party/cpp-base64
                             ${CMAKE_BINARY_DIR}/third-party/libhv/include
                             third-party/jpcre2/src
+                            third-party/CTPL
+                            third-party/Scheduler
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    
 

@@ -2,10 +2,11 @@
 #define MIGANGBOT_AIOREQUESTS_H_
 
 #include <memory>
-#include <hv/requests.h>
 #include <future>
 #include <string>
 #include <iostream>
+
+#include <hv/requests.h>
 
 namespace white
 {

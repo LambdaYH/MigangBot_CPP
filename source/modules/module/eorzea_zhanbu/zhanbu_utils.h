@@ -2,21 +2,23 @@
 #define MIGANGBOT_MODULES_MODULE_EORZEA_ZHANBU_ZHANBU_UTILS_H_
 
 #include <ctime>
+
 #include <filesystem>
+#include <string>
+#include <random>
+#include <functional>
+#include <vector>
+
+#include <utf8.h>
 #include <opencv2/core.hpp>
+#include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/freetype.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgproc/imgproc_c.h>
-#include <string>
-#include <openssl/md5.h>
 #include <fmt/chrono.h>
-#include <random>
-#include <functional>
-#include <opencv2/core/mat.hpp>
-#include <vector>
-#include <utf8.h>
+#include <openssl/md5.h>
 
 #include "aiorequests.h"
 #include "event/event.h"
@@ -24,8 +26,7 @@
 #include "utility.h"
 #include "message/utility.h"
 #include "message/message_segment.h"
-
-#include <logger/logger.h>
+#include "logger/logger.h"
 
 namespace white
 {

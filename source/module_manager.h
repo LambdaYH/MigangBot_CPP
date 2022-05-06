@@ -1,10 +1,10 @@
 #ifndef MIGANGBOT_MODULE_MANAGER_H_
 #define MIGANGBOT_MODULE_MANAGER_H_
 
-#include "modules/module_interface.h"
-#include "event/event_handler.h"
 #include <vector>
 #include <memory>
+
+#include "modules/module_interface.h"
 
 namespace white
 {

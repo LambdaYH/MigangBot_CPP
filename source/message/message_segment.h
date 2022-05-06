@@ -3,6 +3,7 @@
 
 #include <string>
 #include <string_view>
+
 #include <fmt/core.h>
 
 namespace white

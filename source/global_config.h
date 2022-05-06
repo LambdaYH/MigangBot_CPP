@@ -1,9 +1,10 @@
 #ifndef MIGANGBOT_GLOBAL_CONFIG_H_
 #define MIGANGBOT_GLOBAL_CONFIG_H_
 
-#include <yaml-cpp/yaml.h>
 #include <filesystem>
 #include <unordered_set>
+
+#include <yaml-cpp/yaml.h>
 
 #include "type.h"
 

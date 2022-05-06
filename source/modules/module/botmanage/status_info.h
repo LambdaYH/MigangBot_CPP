@@ -2,20 +2,21 @@
 #define MIGANGBOT_MODULES_MODULE_BOTMANAGE_STATUS_INFO_H_
 
 #include "modules/module_interface.h"
-#include "message/message_segment.h"
-#include "message/utility.h"
-#include "aiorequests.h"
 
-#include <chrono>
 #include <ctime>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <sys/types.h>
 #include <sys/sysinfo.h>
-#include <hv/requests.h>
+
+#include <chrono>
 #include <filesystem>
 #include <mutex>
+
+#include "message/message_segment.h"
+#include "message/utility.h"
+#include "aiorequests.h"
 
 
 namespace white
@@ -99,9 +100,9 @@ private:
 
 inline void StatusInfo::Register()
 {
-    RegisterCommand(FULLMATCH, {"/ping"}, func(StatusInfo::Ping));
-    RegisterCommand(FULLMATCH, {"status", "状态"}, func(StatusInfo::Status), permission::SUPERUSER);
-    RegisterCommand(FULLMATCH, {"network", "网络状况"}, func(StatusInfo::Network), permission::SUPERUSER);
+    RegisterCommand(FULLMATCH, {"/ping"}, ACT(StatusInfo::Ping));
+    RegisterCommand(FULLMATCH, {"status", "状态"}, ACT(StatusInfo::Status), permission::SUPERUSER);
+    RegisterCommand(FULLMATCH, {"network", "网络状况"}, ACT(StatusInfo::Network), permission::SUPERUSER);
 }
 
 inline void StatusInfo::Ping(const Event &event, onebot11::ApiBot &bot)

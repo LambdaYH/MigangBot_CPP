@@ -8,21 +8,19 @@
 #include <vector>
 #include <array>
 #include <algorithm>
+
 #include <nlohmann/json.hpp>
 #include <jpcre2.hpp>
 
 #include "event/trie.h"
 #include "event/event_filter.h"
-#include "event/event.h"
 #include "event/regex_matcher.h"
 #include "pool/thread_pool.h"
 #include "logger/logger.h"
 #include "bot/onebot_11/api_bot.h"
 #include "utility.h"
 #include "permission/permission.h"
-#include "event/types.h"
-
-#include <iostream>
+#include "event/type.h"
 
 namespace white
 {

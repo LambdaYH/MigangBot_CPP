@@ -2,6 +2,7 @@
 #define MIGANGBOT_BOT_CONVERT_TO_STRING_H_
 
 #include <string>
+
 #include <nlohmann/json.hpp>
 
 namespace white

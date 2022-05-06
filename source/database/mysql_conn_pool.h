@@ -1,12 +1,11 @@
 #ifndef MIGANGBOT_DATABASE_MYSQL_CONN_POOL_H_
 #define MIGANGBOT_DATABASE_MYSQL_CONN_POOL_H_
 
-#include <mutex>
 #include <string>
-#include <condition_variable>
-#include <mysql/mysql.h>
-#include <unordered_map>
 #include <utility>
+#include <unordered_map>
+
+#include <mysql/mysql.h>
 #include <oneapi/tbb/concurrent_queue.h>
 
 #include "logger/logger.h"

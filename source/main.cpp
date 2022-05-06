@@ -1,7 +1,7 @@
-#include <hv/WebSocketServer.h>
-#include <hv/hlog.h>
-#include <algorithm>
 #include <cstdlib>
+
+#include <filesystem>
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -9,17 +9,18 @@
 #include <thread>
 #include <vector>
 #include <fstream>
-#include <yaml-cpp/yaml.h>
-#include <filesystem>
 
-#include "bot/bot.h"
-#include "event/event_handler.h"
+#include <hv/hlog.h>
+#include <yaml-cpp/yaml.h>
+
 #include "event/onebot_11/event_filter.h"
+#include "event/event_handler.h"
 #include "module_list.h"
 #include "logger/logger.h"
 #include "global_config.h"
 #include "database/mysql_conn_pool.h"
 #include "database/redis_conn_pool.h"
+#include "server.h"
 
 YAML::Node white::global_config;
 std::filesystem::path white::config::kConfigDir;
@@ -141,41 +142,13 @@ int main(int argc, char* argv[])
     white::LOG_INFO("MigangBot已初始化");
     white::LOG_INFO("监听地址: {}:{}", address, port);
     
-    hv::HttpService http;
-    http.GET("/ping", [](const HttpContextPtr& ctx) {
-        return ctx->send("pong");
-    });
-
-    hv::WebSocketService ws;
-    ws.onopen = [](const WebSocketChannelPtr& channel, const std::string& url)
-    {
-        white::LOG_DEBUG("onopen: GET {}", url);
-        white::Bot* bot = channel->newContext<white::Bot>();
-        bot->Run(channel);
-    };
-    ws.onmessage = [](const WebSocketChannelPtr& channel, const std::string& msg)
-    {
-        white::Bot* bot = channel->getContext<white::Bot>();
-        white::LOG_DEBUG("Get Message: {}", msg);
-        bot->OnRead(msg);
-    };
-    ws.onclose = [](const WebSocketChannelPtr& channel)
-    {
-        white::LOG_DEBUG("onClose");
-        channel->deleteContext<white::Bot>();
-    };
-
     hlog_disable();
-    websocket_server_t server;
-    server.port = port;
-    strcpy(server.host, address.c_str());
-    server.service = &http;
-    server.ws = &ws;
-    
-    websocket_server_run(&server, 0);
 
-    while (getchar() != '\n');
-    websocket_server_stop(&server);
+    white::Server server(port, address);
+
+    // init schedule ...
+
+    server.Run();
 
     return EXIT_SUCCESS;
 }

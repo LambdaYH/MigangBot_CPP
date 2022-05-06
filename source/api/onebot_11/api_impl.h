@@ -1,17 +1,18 @@
 #ifndef MIGANGBOT_API_ONTBOT_11_API_IMPL_H_
 #define MIGANGBOT_API_ONTBOT_11_API_IMPL_H_
 
-#include "event/event.h"
-#include "type.h"
-#include <nlohmann/json.hpp>
-#include <iostream>
 #include <string>
+#include <iostream>
+
+#include <nlohmann/json.hpp>
+
+#include "type.h"
 
 namespace white
 {
 namespace onebot11
 {
-using Json = nlohmann::json;
+
 using Event = Json;
 
 class ApiImpl : std::enable_shared_from_this<ApiImpl>

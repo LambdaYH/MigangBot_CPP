@@ -1,9 +1,8 @@
-#ifndef MIGANGBOT_EVENT_TYPES_H_
-#define MIGANGBOT_EVENT_TYPES_H_
+#ifndef MIGANGBOT_EVENT_TYPE_H_
+#define MIGANGBOT_EVENT_TYPE_H_
 
 #include "event/event.h"
 #include "bot/onebot_11/api_bot.h"
-#include <string>
 
 namespace white {
 
