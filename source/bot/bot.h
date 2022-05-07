@@ -55,15 +55,13 @@ private:
     std::function<void(const std::string &)> notify_;
     std::function<void(const std::time_t, std::function<void(const Json &)> &&)> set_echo_function_;
     onebot11::ApiBot api_bot_;
-    std::function<bool(Event &)> event_handler_;
     
 };
 
 inline Bot::Bot() :
         notify_(std::bind(&Bot::Notify, this, std::placeholders::_1)),
         set_echo_function_(std::bind(&Bot::SetEchoFunction, this, std::placeholders::_1, std::placeholders::_2)),
-        api_bot_(notify_, set_echo_function_),
-        event_handler_( std::bind(&EventHandler::Handle, &EventHandler::GetInstance(), std::placeholders::_1, std::ref(api_bot_)) )
+        api_bot_(notify_, set_echo_function_)
 {
     
 }
@@ -103,11 +101,14 @@ inline void Bot::SetEchoFunction(const std::time_t echo_code, std::function<void
 
 inline void Bot::Process(const std::string &message) noexcept
 {
+    static auto event_handle = [this](auto &event){
+        EventHandler::GetInstance().Handle(event, api_bot_);
+    };
     try
     {
         auto msg = Json::parse(message);
         if(EventProcess(msg))
-            event_handler_(msg);
+            event_handle(msg);
     }catch(Json::exception &e)
     {
         LOG_ERROR("Exception: {}", e.what());
