@@ -1,6 +1,7 @@
 #ifndef MIGANGBOT_MODULES_MODULE_ECHO_H_
 #define MIGANGBOT_MODULES_MODULE_ECHO_H_
 
+#include "co/co.h"
 #include "modules/module_interface.h"
 
 #include <string_view>
@@ -28,7 +29,8 @@ inline void Echo::Register()
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)
 {
     auto text = message::ExtraPlainText(event);
-    bot.send_msg(event, text);
+    auto ret = bot.send_msg(event, text).Ret();
+    bot.send_msg(event, bot.WaitForNextMessage(event));
 }
 
 } // namespace module

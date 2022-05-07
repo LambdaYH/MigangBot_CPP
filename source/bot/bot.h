@@ -50,7 +50,6 @@ private:
 
 private:
     WebSocketChannelPtr channel_;
-    std::queue<std::string> writable_msg_queue_;
     tbb::concurrent_unordered_map<std::time_t, std::function<void(const Json &)>> echo_function_;
     std::function<void(const std::string &)> notify_;
     std::function<void(const std::time_t, std::function<void(const Json &)> &&)> set_echo_function_;
@@ -136,6 +135,10 @@ inline bool Bot::EventProcess(const Event &event) noexcept
             GId group_id = event["group_id"].get<GId>();
             if(api_bot_.IsNeedMessage(group_id, user_id))
                 api_bot_.FeedMessage(group_id, user_id, event["message"].get<std::string>());
+        }else
+        {
+            if(api_bot_.IsNeedMessage(0, user_id))
+                api_bot_.FeedMessage(0, user_id, event["message"].get<std::string>());
         }
         if(api_bot_.IsSomeOneNeedMessage(user_id))
             api_bot_.FeedMessageTo(user_id, event["message"].get<std::string>());

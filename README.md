@@ -2,6 +2,9 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/2f2ff355bd7f482badfb151c8ad76744)](https://www.codacy.com/gh/LambdaYH/MigangBot/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=LambdaYH/MigangBot&amp;utm_campaign=Badge_Grade)
 
+基于[ithewei/libhv](https://github.com/ithewei/libhv)网络库和[idealvin/cocoyaxi](https://github.com/idealvin/cocoyaxi)go-style coroutine
+
+
 ## 
 
 | 父模块 | 子模块 | 模块功能 | 例子 |

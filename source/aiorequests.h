@@ -8,6 +8,8 @@
 
 #include <hv/requests.h>
 
+#include "co_future.h"
+
 namespace white
 {
 namespace aiorequests
@@ -20,7 +22,7 @@ using requests::ResponseCallback;
 inline Response aiorequest(Request req)
 {
     hv::HttpClient cli;
-    std::promise<Response> promise;
+    co_promise<Response> promise;
     cli.sendAsync(req, [&promise](const Response &resp){
         if(resp == NULL)
             promise.set_value(Response());
