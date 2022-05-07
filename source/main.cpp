@@ -10,7 +10,7 @@
 #include <vector>
 #include <fstream>
 
-#include <co/all.h>
+#include <co/co.h>
 #include <hv/hlog.h>
 #include <yaml-cpp/yaml.h>
 
@@ -54,8 +54,6 @@ constexpr auto kGlobalConfigExample =   "Server:\n"
                                         "\n"
                                         "# 不懂就不改，0表示默认值\n"
                                         "Dev:\n"
-                                        "  ThreadNum:\n"
-                                        "    ThreadPool: 0                  # 处理各个命令对应操作线程池的线程数\n"
                                         "  SqlPool: 5                       # 数据库连接池连接数\n"
                                         "  RedisPool: 5                     # Redis连接池连接数";
 
@@ -66,7 +64,7 @@ inline void InitEventFilter()
         white::EventHandler::GetInstance().InitFilter(std::unique_ptr<white::EventFilter>(new T));
 }
 
-DEF_main(argc, argv)
+int main(int argc, char** argv)
 {
     // load config
     std::filesystem::path current_working_dir = std::filesystem::current_path();
@@ -104,11 +102,6 @@ DEF_main(argc, argv)
     white::LOG_INIT(log_file, log_level);
 
     // 初始化事件处理器
-    auto thread_pool_thread = white::global_config["Dev"]["ThreadNum"]["ThreadPool"].as<std::size_t>();
-    if(thread_pool_thread > 0)
-        white::EventHandler::GetInstance().Init(white::global_config["Dev"]["ThreadNum"]["ThreadPool"].as<std::size_t>());
-    else
-        white::EventHandler::GetInstance().Init();
     InitEventFilter<white::onebot11::EventFilterOnebot11>();
 
     // 初始化数据库连接池
@@ -148,8 +141,8 @@ DEF_main(argc, argv)
     white::Server server(port, address);
 
     // init schedule ...
-
+    flag::init(argc, argv);
     server.Run();
-
+    
     return EXIT_SUCCESS;
 }

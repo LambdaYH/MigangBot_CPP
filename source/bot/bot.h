@@ -42,8 +42,6 @@ private:
 
     void Process(const std::string &message) noexcept;
 
-    void OnProcess(const std::string &message) noexcept;
-
     void Notify(const std::string &msg);
 
     void SetEchoFunction(const std::time_t echo_code, std::function<void(const Json &)> &&func);
@@ -104,11 +102,6 @@ inline void Bot::SetEchoFunction(const std::time_t echo_code, std::function<void
 }
 
 inline void Bot::Process(const std::string &message) noexcept
-{
-    EventHandler::GetInstance().AddTask(std::bind(&Bot::OnProcess, this, message));
-}
-
-inline void Bot::OnProcess(const std::string &message) noexcept
 {
     try
     {

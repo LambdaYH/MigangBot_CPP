@@ -46,14 +46,13 @@ private:
         {
             LOG_DEBUG("onopen: GET {}", url);
             Bot* bot = channel->newContext<Bot>();
-            bot->Run(channel);
+            go(&Bot::Run, bot, channel);
             bots_.insert(bot);
         };
         ws_.onmessage = [](const WebSocketChannelPtr& channel, const std::string& msg)
         {
-            Bot* bot = channel->getContext<Bot>();
             LOG_DEBUG("Get Message: {}", msg);
-            bot->OnRead(msg);
+            go(&Bot::OnRead, channel->getContext<Bot>(), msg);
         };
         ws_.onclose = [this](const WebSocketChannelPtr& channel)
         {

@@ -9,13 +9,13 @@
 #include <array>
 #include <algorithm>
 
+#include <co/co.h>
 #include <nlohmann/json.hpp>
 #include <jpcre2.hpp>
 
 #include "event/trie.h"
 #include "event/event_filter.h"
 #include "event/regex_matcher.h"
-#include "pool/thread_pool.h"
 #include "logger/logger.h"
 #include "bot/onebot_11/api_bot.h"
 #include "utility.h"
@@ -37,11 +37,6 @@ public:
         return event_handler;
     }
 
-    void Init(std::size_t thread_num = std::thread::hardware_concurrency())
-    {
-        pool_ = std::make_unique<ThreadPool>(thread_num);
-    }
-
     void InitFilter(std::unique_ptr<EventFilter> &&filter)
     {
         filter_ = std::move(filter);
@@ -61,9 +56,6 @@ public:
     bool RegisterRegex(const std::initializer_list<std::string> &patterns, F &&func, int permission = permission::NORMAL);
 
     bool Handle(Event &event, onebot11::ApiBot &bot) noexcept;
-
-    template<typename F>
-    void AddTask(F &&func) noexcept;
 
 public:
     EventHandler(const EventHandler &) = delete;
@@ -99,7 +91,6 @@ private:
     plugin_func no_func_avaliable_;
 
     std::unique_ptr<EventFilter> filter_;
-    std::unique_ptr<ThreadPool> pool_;
 };
 
 
@@ -204,9 +195,12 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept
                     }   
                 }
                 auto message = event["message"].get<std::string>();
-                auto func = MatchedHandler(event, message);
+                const auto &func = MatchedHandler(event, message);
                 if(func)
-                    pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝
+                    go([&func, event, &bot]()
+                    {
+                        func(event, bot);
+                    }); // 原对象会消失，event必须拷贝
                 else
                 {
                     // check_regex
@@ -216,51 +210,99 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept
                         case permission::SUPERUSER:
                             for(auto &regex_matcher : command_regex_each_perm_[permission::SUPERUSER])
                                 if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
+                                    go([&regex_matcher, event, &bot]()
+                                    {
+                                        regex_matcher.GetFunc()(event, bot);
+                                    });
                             for(const auto &func : all_msg_handler_each_perm_[permission::SUPERUSER])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                                go([&func, event, &bot]()
+                                {
+                                    func(event, bot);
+                                });
                         case permission::WHITE_LIST:
                             for(auto &regex_matcher : command_regex_each_perm_[permission::WHITE_LIST])
                                 if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
+                                    go([&regex_matcher, event, &bot]()
+                                    {
+                                        regex_matcher.GetFunc()(event, bot);
+                                    });
                             for(const auto &func : all_msg_handler_each_perm_[permission::WHITE_LIST])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                                go([&func, event, &bot]()
+                                {
+                                    func(event, bot);
+                                });
                         case permission::GROUP_OWNER:
                             for(auto &regex_matcher : command_regex_each_perm_[permission::GROUP_OWNER])
                                 if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
+                                    go([&regex_matcher, event, &bot]()
+                                    {
+                                        regex_matcher.GetFunc()(event, bot);
+                                    });
                             for(const auto &func : all_msg_handler_each_perm_[permission::GROUP_OWNER])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                                go([&func, event, &bot]()
+                                {
+                                    func(event, bot);
+                                });
                         case permission::GROUP_ADMIN:
                             for(auto &regex_matcher : command_regex_each_perm_[permission::GROUP_ADMIN])
                                 if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
+                                    go([&regex_matcher, event, &bot]()
+                                    {
+                                        regex_matcher.GetFunc()(event, bot);
+                                    });
                             for(const auto &func : all_msg_handler_each_perm_[permission::GROUP_ADMIN])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                                go([&func, event, &bot]()
+                                {
+                                    func(event, bot);
+                                });
                         case permission::GROUP_MEMBER:
                             for(auto &regex_matcher : command_regex_each_perm_[permission::GROUP_MEMBER])
                                 if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
+                                    go([&regex_matcher, event, &bot]()
+                                    {
+                                        regex_matcher.GetFunc()(event, bot);
+                                    });
                             for(const auto &func : all_msg_handler_each_perm_[permission::GROUP_MEMBER])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                                go([&func, event, &bot]()
+                                {
+                                    func(event, bot);
+                                });
                         case permission::PRIVATE:
                             for(auto &regex_matcher : command_regex_each_perm_[permission::PRIVATE])
                                 if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
+                                    go([&regex_matcher, event, &bot]()
+                                    {
+                                        regex_matcher.GetFunc()(event, bot);
+                                    });
                             for(const auto &func : all_msg_handler_each_perm_[permission::PRIVATE])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                                go([&func, event, &bot]()
+                                {
+                                    func(event, bot);
+                                });
                         case permission::NORMAL:
                             for(auto &regex_matcher : command_regex_each_perm_[permission::NORMAL])
                                 if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
+                                    go([&regex_matcher, event, &bot]()
+                                    {
+                                        regex_matcher.GetFunc()(event, bot);
+                                    });
                             for(const auto &func : all_msg_handler_each_perm_[permission::NORMAL])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                                go([&func, event, &bot]()
+                                {
+                                    func(event, bot);
+                                });
                         case permission::BLACK:
                             for(auto &regex_matcher : command_regex_each_perm_[permission::BLACK])
                                 if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
+                                    go([&regex_matcher, event, &bot]()
+                                    {
+                                        regex_matcher.GetFunc()(event, bot);
+                                    });
                             for(const auto &func : all_msg_handler_each_perm_[permission::BLACK])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                                go([&func, event, &bot]()
+                                {
+                                    func(event, bot);
+                                });
                         default:
                             break;
                     } 
@@ -276,7 +318,10 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept
                 if(notice_handler_.count(notice_type) && notice_handler_.at(notice_type).count(sub_type))
                 {
                     for(auto &func : notice_handler_.at(notice_type).at(sub_type))
-                        pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                        go([&func, event, &bot]()
+                        {
+                            func(event, bot);
+                        });
                 }
             }
             break;
@@ -289,7 +334,10 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept
                 if(request_handler_.count(request_type) && request_handler_.at(request_type).count(sub_type))
                 {
                     for(auto &func : request_handler_.at(request_type).at(sub_type))
-                        pool_->AddTask(std::bind(func, event, std::ref(bot)));
+                        go([&func, event, &bot]()
+                        {
+                            func(event, bot);
+                        });
                 }
             }
             break;
@@ -457,12 +505,6 @@ inline const SearchResult EventHandler::MatchHelper(int permission, const std::s
             return func_suffix_result;
     }
     return {no_func_avaliable_, 0};
-}
-
-template<typename F>
-inline void EventHandler::AddTask(F &&func) noexcept
-{
-    pool_->AddTask(std::forward<F>(func));
 }
 
 } // namespace white
