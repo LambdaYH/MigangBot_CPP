@@ -29,7 +29,7 @@ public:
             regex_.push_back(jp::Regex(pattern, "mSi"));
     }
 
-    bool Check(const std::string &str)
+    bool Check(const std::string &str) noexcept
     {
         for(auto &re : regex_)
             if(re.match(str))
@@ -37,7 +37,7 @@ public:
         return false;
     }
 
-    const plugin_func &GetFunc() const
+    const plugin_func &GetFunc() const noexcept
     {
         return func_;
     }

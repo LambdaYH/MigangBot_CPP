@@ -30,9 +30,9 @@ public:
     template<typename F>
     bool InsertFromBack(const std::string &key, F &&func);
 
-    const SearchResult Search(const std::string &key) const;
+    const SearchResult Search(const std::string &key) const noexcept;
 
-    const SearchResult SearchFromBack(const std::string &key) const;
+    const SearchResult SearchFromBack(const std::string &key) const noexcept;
 
 private:
     struct TrieNode
@@ -92,7 +92,7 @@ inline bool Trie::InsertFromBack(const std::string &key, F &&func)
     return true;
 }
 
-inline const SearchResult Trie::Search(const std::string &key) const
+inline const SearchResult Trie::Search(const std::string &key) const noexcept
 {
     auto cur_node = root_;
     short command_size{ 0 };
@@ -113,7 +113,7 @@ inline const SearchResult Trie::Search(const std::string &key) const
     return {no_func_here_, 0};
 }
 
-inline const SearchResult Trie::SearchFromBack(const std::string &key) const
+inline const SearchResult Trie::SearchFromBack(const std::string &key) const noexcept
 {
     auto cur_node = root_;
     short command_size{ 0 };

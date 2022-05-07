@@ -59,39 +59,39 @@ inline void Logger::Init(const std::string &log_file, const std::string &level)
     logger_->set_pattern("[%Y-%m-%d %H:%M:%S][%l]: %v");
 }
 
-inline void LOG_INIT(const std::string &log_file, const std::string &level)
+inline void LOG_INIT(const std::string &log_file, const std::string &level) noexcept
 {
     Logger::GetInstance().Init(log_file, level);
 }
 
 template<typename... Args>
-inline void LOG_DEBUG(spdlog::format_string_t<Args...> fmt, Args &&... args)
+inline void LOG_DEBUG(spdlog::format_string_t<Args...> fmt, Args &&... args) noexcept
 {
-    Logger::GetInstance().GetLogger().debug(fmt, std::forward<Args>(args)...);
+    Logger::GetInstance().GetLogger().debug(std::move(fmt), std::forward<Args>(args)...);
 }
 
 template<typename... Args>
-inline void LOG_INFO(spdlog::format_string_t<Args...> fmt, Args &&... args)
+inline void LOG_INFO(spdlog::format_string_t<Args...> fmt, Args &&... args) noexcept
 {
-    Logger::GetInstance().GetLogger().info(fmt, std::forward<Args>(args)...);
+    Logger::GetInstance().GetLogger().info(std::move(fmt), std::forward<Args>(args)...);
 }
 
 template<typename... Args>
-inline void LOG_WARN(spdlog::format_string_t<Args...> fmt, Args &&... args)
+inline void LOG_WARN(spdlog::format_string_t<Args...> fmt, Args &&... args) noexcept
 {
-    Logger::GetInstance().GetLogger().warn(fmt, std::forward<Args>(args)...);
+    Logger::GetInstance().GetLogger().warn(std::move(fmt), std::forward<Args>(args)...);
 }
 
 template<typename... Args>
-inline void LOG_ERROR(spdlog::format_string_t<Args...> fmt, Args &&... args)
+inline void LOG_ERROR(spdlog::format_string_t<Args...> fmt, Args &&... args) noexcept
 {
-    Logger::GetInstance().GetLogger().error(fmt, std::forward<Args>(args)...);
+    Logger::GetInstance().GetLogger().error(std::move(fmt), std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void LOG_CRITICAL(spdlog::format_string_t<Args...> fmt, Args &&... args)
 {
-    Logger::GetInstance().GetLogger().critical(fmt, std::forward<Args>(args)...);
+    Logger::GetInstance().GetLogger().critical(std::move(fmt), std::forward<Args>(args)...);
 }
 
 } // namespace white

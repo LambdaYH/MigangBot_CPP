@@ -46,3 +46,6 @@
 [submodule "third-party/Scheduler"]
 	path = third-party/Scheduler
 	url = https://github.com/Bosma/Scheduler.git
+[submodule "third-party/cocoyaxi"]
+	path = third-party/cocoyaxi
+	url = https://github.com/idealvin/cocoyaxi.git

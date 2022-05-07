@@ -31,7 +31,7 @@ constexpr auto kCommandArraySize = permission::SUPERUSER + 1;
 class EventHandler
 {
 public:
-    static EventHandler &GetInstance()
+    static EventHandler &GetInstance() noexcept
     {
         static EventHandler event_handler;
         return event_handler;
@@ -60,10 +60,10 @@ public:
     template<typename F>
     bool RegisterRegex(const std::initializer_list<std::string> &patterns, F &&func, int permission = permission::NORMAL);
 
-    bool Handle(Event &event, onebot11::ApiBot &bot);
+    bool Handle(Event &event, onebot11::ApiBot &bot) noexcept;
 
     template<typename F>
-    void AddTask(F &&func);
+    void AddTask(F &&func) noexcept;
 
 public:
     EventHandler(const EventHandler &) = delete;
@@ -76,8 +76,8 @@ private:
     ~EventHandler() {}
 
 private:
-    const plugin_func &MatchedHandler(Event &event, const std::string &message) const;
-    const SearchResult MatchHelper(int permission, const std::string &message, bool only_to_me) const;
+    const plugin_func &MatchedHandler(Event &event, const std::string &message) const noexcept;
+    const SearchResult MatchHelper(int permission, const std::string &message, bool only_to_me) const noexcept;
 
 private:
     std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize> command_fullmatch_each_perm_;
@@ -162,7 +162,7 @@ inline bool EventHandler::RegisterRegex(const std::initializer_list<std::string>
     return true;
 }
 
-inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot)
+inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept
 {
     if(filter_ && !filter_->operator()(event))
         return false;
@@ -323,7 +323,7 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot)
     return true;
 }
 
-inline const plugin_func &EventHandler::MatchedHandler(Event &event, const std::string &message) const
+inline const plugin_func &EventHandler::MatchedHandler(Event &event, const std::string &message) const noexcept
 {
     if(message.empty())
         return no_func_avaliable_;
@@ -433,7 +433,7 @@ inline const plugin_func &EventHandler::MatchedHandler(Event &event, const std::
     return no_func_avaliable_;
 }
 
-inline const SearchResult EventHandler::MatchHelper(int permission, const std::string &message, bool only_to_me) const
+inline const SearchResult EventHandler::MatchHelper(int permission, const std::string &message, bool only_to_me) const noexcept
 {
     if(only_to_me)
     {
@@ -460,7 +460,7 @@ inline const SearchResult EventHandler::MatchHelper(int permission, const std::s
 }
 
 template<typename F>
-inline void EventHandler::AddTask(F &&func)
+inline void EventHandler::AddTask(F &&func) noexcept
 {
     pool_->AddTask(std::forward<F>(func));
 }

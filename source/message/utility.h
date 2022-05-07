@@ -27,7 +27,7 @@ namespace white
 namespace message
 {
 
-inline std::string Escape(const std::string &str, bool escape_comma = true)
+inline std::string Escape(const std::string &str, bool escape_comma = true) noexcept
 {
     auto ret = std::regex_replace(str, std::regex("&"), "&amp;");
     ret = std::regex_replace(ret, std::regex("["), "&#91;");
@@ -37,7 +37,7 @@ inline std::string Escape(const std::string &str, bool escape_comma = true)
     return ret;
 }
 
-inline std::string Unescape(const std::string &str)
+inline std::string Unescape(const std::string &str) noexcept
 {
     auto ret = std::regex_replace(str, std::regex("&#44;"), ",");
     ret = std::regex_replace(ret, std::regex("&#91;"), "[");
@@ -46,7 +46,7 @@ inline std::string Unescape(const std::string &str)
     return ret;
 }
 
-inline std::vector<std::string> Split(const std::string_view &view, const std::string &delimiter)
+inline std::vector<std::string> Split(const std::string_view &view, const std::string &delimiter) noexcept
 {
     std::size_t pos = 0;
     std::vector<std::string> ret;
@@ -56,7 +56,7 @@ inline std::vector<std::string> Split(const std::string_view &view, const std::s
     return ret;
 }
 
-inline std::string ExtraPlainText(const Event &event)
+inline std::string ExtraPlainText(const Event &event) noexcept
 {
     auto msg_raw_str = event["message"].get<std::string>();
     msg_raw_str = Unescape(msg_raw_str);
@@ -79,42 +79,42 @@ inline std::string ExtraPlainText(const Event &event)
     return std::string(view);
 }
 
-inline void ExtraPlainText(std::string_view &str)
+inline void ExtraPlainText(std::string_view &str) noexcept
 {
     str = str.substr(std::min(str.find_first_of(' ') + 1, str.size()));
 }
 
-inline void LStrip(std::string_view &str, char ch = ' ')
+inline void LStrip(std::string_view &str, char ch = ' ') noexcept
 {
     str.remove_prefix(std::min(str.find_first_not_of(ch), str.size()));
 }
 
-inline void RStrip(std::string_view &str, char ch = ' ')
+inline void RStrip(std::string_view &str, char ch = ' ') noexcept
 {
     str.remove_suffix(std::min(str.size() - str.find_last_not_of(ch), str.size()));
 }
 
-inline void Strip(std::string_view &str, char ch = ' ')
+inline void Strip(std::string_view &str, char ch = ' ') noexcept
 {
     str.remove_prefix(std::min(str.find_first_not_of(ch), str.size()));
     str.remove_suffix(std::min(str.size() - str.find_last_not_of(ch) - 1, str.size()));
 }
 
-inline std::string LStrip(const std::string &str, char ch = ' ')
+inline std::string LStrip(const std::string &str, char ch = ' ') noexcept
 {
     auto view = std::string_view(str);
     view.remove_prefix(std::min(view.find_first_not_of(ch), view.size()));
     return std::string(view);
 }
 
-inline std::string RStrip(const std::string &str, char ch = ' ')
+inline std::string RStrip(const std::string &str, char ch = ' ') noexcept
 {
     auto view = std::string_view(str);
     view.remove_suffix(std::min(view.size() - view.find_last_not_of(ch) - 1, view.size()));
     return std::string(view);
 }
 
-inline std::string Strip(const std::string &str, char ch = ' ')
+inline std::string Strip(const std::string &str, char ch = ' ') noexcept
 {
     auto view = std::string_view(str);
     view.remove_prefix(std::min(view.find_first_not_of(ch), view.size()));
@@ -125,7 +125,7 @@ inline std::string Strip(const std::string &str, char ch = ' ')
 } // namespace message
 
     // https://stackoverflow.com/questions/29772271/c-opencv-convert-mat-to-base64-and-vice-versa
-inline std::string ImageTobase64(const cv::Mat &image)
+inline std::string ImageTobase64(const cv::Mat &image) 
 {
     std::vector<uchar> buf;
     cv::imencode(".jpg", image, buf);

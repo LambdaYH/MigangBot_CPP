@@ -12,7 +12,7 @@ namespace onebot11
 class EventFilterOnebot11 : public EventFilter
 {
 public:
-    virtual const bool operator()(const Event &msg) const
+    virtual const bool operator()(const Event &msg) const noexcept override
     {
         // 过滤临时会话
         if(msg.contains("post_type"))

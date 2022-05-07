@@ -5,6 +5,7 @@
 #include <functional>
 #include <vector>
 
+#include <co/co.h>
 #include <oneapi/tbb/concurrent_queue.h>
 
 #include "logger/logger.h"
@@ -18,7 +19,7 @@ public:
     ~ThreadPool();
 
     template<typename F> // template for std::forward
-    void AddTask(F &&task);
+    void AddTask(F &&task) noexcept;
 
 private:
     void Run(std::size_t thread_num);
@@ -47,7 +48,7 @@ inline ThreadPool::~ThreadPool()
 }
 
 template<typename F>
-inline void ThreadPool::AddTask(F &&task)
+inline void ThreadPool::AddTask(F &&task) noexcept
 {
     tasks_queue_.push(std::forward<F>(task));
 }
@@ -58,7 +59,7 @@ inline void ThreadPool::Run(size_t thread_num)
     {
         threads_.push_back(
             std::thread{
-            [&]{
+            [&]{           
                 std::function<void()> task;
                 while(true)
                 {

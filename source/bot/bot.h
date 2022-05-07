@@ -25,15 +25,14 @@ namespace white
 class Bot : public std::enable_shared_from_this<Bot>
 {
 public:
-    explicit 
     Bot();
     ~Bot();
 
-    void Run(const WebSocketChannelPtr& channel);
+    void Run(const WebSocketChannelPtr& channel) noexcept;
 
-    void OnRead(const std::string &msg);
+    void OnRead(const std::string &msg) noexcept;
 
-    const auto &GetBot()
+    const auto &GetBot() noexcept
     {
         return api_bot_;
     }
@@ -41,15 +40,15 @@ public:
 private:
     void OnRun();
 
-    void Process(const std::string &message);
+    void Process(const std::string &message) noexcept;
 
-    void OnProcess(const std::string &message);
+    void OnProcess(const std::string &message) noexcept;
 
     void Notify(const std::string &msg);
 
     void SetEchoFunction(const std::time_t echo_code, std::function<void(const Json &)> &&func);
 
-    bool EventProcess(const Event &event);
+    bool EventProcess(const Event &event) noexcept;
 
 private:
     WebSocketChannelPtr channel_;
@@ -76,7 +75,7 @@ inline Bot::~Bot()
 
 }
 
-inline void Bot::Run(const WebSocketChannelPtr& channel)
+inline void Bot::Run(const WebSocketChannelPtr& channel) noexcept
 {
     channel_ = channel;
     OnRun();
@@ -88,7 +87,7 @@ inline void Bot::OnRun()
         api_bot_.send_private_msg(superuser, fmt::format("MigangBot已启动\n版本: {}", kMigangBotVersion));
 }
 
-inline void Bot::OnRead(const std::string &msg)
+inline void Bot::OnRead(const std::string &msg) noexcept
 {
     Process(msg);
 }
@@ -104,12 +103,12 @@ inline void Bot::SetEchoFunction(const std::time_t echo_code, std::function<void
     echo_function_[echo_code] = std::move(func);
 }
 
-inline void Bot::Process(const std::string &message)
+inline void Bot::Process(const std::string &message) noexcept
 {
     EventHandler::GetInstance().AddTask(std::bind(&Bot::OnProcess, this, message));
 }
 
-inline void Bot::OnProcess(const std::string &message)
+inline void Bot::OnProcess(const std::string &message) noexcept
 {
     try
     {
@@ -122,7 +121,7 @@ inline void Bot::OnProcess(const std::string &message)
     }
 }
 
-inline bool Bot::EventProcess(const Event &event)
+inline bool Bot::EventProcess(const Event &event) noexcept
 {
     if(event.contains("retcode"))
     {

@@ -10,6 +10,7 @@
 #include <vector>
 #include <fstream>
 
+#include <co/all.h>
 #include <hv/hlog.h>
 #include <yaml-cpp/yaml.h>
 
@@ -65,7 +66,7 @@ inline void InitEventFilter()
         white::EventHandler::GetInstance().InitFilter(std::unique_ptr<white::EventFilter>(new T));
 }
 
-int main(int argc, char* argv[])
+DEF_main(argc, argv)
 {
     // load config
     std::filesystem::path current_working_dir = std::filesystem::current_path();

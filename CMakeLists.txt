@@ -77,6 +77,9 @@ add_subdirectory(third-party/tidy-html5)
 set(PCRE2_SUPPORT_JIT ON CACHE INTERNAL "")
 add_subdirectory(third-party/pcre2)
 
+# cocoyaxi(coroutines library)
+add_subdirectory(third-party/cocoyaxi)
+
 # tencentcloud-sdk-cpp
 set(BUILD_MODULES CACHE INTERNAL "nlp")
 set(Tencentcloud-sdk-cpp_LIBS
@@ -94,6 +97,7 @@ add_executable(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PRIVATE
                             source 
                             third-party/cpp-base64
+                            third-party/cocoyaxi/include
                             ${CMAKE_BINARY_DIR}/third-party/libhv/include
                             third-party/jpcre2/src
                             third-party/CTPL
@@ -111,6 +115,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         ${OpenCV_LIBS}
                         TBB::tbb
                         libmysqlclient.a
+                        cocoyaxi::co
                         zlibstatic
                         utf8::cpp
                         ${Tencentcloud-sdk-cpp_LIBS}
