@@ -27,6 +27,14 @@ struct GroupInfo
     int member_count;
     int max_member_count;
 };
+
+struct UserInfo
+{
+    QId user_id;
+    std::string nickname;
+    std::string sex;
+    int32_t age;
+};
     
 } // namespace white
 

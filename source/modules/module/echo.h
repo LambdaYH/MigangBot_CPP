@@ -30,7 +30,6 @@ inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)
 {
     auto text = message::ExtraPlainText(event);
     auto ret = bot.send_msg(event, text).Ret();
-    bot.send_msg(event, bot.WaitForNextMessage(event));
 }
 
 } // namespace module

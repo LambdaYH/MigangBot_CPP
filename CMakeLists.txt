@@ -40,7 +40,11 @@ set(JSON_Install OFF CACHE INTERNAL "")
 set(JSON_ImplicitConversions OFF CACHE INTERNAL "Enable implicit conversions.")
 add_subdirectory(third-party/json)
 
+# fmt
+add_subdirectory(third-party/fmt)
+
 # spdlog
+set(SPDLOG_FMT_EXTERNAL ON CACHE INTERNAL "Use external fmt library instead of bundled")
 add_subdirectory(third-party/spdlog)
 
 # libhv
@@ -53,9 +57,6 @@ add_subdirectory(third-party/libhv)
 # oneTBB
 set(TBB_TEST OFF CACHE INTERNAL "Enable testing")
 add_subdirectory(third-party/oneTBB)
-
-# fmt
-add_subdirectory(third-party/fmt)
 
 # utfcpp
 add_subdirectory(third-party/utfcpp)
@@ -90,8 +91,11 @@ set(Tencentcloud-sdk-cpp_LIBS
     uuid
 )
 
+file(GLOB_RECURSE SRCS source/modules/module/*cpp)
+
 add_executable(${PROJECT_NAME} 
                 source/main.cpp
+                ${SRCS}
                 third-party/cpp-base64/base64.cpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -111,7 +115,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         nlohmann_json::nlohmann_json 
                         hv_static 
                         spdlog
-                        fmt
+                        fmt::fmt
                         ${OpenCV_LIBS}
                         TBB::tbb
                         libmysqlclient.a

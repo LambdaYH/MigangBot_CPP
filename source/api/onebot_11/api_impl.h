@@ -15,131 +15,18 @@ namespace onebot11
 
 using Event = Json;
 
-class ApiImpl : std::enable_shared_from_this<ApiImpl>
-{
-public:
-    ApiImpl();
-    ~ApiImpl();
-
-public:
-    // onebot
-    Json handle_quick_operation_message_reply(const Event &event, const std::string &message, bool at_sender, bool auto_escape = false) const;
-
-    Json handle_quick_operation_message_delete(const Event &event, const MsgId message_id) const;
-
-    Json handle_quick_operation_message_kick(const Event &event, const MsgId message_id, bool reject_add_request) const;
-
-    Json handle_quick_operation_message_ban(const Event &event, const uint32_t ban_duration) const;
-
-    Json handle_quick_operation_request_friend(const Event &event, const std::string &flag, bool approve) const;
-
-    Json handle_quick_operation_request_group(const Event &event, const std::string &sub_type, const std::string &reason, bool approve) const;
-
-    Json send_private_msg(const QId user_id, const std::string &message, bool auto_escape = false) const;
-
-    Json send_group_msg(const QId group_id, const std::string &message, bool auto_escape = false) const;
-
-    template<bool is_group>
-    Json send_msg(const QId qid, const GId gid, const std::string &message, bool auto_escape = true) const;
-
-    Json delete_msg(MsgId msg_id) const;
-
-    Json get_msg(MsgId msg_id) const;
-
-    Json get_forward_msg(const std::string &id) const;
-
-    Json send_like(const QId qid, const uint8_t time) const;
-
-    Json set_group_kick(const GId gid, const QId, const std::string &message, bool reject_add_request) const;
-
-    Json set_group_ban(const GId gid, const QId qid, const uint32_t duration = 1800) const;
-
-    Json set_group_anonymous_ban(const GId gid, int32_t duration, const std::string &anonymous_flag) const;
-
-    Json set_group_whole_ban(const GId gid, bool enable = true) const;
-
-    Json set_group_admin(const GId gid, const QId qid, bool enable = true) const;
-
-    Json set_group_anonymous(const GId gid, bool enable = true) const;
-
-    Json set_group_card(const GId gid, const QId qid, const std::string &card) const;
-
-    Json set_group_name(const GId gid, const std::string &name) const;
-
-    Json set_group_leave(const GId gid) const;
-
-    Json set_group_special_title(const GId gid, const QId qid, const std::string &special_title) const;
-
-    Json set_friend_add_request(const std::string &flag, bool approve = true) const;
-
-    Json set_group_add_request(const std::string &flag, const std::string &sub_type, const std::string &reason, bool approve = true) const;
-
-    Json get_login_info() const;
-
-    Json get_stranger_info(const QId qid) const;
-
-    Json get_friend_list() const;
-
-    Json get_group_info(const GId gid, bool no_cache) const;
-
-    Json get_group_list(bool no_cache) const;
-
-    Json get_group_member_info(const GId gid, const QId qid, bool no_cache) const;
-
-    Json get_group_member_list(const GId gid, bool no_cache) const;
-
-    Json get_group_honor_info(const GId gid, const std::string &type) const;
-
-    Json get_cookies(const std::string &domain) const;
-
-    Json get_csrf_token() const;
-
-    Json get_credentials(const std::string &domain) const;
-
-    Json get_record(const std::string &file, const std::string &out_format) const;
-
-    Json get_image(const std::string &out_format) const;
-
-    Json can_send_image() const;
-
-    Json can_send_record() const;
-
-    Json get_status() const;
-
-    Json get_version_info() const;
-
-    Json set_restart(int delay) const;
-
-    Json clean_cache() const;
-
-    // go-cqhttp
-    Json get_word_slices(const std::string &content) const;
-
-    Json ocr_image(const std::string &image) const;
-
-    Json get_model_show(const std::string &model) const;
-
-    Json get_vip_info(const QId qid) const;
-
-    Json send_group_notice(const GId gid, const std::string &content, const std::string &image) const;
-
-    Json set_model_show(const std::string &model, const std::string &model_show) const;
-
-    Json check_url_safely(const std::string &url) const;
-
-};
-
-inline ApiImpl::ApiImpl()
+namespace api_impl
 {
 
+inline Json CallApi(const std::string &action, const Json &params)
+{
+    return Json{
+        {"action", action},
+        {"params", params}
+    };
 }
 
-inline ApiImpl::~ApiImpl()
-{
-
-}
-
-inline Json ApiImpl::handle_quick_operation_message_reply(const Event &event, const std::string &message, bool at_sender, bool auto_escape) const
+inline Json handle_quick_operation_message_reply(const Event &event, const std::string &message, bool at_sender, bool auto_escape) 
 {
     Event msg;
     msg["action"] = ".handle_quick_operation";
@@ -160,7 +47,7 @@ inline Json ApiImpl::handle_quick_operation_message_reply(const Event &event, co
     return msg;
 }
 
-inline Json ApiImpl::handle_quick_operation_message_delete(const Event &event, const MsgId message_id) const
+inline Json handle_quick_operation_message_delete(const Event &event,  MsgId message_id) 
 {
     Event msg;
     msg["action"] = ".handle_quick_operation";
@@ -175,7 +62,7 @@ inline Json ApiImpl::handle_quick_operation_message_delete(const Event &event, c
     return msg;
 }
 
-inline Json ApiImpl::handle_quick_operation_message_kick(const Event &event, const MsgId message_id, bool reject_add_request) const
+inline Json handle_quick_operation_message_kick(const Event &event,  MsgId message_id, bool reject_add_request) 
 {
     Event msg;
     msg["action"] = ".handle_quick_operation";
@@ -192,7 +79,7 @@ inline Json ApiImpl::handle_quick_operation_message_kick(const Event &event, con
     return msg;
 }
 
-inline Json ApiImpl::handle_quick_operation_message_ban(const Event &event, const uint32_t ban_duration) const
+inline Json handle_quick_operation_message_ban(const Event &event,  uint32_t ban_duration) 
 {
     Event msg;
     msg["action"] = ".handle_quick_operation";
@@ -209,7 +96,7 @@ inline Json ApiImpl::handle_quick_operation_message_ban(const Event &event, cons
     return msg;
 }
 
-inline Json ApiImpl::handle_quick_operation_request_friend(const Event &event, const std::string &flag, bool approve) const
+inline Json handle_quick_operation_request_friend(const Event &event, bool approve) 
 {
     Event msg;
     msg["action"] = ".handle_quick_operation";
@@ -217,7 +104,7 @@ inline Json ApiImpl::handle_quick_operation_request_friend(const Event &event, c
         {"anonymous"        , event.value("anonymous", nullptr)},
         {"post_type"        , "request"},
         {"request_type"     , "friend"},
-        {"flag"             , flag}
+        {"flag"             , event["flag"].get<std::string>()}
     }; 
     msg["params"]["operation"] = {
         {"approve"          , approve}
@@ -225,7 +112,7 @@ inline Json ApiImpl::handle_quick_operation_request_friend(const Event &event, c
     return msg;
 }
 
-inline Json ApiImpl::handle_quick_operation_request_group(const Event &event, const std::string &sub_type, const std::string &reason, bool approve) const
+inline Json handle_quick_operation_request_group(const Event &event, const std::string &sub_type, const std::string &reason, bool approve) 
 {
     Event msg;
     msg["action"] = ".handle_quick_operation";
@@ -242,32 +129,26 @@ inline Json ApiImpl::handle_quick_operation_request_group(const Event &event, co
     return msg;
 }
 
-inline Json ApiImpl::send_private_msg(const QId user_id, const std::string &message, bool auto_escape) const
+inline Json send_private_msg( QId user_id, const std::string &message, bool auto_escape) 
 {
-    Event msg;
-    msg["action"] = "send_private_msg";
-    msg["params"] = {
-        {"user_id"      , user_id},
-        {"message"      , message},
-        {"auto_escape"  , auto_escape},
-    };
-    return msg;
+    return CallApi("send_private_msg", Json{
+                                            {"user_id"      , user_id},
+                                            {"message"      , message},
+                                            {"auto_escape"  , auto_escape},
+    });
 }
 
-inline Json ApiImpl::send_group_msg(const QId group_id, const std::string &message, bool auto_escape) const
+inline Json send_group_msg( QId group_id, const std::string &message, bool auto_escape) 
 {
-    Event msg;
-    msg["action"] = "send_group_msg";
-    msg["params"] = {
-        {"group_id"     , group_id},
-        {"message"      , message},
-        {"auto_escape"  , auto_escape},
-    };
-    return msg;
+    return CallApi("send_group_msg", Json{
+                                    {"group_id"     , group_id},
+                                    {"message"      , message},
+                                    {"auto_escape"  , auto_escape},
+    });
 }
 
 template<bool is_group>
-inline Json ApiImpl::send_msg(const QId qid, const GId gid, const std::string &message, bool auto_escape) const
+inline Json send_msg(const QId qid, const GId gid, const std::string &message, bool auto_escape) 
 {
     Event msg;
     msg["action"] = "send_msg";
@@ -284,7 +165,7 @@ inline Json ApiImpl::send_msg(const QId qid, const GId gid, const std::string &m
     return msg;
 }
 
-inline Json ApiImpl::delete_msg(MsgId msg_id) const
+inline Json delete_msg(const MsgId msg_id) 
 {
     Event msg;
     msg["action"] = "delete_msg";
@@ -294,7 +175,7 @@ inline Json ApiImpl::delete_msg(MsgId msg_id) const
     return msg;
 }
 
-inline Json ApiImpl::get_msg(MsgId msg_id) const
+inline Json get_msg(const MsgId msg_id) 
 {
     Event msg;
     msg["action"] = "get_msg";
@@ -304,7 +185,7 @@ inline Json ApiImpl::get_msg(MsgId msg_id) const
     return msg;
 }
 
-inline Json ApiImpl::get_forward_msg(const std::string &id) const
+inline Json get_forward_msg(const std::string &id) 
 {
     Event msg;
     msg["action"] = "get_forward_msg";
@@ -314,7 +195,7 @@ inline Json ApiImpl::get_forward_msg(const std::string &id) const
     return msg;
 }
 
-inline Json ApiImpl::send_like(const QId qid, const uint8_t time) const
+inline Json send_like(const QId qid,  uint8_t time) 
 {
     Event msg;
     msg["action"] = "send_like";
@@ -325,7 +206,7 @@ inline Json ApiImpl::send_like(const QId qid, const uint8_t time) const
     return msg;
 }
 
-inline Json ApiImpl::set_group_kick(const GId gid, const QId qid, const std::string &message, bool reject_add_request) const
+inline Json set_group_kick(const GId gid, const QId qid, const std::string &message, bool reject_add_request) 
 {
     Event msg;
     msg["action"] = "set_group_kick";
@@ -338,7 +219,7 @@ inline Json ApiImpl::set_group_kick(const GId gid, const QId qid, const std::str
     return msg;
 }
 
-inline Json ApiImpl::set_group_ban(const GId gid, const QId qid, const uint32_t duration) const
+inline Json set_group_ban(const GId gid, const QId qid,  uint32_t duration) 
 {
     Event msg;
     msg["action"] = "set_group_ban";
@@ -350,7 +231,7 @@ inline Json ApiImpl::set_group_ban(const GId gid, const QId qid, const uint32_t 
     return msg;
 }
 
-inline Json ApiImpl::set_group_anonymous_ban(const GId gid, int32_t duration, const std::string &anonymous_flag) const
+inline Json set_group_anonymous_ban(const GId gid, int32_t duration, const std::string &anonymous_flag) 
 {
     Event msg;
     msg["action"] = "set_group_anonymous_ban";
@@ -362,7 +243,7 @@ inline Json ApiImpl::set_group_anonymous_ban(const GId gid, int32_t duration, co
     return msg;
 }
 
-inline Json ApiImpl::set_group_whole_ban(const GId gid, bool enable) const
+inline Json set_group_whole_ban(const GId gid, bool enable) 
 {
     Event msg;
     msg["action"] = "set_group_whole_ban";
@@ -373,7 +254,7 @@ inline Json ApiImpl::set_group_whole_ban(const GId gid, bool enable) const
     return msg;
 }
 
-inline Json ApiImpl::set_group_admin(const GId gid, const QId qid, bool enable) const
+inline Json set_group_admin(const GId gid, const QId qid, bool enable) 
 {
     Event msg;
     msg["action"] = "set_group_admin";
@@ -385,7 +266,7 @@ inline Json ApiImpl::set_group_admin(const GId gid, const QId qid, bool enable) 
     return msg;
 }
 
-inline Json ApiImpl::set_group_anonymous(const GId gid, bool enable) const
+inline Json set_group_anonymous(const GId gid, bool enable) 
 {
     Event msg;
     msg["action"] = "set_group_anonymous";
@@ -396,7 +277,7 @@ inline Json ApiImpl::set_group_anonymous(const GId gid, bool enable) const
     return msg;
 }
 
-inline Json ApiImpl::set_group_card(const GId gid, const QId qid, const std::string &card) const
+inline Json set_group_card(const GId gid, const QId qid, const std::string &card) 
 {
     Event msg;
     msg["action"] = "set_group_card";
@@ -408,7 +289,7 @@ inline Json ApiImpl::set_group_card(const GId gid, const QId qid, const std::str
     return msg;
 }
 
-inline Json ApiImpl::set_group_name(const GId gid, const std::string &name) const
+inline Json set_group_name(const GId gid, const std::string &name) 
 {
     Event msg;
     msg["action"] = "set_group_name";
@@ -419,17 +300,15 @@ inline Json ApiImpl::set_group_name(const GId gid, const std::string &name) cons
     return msg;
 }
 
-inline Json ApiImpl::set_group_leave(const GId gid) const
+inline Json set_group_leave(const GId gid, bool is_dismiss = false) 
 {
-    Event msg;
-    msg["action"] = "set_group_leave";
-    msg["params"] = {
-        {"group_id"             , gid}
-    };
-    return msg;
+    return CallApi("set_group_leave", Json{
+        {"group_id"  , gid},
+        {"is_dismiss", is_dismiss}
+    });
 }
 
-inline Json ApiImpl::set_group_special_title(const GId gid, const QId qid, const std::string &special_title) const
+inline Json set_group_special_title(const GId gid, const QId qid, const std::string &special_title) 
 {
     Event msg;
     msg["action"] = "set_group_special_title";
@@ -441,66 +320,54 @@ inline Json ApiImpl::set_group_special_title(const GId gid, const QId qid, const
     return msg;   
 }
 
-inline Json ApiImpl::set_friend_add_request(const std::string &flag, bool approve) const
+inline Json set_friend_add_request(const std::string &flag, bool approve) 
 {
-    Event msg;
-    msg["action"] = "set_friend_add_request";
-    msg["params"] = {
-        {"flag"                 , flag},
-        {"approve"              , approve}
-    };
-    return msg;    
+    return CallApi("set_friend_add_request", Json{
+                                            {"flag"                 , flag},
+                                            {"approve"              , approve}
+    }); 
 }
 
-inline Json ApiImpl::set_group_add_request(const std::string &flag, const std::string &sub_type, const std::string &reason, bool approve) const
+inline Json set_group_add_request(const std::string &flag, const std::string &sub_type, const std::string &reason, bool approve) 
 {
-    Event msg;
-    msg["action"] = "set_group_add_request";
-    msg["params"] = {
-        {"flag"                 , flag},
-        {"sub_type"             , sub_type},
-        {"reason"               , reason},
-        {"approve"              , approve}
-    };
-    return msg;  
+    return CallApi("set_group_add_request", Json{
+                                        {"flag"                 , flag},
+                                        {"sub_type"             , sub_type},
+                                        {"reason"               , reason},
+                                        {"approve"              , approve}
+    });
 }
 
-inline Json ApiImpl::get_login_info() const
+inline Json get_login_info() 
 {
     Event msg;
     msg["action"] = "get_login_info";
     return msg;
 }
 
-inline Json ApiImpl::get_stranger_info(const QId qid) const
+inline Json get_stranger_info(QId qid) 
 {
-    Event msg;
-    msg["action"] = "get_stranger_info";
-    msg["params"] = {
-        {"user_id"                , qid}
-    };
-    return msg;
+    return CallApi("get_stranger_info", Json{
+                                    {"user_id", qid}
+    });
 }
 
-inline Json ApiImpl::get_friend_list() const
+inline Json get_friend_list() 
 {
     Event msg;
     msg["action"] = "get_friend_list";
     return msg;
 }
 
-inline Json ApiImpl::get_group_info(const GId gid, bool no_cache) const
+inline Json get_group_info(GId gid, bool no_cache) 
 {
-    Event msg;
-    msg["action"] = "get_group_info";
-    msg["params"] = {
+    return CallApi("get_group_info", Json{
         {"group_id"               , gid},
         {"no_cache"               , no_cache},
-    };
-    return msg;   
+    });
 }
 
-inline Json ApiImpl::get_group_list(bool no_cache) const
+inline Json get_group_list(bool no_cache) 
 {
     Event msg;
     msg["action"] = "get_group_list";
@@ -510,7 +377,7 @@ inline Json ApiImpl::get_group_list(bool no_cache) const
     return msg;       
 }
 
-inline Json ApiImpl::get_group_member_info(const GId gid, const QId qid, bool no_cache) const
+inline Json get_group_member_info(const GId gid, const QId qid, bool no_cache) 
 {
     Event msg;
     msg["action"] = "get_group_member_info";
@@ -522,7 +389,7 @@ inline Json ApiImpl::get_group_member_info(const GId gid, const QId qid, bool no
     return msg; 
 }
 
-inline Json ApiImpl::get_group_member_list(const GId gid, bool no_cache) const
+inline Json get_group_member_list(const GId gid, bool no_cache) 
 {
     Event msg;
     msg["action"] = "get_group_member_list";
@@ -533,7 +400,7 @@ inline Json ApiImpl::get_group_member_list(const GId gid, bool no_cache) const
     return msg;     
 }
 
-inline Json ApiImpl::get_group_honor_info(const GId gid, const std::string &type) const
+inline Json get_group_honor_info(const GId gid, const std::string &type) 
 {
     Event msg;
     msg["action"] = "get_group_honor_info";
@@ -544,7 +411,7 @@ inline Json ApiImpl::get_group_honor_info(const GId gid, const std::string &type
     return msg;     
 }
 
-inline Json ApiImpl::get_cookies(const std::string &domain) const
+inline Json get_cookies(const std::string &domain) 
 {
     Event msg;
     msg["action"] = "get_cookies";
@@ -554,14 +421,14 @@ inline Json ApiImpl::get_cookies(const std::string &domain) const
     return msg;  
 }
 
-inline Json ApiImpl::get_csrf_token() const
+inline Json get_csrf_token() 
 {
     Event msg;
     msg["action"] = "get_csrf_token";
     return msg;      
 }
 
-inline Json ApiImpl::get_credentials(const std::string &domain) const
+inline Json get_credentials(const std::string &domain) 
 {
     Event msg;
     msg["action"] = "get_credentials";
@@ -571,7 +438,7 @@ inline Json ApiImpl::get_credentials(const std::string &domain) const
     return msg;      
 }
 
-inline Json ApiImpl::get_record(const std::string &file, const std::string &out_format) const
+inline Json get_record(const std::string &file, const std::string &out_format) 
 {
     Event msg;
     msg["action"] = "get_record";
@@ -582,7 +449,7 @@ inline Json ApiImpl::get_record(const std::string &file, const std::string &out_
     return msg;  
 }
 
-inline Json ApiImpl::get_image(const std::string &file) const
+inline Json get_image(const std::string &file) 
 {
     Event msg;
     msg["action"] = "get_image";
@@ -592,35 +459,35 @@ inline Json ApiImpl::get_image(const std::string &file) const
     return msg;      
 }
 
-inline Json ApiImpl::can_send_image() const
+inline Json can_send_image() 
 {
     Event msg;
     msg["action"] = "can_send_image";
     return msg;        
 }
 
-inline Json ApiImpl::can_send_record() const
+inline Json can_send_record() 
 {
     Event msg;
     msg["action"] = "can_send_record";
     return msg;       
 }
 
-inline Json ApiImpl::get_status() const
+inline Json get_status() 
 {
     Event msg;
     msg["action"] = "get_status";
     return msg;       
 }
 
-inline Json ApiImpl::get_version_info() const
+inline Json get_version_info() 
 {
     Event msg;
     msg["action"] = "get_version_info";
     return msg;       
 }
 
-inline Json ApiImpl::set_restart(int delay) const
+inline Json set_restart(int delay) 
 {
     Event msg;
     msg["action"] = "set_restart";
@@ -630,7 +497,7 @@ inline Json ApiImpl::set_restart(int delay) const
     return msg;     
 }
 
-inline Json ApiImpl::clean_cache() const
+inline Json clean_cache() 
 {
     Event msg;
     msg["action"] = "clean_cache";
@@ -638,7 +505,7 @@ inline Json ApiImpl::clean_cache() const
 }
 
 // go-cqhttp
-inline Json ApiImpl::get_word_slices(const std::string &content) const 
+inline Json get_word_slices(const std::string &content)  
 {
     Event msg;
     msg["action"] = ".get_word_slices";
@@ -648,7 +515,7 @@ inline Json ApiImpl::get_word_slices(const std::string &content) const
     return msg;    
 }
 
-inline Json ApiImpl::ocr_image(const std::string &image) const
+inline Json ocr_image(const std::string &image) 
 {
     Event msg;
     msg["action"] = ".ocr_image";
@@ -658,7 +525,7 @@ inline Json ApiImpl::ocr_image(const std::string &image) const
     return msg;   
 }
 
-inline Json ApiImpl::get_model_show(const std::string &model) const
+inline Json get_model_show(const std::string &model) 
 {
     Event msg;
     msg["action"] = "_get_model_show";
@@ -668,7 +535,7 @@ inline Json ApiImpl::get_model_show(const std::string &model) const
     return msg;   
 }
 
-inline Json ApiImpl::get_vip_info(const QId qid) const
+inline Json get_vip_info(const QId qid) 
 {
     Event msg;
     msg["action"] = "_get_vip_info";
@@ -678,7 +545,7 @@ inline Json ApiImpl::get_vip_info(const QId qid) const
     return msg;   
 }
 
-inline Json ApiImpl::send_group_notice(const GId gid, const std::string &content, const std::string &image) const
+inline Json send_group_notice(const GId gid, const std::string &content, const std::string &image) 
 {
     Event msg;
     msg["action"] = "_send_group_notice";
@@ -690,7 +557,7 @@ inline Json ApiImpl::send_group_notice(const GId gid, const std::string &content
     return msg;   
 }
 
-inline Json ApiImpl::set_model_show(const std::string &model, const std::string &model_show) const
+inline Json set_model_show(const std::string &model, const std::string &model_show) 
 {
     Event msg;
     msg["action"] = "_set_model_show";
@@ -701,7 +568,7 @@ inline Json ApiImpl::set_model_show(const std::string &model, const std::string 
     return msg;   
 }
 
-inline Json ApiImpl::check_url_safely(const std::string &url) const
+inline Json check_url_safely(const std::string &url) 
 {
     Event msg;
     msg["action"] = "check_url_safely";
@@ -711,6 +578,7 @@ inline Json ApiImpl::check_url_safely(const std::string &url) const
     return msg;   
 }
 
+} // namespace api_impl
 } // namespace onebot11
 } // namespace white
 

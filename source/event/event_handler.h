@@ -323,6 +323,17 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept
                             func(event, bot);
                         });
                 }
+                if(!sub_type.empty())
+                {
+                    if(notice_handler_.count(notice_type) && notice_handler_.at(notice_type).count(""))
+                    {
+                        for(auto &func : notice_handler_.at(notice_type).at(""))
+                            go([&func, event, &bot]()
+                            {
+                                func(event, bot);
+                            });
+                    }
+                }
             }
             break;
             // request

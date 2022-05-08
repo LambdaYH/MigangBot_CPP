@@ -31,6 +31,8 @@ public:
                     return "";
                 else if constexpr (std::is_same<T, GroupInfo>::value)
                     return {0, "", 0, 0};
+                else if constexpr (std::is_same<T, UserInfo>::value)
+                    return {0, "", "", 0};
             }
             break;
             case std::future_status::ready:

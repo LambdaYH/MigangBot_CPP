@@ -8,6 +8,8 @@
 #include "modules/module/botmanage/help.h"
 #include "modules/module/botmanage/status_info.h"
 #include "modules/module/botmanage/feedback.h"
+#include "modules/module/botmanage/friend_invite.h"
+#include "modules/module/botmanage/group_invite.h"
 
 #include "modules/module/tencentcloud_nlp/auto_summarization.h"
 #include "modules/module/tencentcloud_nlp/keywords_extraction.h"
@@ -30,6 +32,8 @@ inline void InitModuleList()
     AddModule<Help>();
     AddModule<StatusInfo>();
     AddModule<FeedBack>();
+    AddModule<FriendInvite>();
+    AddModule<GroupInvite>();
 
     // tencentcloud_nlp
     AddModule<AutoSummarization>();
