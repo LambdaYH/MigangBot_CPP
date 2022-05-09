@@ -30,8 +30,6 @@ class Server {
     websocket_server_stop(&server_);
   }
 
-  const auto GetBots() { return bots_; }
-
  private:
   void InitWebsocketService() {
     ws_.onopen = [this](const WebSocketChannelPtr& channel,
@@ -39,7 +37,6 @@ class Server {
       LOG_DEBUG("onopen: GET {}", url);
       Bot* bot = channel->newContext<Bot>();
       go(&Bot::Run, bot, channel);
-      bots_.insert(bot);
     };
     ws_.onmessage = [](const WebSocketChannelPtr& channel,
                        const std::string& msg) {
@@ -48,8 +45,6 @@ class Server {
     };
     ws_.onclose = [this](const WebSocketChannelPtr& channel) {
       LOG_DEBUG("onClose");
-      Bot* bot = channel->getContext<Bot>();
-      bots_.erase(bot);
       channel->deleteContext<Bot>();
     };
   }
@@ -65,7 +60,6 @@ class Server {
 
   websocket_server_t server_;
 
-  std::set<Bot*> bots_;
 };
 
 }  // namespace white

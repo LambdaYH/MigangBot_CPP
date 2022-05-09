@@ -19,6 +19,7 @@
 #include "event/event_handler.h"
 #include "global_config.h"
 #include "version.h"
+#include "schedule/schedule.h"
 
 namespace white {
 
@@ -30,8 +31,6 @@ class Bot : public std::enable_shared_from_this<Bot> {
   void Run(const WebSocketChannelPtr &channel) noexcept;
 
   void OnRead(const std::string &msg) noexcept;
-
-  const auto &GetBot() noexcept { return api_bot_; }
 
  private:
   void OnRun();
@@ -62,7 +61,7 @@ inline Bot::Bot()
                                    std::placeholders::_2)),
       api_bot_(notify_, set_echo_function_) {}
 
-inline Bot::~Bot() {}
+inline Bot::~Bot() { BotSet::GetInstance().RemoveBot(&api_bot_); }
 
 inline void Bot::Run(const WebSocketChannelPtr &channel) noexcept {
   channel_ = channel;
@@ -70,6 +69,7 @@ inline void Bot::Run(const WebSocketChannelPtr &channel) noexcept {
 }
 
 inline void Bot::OnRun() {
+  BotSet::GetInstance().AddBot(&api_bot_);
   for (auto superuser : config::SUPERUSERS)
     api_bot_.send_private_msg(
         superuser, fmt::format("MigangBot已启动\n版本: {}", kMigangBotVersion));
