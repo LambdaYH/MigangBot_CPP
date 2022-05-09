@@ -4,27 +4,23 @@
 #include "event/event.h"
 #include "event/event_filter.h"
 
-namespace white
-{
-namespace onebot11
-{
+namespace white {
+namespace onebot11 {
 
-class EventFilterOnebot11 : public EventFilter
-{
-public:
-    virtual const bool operator()(const Event &msg) const noexcept override
-    {
-        // 过滤临时会话
-        if(msg.contains("post_type"))
-            if(msg.value("message_type", "") == "private" && msg.value("sub_type", "") == "group")
-                return false;
-        if(msg.contains("retcode"))
-            return false;
-        return true;
-    }
+class EventFilterOnebot11 : public EventFilter {
+ public:
+  virtual const bool operator()(const Event &msg) const noexcept override {
+    // 过滤临时会话
+    if (msg.contains("post_type"))
+      if (msg.value("message_type", "") == "private" &&
+          msg.value("sub_type", "") == "group")
+        return false;
+    if (msg.contains("retcode")) return false;
+    return true;
+  }
 };
 
-} // namespace onebot11
-} // namespace white
+}  // namespace onebot11
+}  // namespace white
 
 #endif

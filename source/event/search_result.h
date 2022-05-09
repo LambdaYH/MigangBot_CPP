@@ -3,17 +3,16 @@
 
 #include <string>
 
-#include "event/type.h"
 #include "bot/onebot_11/api_bot.h"
+#include "event/type.h"
 
 namespace white {
 
-struct SearchResult
-{
+struct SearchResult {
   const plugin_func &func;
   const short command_size;
 };
 
-} // namespace hite
+}  // namespace white
 
 #endif

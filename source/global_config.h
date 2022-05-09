@@ -8,13 +8,11 @@
 
 #include "type.h"
 
-namespace white
-{
+namespace white {
 
 extern YAML::Node global_config;
 
-namespace config
-{
+namespace config {
 
 extern std::filesystem::path kConfigDir;
 
@@ -26,7 +24,7 @@ extern std::unordered_set<QId> WHITE_LIST;
 
 extern std::filesystem::path kAssetsDir;
 
-} // namespace global_config
-} // namespace white
+}  // namespace config
+}  // namespace white
 
 #endif

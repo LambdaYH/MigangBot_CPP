@@ -1,8 +1,8 @@
 #ifndef MIGANGBOT_EVENT_TYPE_H_
 #define MIGANGBOT_EVENT_TYPE_H_
 
-#include "event/event.h"
 #include "bot/onebot_11/api_bot.h"
+#include "event/event.h"
 
 namespace white {
 
@@ -14,6 +14,6 @@ constexpr auto SUFFIX = 2;
 constexpr auto KEYWORD = 3;
 constexpr auto ALLMSG = 4;
 
-} // namespace hite
+}  // namespace white
 
 #endif

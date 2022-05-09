@@ -5,13 +5,12 @@
 
 #include <nlohmann/json.hpp>
 
-namespace white
-{
+namespace white {
 
 using Event = nlohmann::json;
 
 using EventPtr = std::shared_ptr<nlohmann::json>;
 
-} // namespace white
+}  // namespace white
 
 #endif

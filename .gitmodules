@@ -40,12 +40,9 @@
 [submodule "third-party/jpcre2"]
 	path = third-party/jpcre2
 	url = https://github.com/jpcre2/jpcre2.git
-[submodule "third-party/CTPL"]
-	path = third-party/CTPL
-	url = https://github.com/vit-vit/CTPL.git
-[submodule "third-party/Scheduler"]
-	path = third-party/Scheduler
-	url = https://github.com/Bosma/Scheduler.git
 [submodule "third-party/cocoyaxi"]
 	path = third-party/cocoyaxi
 	url = https://github.com/idealvin/cocoyaxi.git
+[submodule "third-party/Scheduler"]
+	path = third-party/Scheduler
+	url = https://github.com/LambdaYH/Scheduler.git
