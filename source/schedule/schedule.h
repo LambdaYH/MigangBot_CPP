@@ -36,7 +36,7 @@ class BotSet {
   BotSet(const BotSet &b) = delete;
   BotSet(const BotSet &&b) = delete;
   BotSet &operator=(const BotSet &b) = delete;
-  BotSet &operator==(const BotSet &b) = delete;
+  BotSet &operator=(const BotSet &&b) = delete;
 
  private:
   BotSet() {}
