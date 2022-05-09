@@ -93,10 +93,13 @@ class StatusInfo : public Module {
 };
 
 inline void StatusInfo::Register() {
-  RegisterCommand(FULLMATCH, {"/ping"}, ACT(StatusInfo::Ping));
-  RegisterCommand(FULLMATCH, {"status", "状态"}, ACT(StatusInfo::Status),
+  RegisterCommand(FULLMATCH, {"/ping"}, "__ping__", ACT(StatusInfo::Ping),
+                  permission::NORMAL, permission::SUPERUSER);
+  RegisterCommand(FULLMATCH, {"status", "状态"}, "__status__",
+                  ACT(StatusInfo::Status), permission::SUPERUSER,
                   permission::SUPERUSER);
-  RegisterCommand(FULLMATCH, {"network", "网络状况"}, ACT(StatusInfo::Network),
+  RegisterCommand(FULLMATCH, {"network", "网络状况"}, "__network__",
+                  ACT(StatusInfo::Network), permission::SUPERUSER,
                   permission::SUPERUSER);
 }
 

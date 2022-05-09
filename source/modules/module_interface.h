@@ -15,6 +15,7 @@
 #include "logger/logger.h"
 #include "message/utility.h"
 #include "permission/permission.h"
+#include "service/service_manager.h"
 #include "utility.h"
 
 namespace white {
@@ -25,44 +26,48 @@ namespace module {
 
 using Config = YAML::Node;
 
-inline void RegisterAllMessage(const plugin_func &&func,
-                               int permission = permission::NORMAL) {
-  EventHandler::GetInstance().RegisterCommand(ALLMSG, "", std::move(func),
-                                              permission);
+template <typename... Args>
+inline void RegisterAllMessage(const int command_type, Args &&...args) {
+  auto service = std::make_shared<Service>(std::forward<Args>(args)...);
+  EventHandler::GetInstance().RegisterCommand(ALLMSG, "", service);
+  ServiceManager::GetInstance().RegisterService(service);
 }
 
-inline void RegisterCommand(const int type,
+template <typename... Args>
+inline void RegisterCommand(const int command_type,
                             const std::initializer_list<std::string> &commands,
-                            const plugin_func &func,
-                            int permission = permission::NORMAL,
-                            bool only_to_me = false) {
+                            Args &&...args) {
+  auto service = std::make_shared<Service>(std::forward<Args>(args)...);
   for (auto &command : commands) {
-    auto func_cp = func;
-    if (!EventHandler::GetInstance().RegisterCommand(
-            type, command, std::move(func_cp), permission, only_to_me))
+    if (!EventHandler::GetInstance().RegisterCommand(command_type, command,
+                                                     service))
       LOG_WARN("注册指令[{}]失败", command);
   }
+  ServiceManager::GetInstance().RegisterService(service);
 }
 
+template <typename... Args>
 inline void RegisterNotice(const std::string &notice_type,
-                           const std::string &sub_type,
-                           const plugin_func &func) {
-  EventHandler::GetInstance().RegisterNotice(notice_type, sub_type,
-                                             std::move(func));
+                           const std::string &sub_type, Args &&...args) {
+  auto service = std::make_shared<Service>(std::forward<Args>(args)...);
+  EventHandler::GetInstance().RegisterNotice(notice_type, sub_type, service);
+  ServiceManager::GetInstance().RegisterService(service);
 }
 
+template <typename... Args>
 inline void RegisterRequest(const std::string &request_type,
-                            const std::string &sub_type,
-                            const plugin_func &func) {
-  EventHandler::GetInstance().RegisterRequest(request_type, sub_type,
-                                              std::move(func));
+                            const std::string &sub_type, Args &&...args) {
+  auto service = std::make_shared<Service>(std::forward<Args>(args)...);
+  EventHandler::GetInstance().RegisterRequest(request_type, sub_type, service);
+  ServiceManager::GetInstance().RegisterService(service);
 }
 
+template <typename... Args>
 inline void RegisterRegex(const std::initializer_list<std::string> &patterns,
-                          const plugin_func &func,
-                          int permission = permission::NORMAL) {
-  EventHandler::GetInstance().RegisterRegex(patterns, std::move(func),
-                                            permission);
+                          Args &&...args) {
+  auto service = std::make_shared<Service>(std::forward<Args>(args)...);
+  EventHandler::GetInstance().RegisterRegex(patterns, service);
+  ServiceManager::GetInstance().RegisterService(service);
 }
 
 class Module {

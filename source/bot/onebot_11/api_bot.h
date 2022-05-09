@@ -49,6 +49,8 @@ class ApiBot {
   CoFutureWrapper<GroupInfo> get_group_info(const GId group_id,
                                             bool no_cache = false);
 
+  CoFutureWrapper<std::vector<GroupInfo>> get_group_list(bool no_cache = false);
+
   CoFutureWrapper<UserInfo> get_stranger_info(const QId user_id,
                                               bool no_cache = false);
 
@@ -107,6 +109,18 @@ class ApiBot {
                                value["nickname"].get<std::string>(),
                                value["sex"].get<std::string>(),
                                value["age"].get<int32_t>()});
+      } else if constexpr (std::is_same<T, std::vector<GroupInfo>>::value) {
+        if (value.is_null())
+          shared_p->set_value({});
+        else {
+          std::vector<GroupInfo> v;
+          for (std::size_t i = 0; i < value.size(); ++i)
+            v.push_back({value[i]["group_id"].get<GId>(),
+                         value[i]["group_name"].get<std::string>(),
+                         value[i]["member_count"].get<int>(),
+                         value[i]["max_member_count"].get<int>()});
+          shared_p->set_value(std::move(v));
+        }
       }
     } catch (const std::exception &e) {
       LOG_ERROR("Exception In EchoFunction: {}", e.what());
@@ -271,6 +285,14 @@ inline CoFutureWrapper<GroupInfo> ApiBot::get_group_info(const GId group_id,
                                                          bool no_cache) {
   Json msg = api_impl::get_group_info(group_id, no_cache);
   auto ret = Echo<GroupInfo>(msg);
+  notify_(msg.dump());
+  return ret;
+}
+
+inline CoFutureWrapper<std::vector<GroupInfo>> ApiBot::get_group_list(
+    bool no_cache) {
+  Json msg = api_impl::get_group_list(no_cache);
+  auto ret = Echo<std::vector<GroupInfo>>(msg);
   notify_(msg.dump());
   return ret;
 }

@@ -13,6 +13,7 @@
 #include "bot/onebot_11/api_bot.h"
 #include "event/search_result.h"
 #include "event/type.h"
+#include "service/service.h"
 
 namespace white {
 
@@ -22,11 +23,9 @@ class Trie {
   ~Trie();
 
  public:
-  template <typename F>
-  bool Insert(const std::string &key, F &&func);
+  bool Insert(const std::string &key, std::shared_ptr<Service> service);
 
-  template <typename F>
-  bool InsertFromBack(const std::string &key, F &&func);
+  bool InsertFromBack(const std::string &key, std::shared_ptr<Service> service);
 
   const SearchResult Search(const std::string &key) const noexcept;
 
@@ -35,20 +34,19 @@ class Trie {
  private:
   struct TrieNode {
     std::unordered_map<char, std::shared_ptr<TrieNode>> childs;
-    plugin_func func;
+    std::shared_ptr<Service> service;
   };
 
  private:
   std::shared_ptr<TrieNode> root_;
-  plugin_func no_func_here_;
+  std::shared_ptr<Service> no_service_here_;
 };
 
-inline Trie::Trie() : root_(std::make_shared<TrieNode>()), no_func_here_() {}
+inline Trie::Trie() : root_(std::make_shared<TrieNode>()), no_service_here_() {}
 
 inline Trie::~Trie() {}
 
-template <typename F>
-inline bool Trie::Insert(const std::string &key, F &&func) {
+inline bool Trie::Insert(const std::string &key, std::shared_ptr<Service> service) {
   auto cur_node = root_;
   for (auto ch : key) {
     ch = std::tolower(ch);
@@ -56,13 +54,12 @@ inline bool Trie::Insert(const std::string &key, F &&func) {
       cur_node->childs.emplace(ch, std::make_shared<TrieNode>());
     cur_node = cur_node->childs[ch];
   }
-  if (cur_node->func) return false;
-  cur_node->func = std::forward<F>(func);
+  if (cur_node->service) return false;
+  cur_node->service = service;
   return true;
 }
 
-template <typename F>
-inline bool Trie::InsertFromBack(const std::string &key, F &&func) {
+inline bool Trie::InsertFromBack(const std::string &key, std::shared_ptr<Service> service) {
   auto cur_node = root_;
   for (auto it = key.rbegin(); it != key.rend(); ++it) {
     auto ch = std::tolower(*it);
@@ -70,8 +67,8 @@ inline bool Trie::InsertFromBack(const std::string &key, F &&func) {
       cur_node->childs.emplace(ch, std::make_shared<TrieNode>());
     cur_node = cur_node->childs[ch];
   }
-  if (cur_node->func) return false;
-  cur_node->func = std::forward<F>(func);
+  if (cur_node->service) return false;
+  cur_node->service = service;
   return true;
 }
 
@@ -82,12 +79,12 @@ inline const SearchResult Trie::Search(const std::string &key) const noexcept {
     ch = std::tolower(ch);
     if (ch == ' ') break;
     ++command_size;
-    if (!cur_node->childs.count(ch)) return {no_func_here_, 0};
+    if (!cur_node->childs.count(ch)) return {no_service_here_, 0};
     cur_node = cur_node->childs[ch];
-    if (cur_node->func) return {cur_node->func, command_size};
+    if (cur_node->service) return {cur_node->service, command_size};
   }
-  if (cur_node->func) return {cur_node->func, command_size};
-  return {no_func_here_, 0};
+  if (cur_node->service) return {cur_node->service, command_size};
+  return {no_service_here_, 0};
 }
 
 inline const SearchResult Trie::SearchFromBack(
@@ -98,12 +95,12 @@ inline const SearchResult Trie::SearchFromBack(
     auto ch = std::tolower(*it);
     if (ch == ' ') break;
     --command_size;
-    if (!cur_node->childs.count(ch)) return {no_func_here_, 0};
+    if (!cur_node->childs.count(ch)) return {no_service_here_, 0};
     cur_node = cur_node->childs[ch];
-    if (cur_node->func) return {cur_node->func, command_size};
+    if (cur_node->service) return {cur_node->service, command_size};
   }
-  if (cur_node->func) return {cur_node->func, command_size};
-  return {no_func_here_, 0};
+  if (cur_node->service) return {cur_node->service, command_size};
+  return {no_service_here_, 0};
 }
 
 }  // namespace white

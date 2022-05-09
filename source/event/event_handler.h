@@ -21,6 +21,7 @@
 #include "logger/logger.h"
 #include "permission/permission.h"
 #include "utility.h"
+#include "service/service_manager.h"
 
 namespace white {
 
@@ -39,22 +40,19 @@ class EventHandler {
   }
 
  public:
-  template <typename F>
   bool RegisterCommand(const int command_type, const std::string &command,
-                       F &&func, int permission = permission::NORMAL,
-                       bool only_to_me = false);
+                       std::shared_ptr<Service> service);
 
-  template <typename F>
   bool RegisterNotice(const std::string &notice_type,
-                      const std::string &sub_type, F &&func);
+                      const std::string &sub_type,
+                      std::shared_ptr<Service> service);
 
-  template <typename F>
   bool RegisterRequest(const std::string &request_type,
-                       const std::string &sub_type, F &&func);
+                       const std::string &sub_type,
+                       std::shared_ptr<Service> service);
 
-  template <typename F>
   bool RegisterRegex(const std::initializer_list<std::string> &patterns,
-                     F &&func, int permission = permission::NORMAL);
+                     std::shared_ptr<Service> service);
 
   bool Handle(Event &event, onebot11::ApiBot &bot) noexcept;
 
@@ -69,115 +67,73 @@ class EventHandler {
   ~EventHandler() {}
 
  private:
-  const plugin_func &MatchedHandler(Event &event,
-                                    const std::string &message) const noexcept;
-  const SearchResult MatchHelper(int permission, const std::string &message,
-                                 bool only_to_me) const noexcept;
+  const plugin_func &MatchedHandler(Event &event, const int perm,
+                                    const std::string &message,
+                                    const char message_type) const noexcept;
 
  private:
-  std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize>
-      command_fullmatch_each_perm_;
-  std::array<Trie, kCommandArraySize> command_prefix_each_perm_;
-  std::array<Trie, kCommandArraySize> command_suffix_each_perm_;
-  std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize>
-      command_keyword_each_perm_;
+  std::unordered_map<std::string, std::shared_ptr<Service>> command_fullmatch_;
+  Trie command_prefix_;
+  Trie command_suffix_;
 
-  std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize>
-      command_fullmatch_each_perm_to_me_;
-  std::array<Trie, kCommandArraySize> command_prefix_each_perm_to_me_;
-  std::array<Trie, kCommandArraySize> command_suffix_each_perm_to_me_;
-  std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize>
-      command_keyword_each_perm_to_me_;
+  std::vector<RegexMatcher> command_regex_;
 
-  std::array<std::vector<RegexMatcher>, kCommandArraySize>
-      command_regex_each_perm_;
+  std::vector<std::shared_ptr<Service>> all_msg_handler_;
 
-  std::array<std::vector<plugin_func>, kCommandArraySize>
-      all_msg_handler_each_perm_;
-
-  std::unordered_map<std::string,
-                     std::unordered_map<std::string, std::vector<plugin_func>>>
+  std::unordered_map<
+      std::string,
+      std::unordered_map<std::string, std::vector<std::shared_ptr<Service>>>>
       notice_handler_;
-  std::unordered_map<std::string,
-                     std::unordered_map<std::string, std::vector<plugin_func>>>
+  std::unordered_map<
+      std::string,
+      std::unordered_map<std::string, std::vector<std::shared_ptr<Service>>>>
       request_handler_;
   plugin_func no_func_avaliable_;
 
   std::unique_ptr<EventFilter> filter_;
 };
 
-template <typename F>
 inline bool EventHandler::RegisterCommand(const int command_type,
-                                          const std::string &command, F &&func,
-                                          int permission, bool only_to_me) {
+                                          const std::string &command,
+                                          std::shared_ptr<Service> service) {
   switch (command_type) {
     case FULLMATCH:
-      if (only_to_me)
-        return command_fullmatch_each_perm_to_me_[permission]
-            .emplace(std::move(command), std::forward<F>(func))
-            .second;
-      return command_fullmatch_each_perm_[permission]
-          .emplace(std::move(command), std::forward<F>(func))
-          .second;
+      return command_fullmatch_.emplace(command, service).second;
       break;
     case PREFIX:
-      if (only_to_me)
-        return command_prefix_each_perm_to_me_[permission].Insert(
-            std::move(command), std::forward<F>(func));
-      return command_prefix_each_perm_[permission].Insert(
-          std::move(command), std::forward<F>(func));
+      return command_prefix_.Insert(command, service);
       break;
-    case SUFFIX: {
-      if (only_to_me)
-        return command_suffix_each_perm_to_me_[permission].InsertFromBack(
-            std::move(command), std::forward<F>(func));
-      return command_suffix_each_perm_[permission].InsertFromBack(
-          std::move(command), std::forward<F>(func));
-      break;
-    }
-    case KEYWORD:
-      if (only_to_me)
-        return command_keyword_each_perm_to_me_[permission]
-            .emplace(std::move(command), std::forward<F>(func))
-            .second;
-      return command_fullmatch_each_perm_[permission]
-          .emplace(std::move(command), std::forward<F>(func))
-          .second;
+    case SUFFIX:
+      return command_suffix_.Insert(command, service);
       break;
     case ALLMSG:
-      all_msg_handler_each_perm_[permission].push_back(std::forward<F>(func));
+      all_msg_handler_.push_back(service);
       return true;
       break;
     default:
-      return command_fullmatch_each_perm_[permission]
-          .emplace(std::move(command), std::forward<F>(func))
-          .second;
+      return command_fullmatch_.emplace(command, service).second;
   }
   return true;
 }
 
-template <typename F>
 inline bool EventHandler::RegisterNotice(const std::string &notice_type,
                                          const std::string &sub_type,
-                                         F &&func) {
-  notice_handler_[notice_type][sub_type].push_back(std::forward<F>(func));
+                                         std::shared_ptr<Service> service) {
+  notice_handler_[notice_type][sub_type].push_back(service);
   return true;
 }
 
-template <typename F>
 inline bool EventHandler::RegisterRequest(const std::string &request_type,
                                           const std::string &sub_type,
-                                          F &&func) {
-  request_handler_[request_type][sub_type].push_back(std::forward<F>(func));
+                                          std::shared_ptr<Service> service) {
+  request_handler_[request_type][sub_type].push_back(service);
   return true;
 }
 
-template <typename F>
 inline bool EventHandler::RegisterRegex(
-    const std::initializer_list<std::string> &patterns, F &&func,
-    int permission) {
-  command_regex_each_perm_[permission].push_back(
-      RegexMatcher(patterns, std::forward<F>(func)));
+    const std::initializer_list<std::string> &patterns,
+    std::shared_ptr<Service> service) {
+  command_regex_.push_back(RegexMatcher(patterns, service));
   return true;
 }
 
@@ -188,7 +144,8 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
     switch (post_type[3]) {
       // message
       case 's': {
-        if (event["message_type"].get<std::string>()[0] == 'p') {
+        auto message_type = event["message_type"].get<std::string>()[0];
+        if (message_type == 'p') {
           if (event["sub_type"].get<std::string>()[0] == 'f')
             LOG_INFO("Bot[{}]收到来自好友[{}({})]的消息: {}",
                      event["self_id"].get<QId>(),
@@ -208,8 +165,68 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                      event.value("message", "Unknown message"));
           }
         }
+        // pre_propose
+        auto msg = event["message"].get<std::string_view>();
+        auto perm = permission::GetUserPermission(event);
+        if (message_type == 'g') {
+          if (msg.starts_with("启用") || msg.starts_with("enable")) {
+            auto group_id = event["group_id"].get<GId>();
+            auto service_name =
+                msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
+            if (!service_name.empty()) {
+              auto name = std::string(service_name);
+              go([group_id, &bot, name, perm] {
+                if (ServiceManager::GetInstance().GroupEnable(std::string(name),
+                                                              group_id, perm))
+
+                  bot.send_group_msg(group_id,
+                                     fmt::format("已成功启用服务[{}]", name));
+
+                else
+                  bot.send_group_msg(
+                      group_id,
+                      fmt::format("未能(完全)启用服务[{}]，权限不足", name));
+              });
+            }
+          } else if (msg.starts_with("禁用") || msg.starts_with("disable")) {
+            auto group_id = event["group_id"].get<GId>();
+            auto service_name =
+                msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
+            if (!service_name.empty()) {
+              auto name = std::string(service_name);
+              go([group_id, &bot, name, perm] {
+                if (ServiceManager::GetInstance().GroupDisable(
+                        std::string(name), group_id, perm))
+
+                  bot.send_group_msg(group_id,
+                                     fmt::format("已成功禁用服务[{}]", name));
+
+                else
+                  bot.send_group_msg(
+                      group_id,
+                      fmt::format("未能(完全)禁用服务[{}]，权限不足", name));
+              });
+            }
+          }
+        }
+        if (msg.starts_with("[CQ:at")) {
+          auto at_id_start = msg.find_first_of('=') + 1;
+          if (at_id_start != std::string_view::npos) {
+            auto at_id_end = msg.find_first_of(']');
+            if (at_id_end != std::string_view::npos) {
+              auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
+              auto self_id = std::to_string(event["self_id"].get<QId>());
+              if (at_id == self_id) {
+                msg = msg.substr(msg.find_first_of(']') + 1);
+                msg = msg.substr(msg.find_first_not_of(' '));
+                event["__to_me__"] = true;
+                event["message"] = std::string(msg);
+              }
+            }
+          }
+        }
         auto message = event["message"].get<std::string>();
-        const auto &func = MatchedHandler(event, message);
+        const auto &func = MatchedHandler(event, perm, message, message_type);
         if (func)
           go([&func, event, &bot]() {
             func(event, bot);
@@ -217,87 +234,42 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
         else {
           // check_regex
           // check all
-          switch (permission::GetUserPermission(event)) {
-            case permission::SUPERUSER:
-              for (auto &regex_matcher :
-                   command_regex_each_perm_[permission::SUPERUSER])
-                if (regex_matcher.Check(message))
-                  go([&regex_matcher, event, &bot]() {
-                    regex_matcher.GetFunc()(event, bot);
+          switch (message_type) {
+            case 'g': {
+              auto group_id = event["group_id"].get<GId>();
+              for (auto &regex_matcher : command_regex_) {
+                if (regex_matcher.Check(message)) {
+                  const auto &service = regex_matcher.GetService();
+                  if (service->CheckIsEnable(group_id) &&
+                      service->CheckPerm(perm))
+                    go([&service, event, &bot] {
+                      service->GetFunc()(event, bot);
+                    });
+                }
+              }
+              for (const auto &service : all_msg_handler_)
+                if (service->CheckIsEnable(group_id) &&
+                    service->CheckPerm(perm))
+                  go([&service, event, &bot] {
+                    service->GetFunc()(event, bot);
                   });
-              for (const auto &func :
-                   all_msg_handler_each_perm_[permission::SUPERUSER])
-                go([&func, event, &bot]() { func(event, bot); });
-            case permission::WHITE_LIST:
-              for (auto &regex_matcher :
-                   command_regex_each_perm_[permission::WHITE_LIST])
-                if (regex_matcher.Check(message))
-                  go([&regex_matcher, event, &bot]() {
-                    regex_matcher.GetFunc()(event, bot);
+            } break;
+            case 'p': {
+              for (auto &regex_matcher : command_regex_) {
+                if (regex_matcher.Check(message)) {
+                  const auto &service = regex_matcher.GetService();
+                  if (service->CheckPerm(perm))
+                    go([&service, event, &bot] {
+                      service->GetFunc()(event, bot);
+                    });
+                }
+              }
+              for (const auto &service : all_msg_handler_)
+                if (service->CheckPerm(perm))
+                  go([&service, event, &bot] {
+                    service->GetFunc()(event, bot);
                   });
-              for (const auto &func :
-                   all_msg_handler_each_perm_[permission::WHITE_LIST])
-                go([&func, event, &bot]() { func(event, bot); });
-            case permission::GROUP_OWNER:
-              for (auto &regex_matcher :
-                   command_regex_each_perm_[permission::GROUP_OWNER])
-                if (regex_matcher.Check(message))
-                  go([&regex_matcher, event, &bot]() {
-                    regex_matcher.GetFunc()(event, bot);
-                  });
-              for (const auto &func :
-                   all_msg_handler_each_perm_[permission::GROUP_OWNER])
-                go([&func, event, &bot]() { func(event, bot); });
-            case permission::GROUP_ADMIN:
-              for (auto &regex_matcher :
-                   command_regex_each_perm_[permission::GROUP_ADMIN])
-                if (regex_matcher.Check(message))
-                  go([&regex_matcher, event, &bot]() {
-                    regex_matcher.GetFunc()(event, bot);
-                  });
-              for (const auto &func :
-                   all_msg_handler_each_perm_[permission::GROUP_ADMIN])
-                go([&func, event, &bot]() { func(event, bot); });
-            case permission::GROUP_MEMBER:
-              for (auto &regex_matcher :
-                   command_regex_each_perm_[permission::GROUP_MEMBER])
-                if (regex_matcher.Check(message))
-                  go([&regex_matcher, event, &bot]() {
-                    regex_matcher.GetFunc()(event, bot);
-                  });
-              for (const auto &func :
-                   all_msg_handler_each_perm_[permission::GROUP_MEMBER])
-                go([&func, event, &bot]() { func(event, bot); });
-            case permission::PRIVATE:
-              for (auto &regex_matcher :
-                   command_regex_each_perm_[permission::PRIVATE])
-                if (regex_matcher.Check(message))
-                  go([&regex_matcher, event, &bot]() {
-                    regex_matcher.GetFunc()(event, bot);
-                  });
-              for (const auto &func :
-                   all_msg_handler_each_perm_[permission::PRIVATE])
-                go([&func, event, &bot]() { func(event, bot); });
-            case permission::NORMAL:
-              for (auto &regex_matcher :
-                   command_regex_each_perm_[permission::NORMAL])
-                if (regex_matcher.Check(message))
-                  go([&regex_matcher, event, &bot]() {
-                    regex_matcher.GetFunc()(event, bot);
-                  });
-              for (const auto &func :
-                   all_msg_handler_each_perm_[permission::NORMAL])
-                go([&func, event, &bot]() { func(event, bot); });
-            case permission::BLACK:
-              for (auto &regex_matcher :
-                   command_regex_each_perm_[permission::BLACK])
-                if (regex_matcher.Check(message))
-                  go([&regex_matcher, event, &bot]() {
-                    regex_matcher.GetFunc()(event, bot);
-                  });
-              for (const auto &func :
-                   all_msg_handler_each_perm_[permission::BLACK])
-                go([&func, event, &bot]() { func(event, bot); });
+            } break;
             default:
               break;
           }
@@ -311,14 +283,21 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                  notice_type, sub_type);
         if (notice_handler_.count(notice_type) &&
             notice_handler_.at(notice_type).count(sub_type)) {
-          for (auto &func : notice_handler_.at(notice_type).at(sub_type))
-            go([&func, event, &bot]() { func(event, bot); });
+          for (const auto &service :
+               notice_handler_.at(notice_type).at(sub_type))
+            if (!event.contains("group_id") ||
+                service->CheckIsEnable(event["group_id"].get<GId>()))
+              go([&service, event, &bot]() { service->GetFunc()(event, bot); });
         }
         if (!sub_type.empty()) {
           if (notice_handler_.count(notice_type) &&
               notice_handler_.at(notice_type).count("")) {
-            for (auto &func : notice_handler_.at(notice_type).at(""))
-              go([&func, event, &bot]() { func(event, bot); });
+            for (const auto &service : notice_handler_.at(notice_type).at(""))
+              if (!event.contains("group_id") ||
+                  service->CheckIsEnable(event["group_id"].get<GId>()))
+                go([&service, event, &bot]() {
+                  service->GetFunc()(event, bot);
+                });
           }
         }
       } break;
@@ -330,8 +309,11 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                  request_type, sub_type);
         if (request_handler_.count(request_type) &&
             request_handler_.at(request_type).count(sub_type)) {
-          for (auto &func : request_handler_.at(request_type).at(sub_type))
-            go([&func, event, &bot]() { func(event, bot); });
+          for (const auto &service :
+               request_handler_.at(request_type).at(sub_type))
+            if (!event.contains("group_id") ||
+                service->CheckIsEnable(event["group_id"].get<GId>()))
+              go([&service, event, &bot]() { service->GetFunc()(event, bot); });
         }
       } break;
       // meta_event
@@ -361,118 +343,58 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
 }
 
 inline const plugin_func &EventHandler::MatchedHandler(
-    Event &event, const std::string &message) const noexcept {
+    Event &event, const int perm, const std::string &message,
+    const char message_type) const noexcept {
   if (message.empty()) return no_func_avaliable_;
-  if (event.is_null()) return no_func_avaliable_;
-  std::string_view msg(message);
-  bool only_to_me = false;
-  if (msg.starts_with("[CQ:at")) {
-    auto at_id_start = msg.find_first_of('=') + 1;
-    if (at_id_start != std::string_view::npos) {
-      auto at_id_end = msg.find_first_of(']');
-      if (at_id_end != std::string_view::npos) {
-        auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
-        auto self_id = std::to_string(event["self_id"].get<QId>());
-        if (at_id == self_id) {
-          only_to_me = true;
-          msg = msg.substr(msg.find_first_of(']') + 1);
-          msg = msg.substr(msg.find_first_not_of(' '));
-          event["__to_me__"] = true;
-        }
+  switch (message_type) {
+    case 'g': {
+      auto group_id = event["group_id"].get<GId>();
+      if (command_fullmatch_.count(message)) {
+        auto &service = command_fullmatch_.at(message);
+        if (service->CheckIsEnable(group_id) && service->CheckPerm(perm) &&
+            service->CheckToMe(event.contains("__to_me__")))
+          return service->GetFunc();
       }
-    }
-  }
-  auto msg_str = std::string(msg);
-  auto perm = permission::GetUserPermission(event);
-  switch (perm) {
-    case permission::SUPERUSER: {
-      auto func_ret = MatchHelper(permission::SUPERUSER, msg_str, only_to_me);
-      if (func_ret.func) {
-        event["__command_size__"] = func_ret.command_size;
-        return func_ret.func;
+      auto prefix_search = command_prefix_.Search(message);
+      if (prefix_search.service &&
+          prefix_search.service->CheckIsEnable(group_id) &&
+          prefix_search.service->CheckPerm(perm) &&
+          prefix_search.service->CheckToMe(event.contains("__to_me__"))) {
+        event["__command_size__"] = prefix_search.command_size;
+        return prefix_search.service->GetFunc();
       }
-    }
-    case permission::WHITE_LIST: {
-      auto func_ret = MatchHelper(permission::WHITE_LIST, msg_str, only_to_me);
-      if (func_ret.func) {
-        event["__command_size__"] = func_ret.command_size;
-        return func_ret.func;
+
+      auto suffix_search = command_suffix_.Search(message);
+      if (suffix_search.service &&
+          suffix_search.service->CheckIsEnable(group_id) &&
+          suffix_search.service->CheckPerm(perm) &&
+          suffix_search.service->CheckToMe(event.contains("__to_me__"))) {
+        event["__command_size__"] = prefix_search.command_size;
+        return prefix_search.service->GetFunc();
       }
-    }
-    case permission::GROUP_OWNER: {
-      auto func_ret = MatchHelper(permission::GROUP_OWNER, msg_str, only_to_me);
-      if (func_ret.func) {
-        event["__command_size__"] = func_ret.command_size;
-        return func_ret.func;
+    } break;
+    case 'p': {
+      if (command_fullmatch_.count(message)) {
+        auto &service = command_fullmatch_.at(message);
+        if (service->CheckPerm(perm)) return service->GetFunc();
       }
-    }
-    case permission::GROUP_ADMIN: {
-      auto func_ret = MatchHelper(permission::GROUP_ADMIN, msg_str, only_to_me);
-      if (func_ret.func) {
-        event["__command_size__"] = func_ret.command_size;
-        return func_ret.func;
+      auto prefix_search = command_prefix_.Search(message);
+      if (prefix_search.service && prefix_search.service->CheckPerm(perm)) {
+        event["__command_size__"] = prefix_search.command_size;
+        return prefix_search.service->GetFunc();
       }
-    }
-    case permission::GROUP_MEMBER: {
-      auto func_ret =
-          MatchHelper(permission::GROUP_MEMBER, msg_str, only_to_me);
-      if (func_ret.func) {
-        event["__command_size__"] = func_ret.command_size;
-        return func_ret.func;
+
+      auto suffix_search = command_suffix_.Search(message);
+      if (suffix_search.service && suffix_search.service->CheckPerm(perm)) {
+        event["__command_size__"] = suffix_search.command_size;
+        return suffix_search.service->GetFunc();
       }
-    }
-    case permission::PRIVATE: {
-      auto func_ret = MatchHelper(permission::PRIVATE, msg_str, only_to_me);
-      if (func_ret.func) {
-        event["__command_size__"] = func_ret.command_size;
-        return func_ret.func;
-      }
-    }
-    case permission::NORMAL: {
-      auto func_ret = MatchHelper(permission::NORMAL, msg_str, only_to_me);
-      if (func_ret.func) {
-        event["__command_size__"] = func_ret.command_size;
-        return func_ret.func;
-      }
-    }
-    case permission::BLACK: {
-      auto func_ret = MatchHelper(permission::BLACK, msg_str, only_to_me);
-      if (func_ret.func) {
-        event["__command_size__"] = func_ret.command_size;
-        return func_ret.func;
-      }
-    }
+    } break;
     default:
-      return no_func_avaliable_;
+      break;
   }
   return no_func_avaliable_;
 }
-
-inline const SearchResult EventHandler::MatchHelper(
-    int permission, const std::string &message,
-    bool only_to_me) const noexcept {
-  if (only_to_me) {
-    if (command_fullmatch_each_perm_to_me_[permission].count(message))
-      return {command_fullmatch_each_perm_to_me_[permission].at(message), 0};
-    auto &func_prefix_result =
-        command_prefix_each_perm_to_me_[permission].Search(message);
-    if (func_prefix_result.func) return func_prefix_result;
-    auto &func_suffix_result =
-        command_suffix_each_perm_to_me_[permission].SearchFromBack(message);
-    if (func_suffix_result.func) return func_suffix_result;
-  } else {
-    if (command_fullmatch_each_perm_[permission].count(message))
-      return {command_fullmatch_each_perm_[permission].at(message), 0};
-    auto &func_prefix_result =
-        command_prefix_each_perm_[permission].Search(message);
-    if (func_prefix_result.func) return func_prefix_result;
-    auto &func_suffix_result =
-        command_suffix_each_perm_[permission].SearchFromBack(message);
-    if (func_suffix_result.func) return func_suffix_result;
-  }
-  return {no_func_avaliable_, 0};
-}
-
 }  // namespace white
 
 #endif

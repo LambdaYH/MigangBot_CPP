@@ -16,6 +16,8 @@ namespace config {
 
 extern std::filesystem::path kConfigDir;
 
+extern std::filesystem::path kServiceDir;
+
 extern std::string BOT_NAME;
 
 extern std::unordered_set<QId> SUPERUSERS;

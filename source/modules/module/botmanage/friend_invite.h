@@ -24,7 +24,9 @@ class FriendInvite : public Module {
     botmanage::add_friend_flag = config_["是否同意好友邀请"].as<bool>();
   }
   virtual void Register() override {
-    RegisterRequest("friend", "", ACT(FriendInvite::Handle_friend_invite));
+    RegisterRequest("friend", "", "__处理好友邀请__",
+                    ACT(FriendInvite::Handle_friend_invite), permission::NORMAL,
+                    permission::SUPERUSER);
   }
 
  private:

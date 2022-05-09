@@ -28,6 +28,8 @@ class FutureWrapper {
           return {0, "", 0, 0};
         else if constexpr (std::is_same<T, UserInfo>::value)
           return {0, "", "", 0};
+        else if constexpr (std::is_same<T, std::vector<GroupInfo>>::value)
+          return {};
       } break;
       case std::future_status::ready:
         break;
@@ -56,6 +58,8 @@ class CoFutureWrapper {
           return "";
         else if constexpr (std::is_same<T, GroupInfo>::value)
           return {0, "", 0, 0};
+        else if constexpr (std::is_same<T, std::vector<GroupInfo>>::value)
+          return {};
       } break;
       case co_future_status::ready:
         break;

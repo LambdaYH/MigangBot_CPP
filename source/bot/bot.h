@@ -52,6 +52,7 @@ class Bot : public std::enable_shared_from_this<Bot> {
   std::function<void(const std::time_t, std::function<void(const Json &)> &&)>
       set_echo_function_;
   onebot11::ApiBot api_bot_;
+  std::list<onebot11::ApiBot*>::iterator botset_it_;
 };
 
 inline Bot::Bot()
@@ -61,7 +62,7 @@ inline Bot::Bot()
                                    std::placeholders::_2)),
       api_bot_(notify_, set_echo_function_) {}
 
-inline Bot::~Bot() { BotSet::GetInstance().RemoveBot(&api_bot_); }
+inline Bot::~Bot() { BotSet::GetInstance().RemoveBot(botset_it_); }
 
 inline void Bot::Run(const WebSocketChannelPtr &channel) noexcept {
   channel_ = channel;
@@ -69,7 +70,7 @@ inline void Bot::Run(const WebSocketChannelPtr &channel) noexcept {
 }
 
 inline void Bot::OnRun() {
-  BotSet::GetInstance().AddBot(&api_bot_);
+  botset_it_ = BotSet::GetInstance().AddBot(&api_bot_);
   for (auto superuser : config::SUPERUSERS)
     api_bot_.send_private_msg(
         superuser, fmt::format("MigangBot已启动\n版本: {}", kMigangBotVersion));

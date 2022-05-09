@@ -13,7 +13,9 @@ class BandedOrKicked : public Module {
     botmanage::add_friend_flag = config_["是否同意好友邀请"].as<bool>();
   }
   virtual void Register() override {
-    RegisterRequest("friend", "", ACT(FriendInvite::Handle_friend_invite));
+    auto service = std::make_shared<Service>(
+        "被害检测", ACT(BilibiliParser::Parser), permission::GROUP_MEMBER);
+    RegisterRequest("friend", "", "被害检测", ACT(BilibiliParser::Parser), permission::GROUP_MEMBER);
   }
 
  private:

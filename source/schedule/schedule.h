@@ -2,7 +2,7 @@
 #define MIGANGBOT_SCHEDULE_SCHEDULE_H_
 
 #include <mutex>
-#include <set>
+#include <list>
 
 #include "Scheduler.h"
 #include "bot/onebot_11/api_bot.h"
@@ -20,14 +20,15 @@ class BotSet {
     return botset;
   }
 
-  void AddBot(onebot11::ApiBot *bot) {
+  auto AddBot(onebot11::ApiBot *bot) {
     std::lock_guard<std::mutex> locker(mutex_);
-    bots_.insert(bot);
+    bots_.push_front(bot);
+    return bots_.begin();
   }
 
-  void RemoveBot(onebot11::ApiBot *bot) {
+  void RemoveBot(const auto &it) {
     std::lock_guard<std::mutex> locker(mutex_);
-    bots_.erase(bot);
+    bots_.erase(it);
   }
 
   const auto &GetBots() { return bots_; }
@@ -43,7 +44,7 @@ class BotSet {
   ~BotSet() {}
 
  private:
-  std::set<onebot11::ApiBot *> bots_;
+  std::list<onebot11::ApiBot *> bots_;
   std::mutex mutex_;
 };
 

@@ -5,11 +5,12 @@
 
 #include "bot/onebot_11/api_bot.h"
 #include "event/type.h"
+#include "service/service.h"
 
 namespace white {
 
 struct SearchResult {
-  const plugin_func &func;
+  const std::shared_ptr<Service> &service;
   const short command_size;
 };
 

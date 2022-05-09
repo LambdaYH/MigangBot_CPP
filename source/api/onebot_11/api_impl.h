@@ -292,10 +292,7 @@ inline Json get_group_info(GId gid, bool no_cache) {
 }
 
 inline Json get_group_list(bool no_cache) {
-  Event msg;
-  msg["action"] = "get_group_list";
-  msg["params"] = {{"no_cache", no_cache}};
-  return msg;
+  return CallApi("get_group_list", Json{{"no_cache", no_cache}});
 }
 
 inline Json get_group_member_info(const GId gid, const QId qid, bool no_cache) {

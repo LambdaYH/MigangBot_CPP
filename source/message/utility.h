@@ -58,10 +58,6 @@ inline std::string ExtraPlainText(const Event &event) noexcept {
   auto msg_raw_str = event["message"].get<std::string>();
   msg_raw_str = Unescape(msg_raw_str);
   std::string_view view{msg_raw_str};
-  if (event.contains("__to_me__")) {
-    view = view.substr(view.find_first_of(']') + 1);
-    view = view.substr(view.find_first_not_of(' '));
-  }
   if (event.contains("__command_size__")) {
     auto command_size = event["__command_size__"].get<short>();
     if (command_size == 0) return std::string(view);

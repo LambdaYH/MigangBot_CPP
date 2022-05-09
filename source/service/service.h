@@ -1,0 +1,134 @@
+#ifndef MIGANGBOT_SERVICE_SERVICE_H_
+#define MIGANGBOT_SERVICE_SERVICE_H_
+
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <unordered_set>
+#include <utility>
+
+#include "event/type.h"
+#include "global_config.h"
+#include "permission/permission.h"
+#include "type.h"
+#include "event/event.h"
+
+namespace white {
+class Service {
+  friend class ServiceManager;
+
+ public:
+  template <typename F>
+  Service(const std::string &service_name, F &&func, const int use_permission,
+          const int manage_permission, const bool enable_on_default = true,
+          const bool only_to_me = false)
+      : service_name_(service_name),
+        func_(std::move(func)),
+        use_permission_(use_permission),
+        manage_permission_(manage_permission),
+        enable_on_default_(enable_on_default),
+        only_to_me_(only_to_me),
+        config_path_(config::kServiceDir / (service_name_ + ".json")) {
+    LoadConfig();
+  }
+  template <typename F>
+  Service(const std::string &service_name, F &&func, const int use_permission,
+          const bool enable_on_default = true, const bool only_to_me = false)
+      : Service(service_name, std::forward<F>(func), use_permission,
+                permission::GROUP_ADMIN, enable_on_default, only_to_me) {}
+  template <typename F>
+  Service(const std::string &service_name, F &&func,
+          const bool only_to_me = false)
+      : Service(service_name, std::forward<F>(func), permission::NORMAL,
+                permission::GROUP_ADMIN, true, only_to_me) {}
+
+ public:
+  const std::string &GetServiceName() const noexcept { return service_name_; }
+
+  bool GroupEnable(const GId group_id, const int permission) {
+    if (permission < manage_permission_) return false;
+    if (enable_on_default_) {
+      std::lock_guard<std::mutex> locker(mutex_);
+      if (groups_.count(group_id)) groups_.erase(group_id);
+      SaveConfig();
+      return true;
+    }
+    std::lock_guard<std::mutex> locker(mutex_);
+    if(groups_.emplace(group_id).second)
+      SaveConfig();
+    return true;
+  }
+
+  bool GroupDisable(const GId group_id, const int permission) {
+    if (permission < manage_permission_) return false;
+    if (!enable_on_default_) {
+      std::lock_guard<std::mutex> locker(mutex_);
+      if (groups_.count(group_id)) groups_.erase(group_id);
+      SaveConfig();
+      return true;
+    }
+    std::lock_guard<std::mutex> locker(mutex_);
+    if(groups_.emplace(group_id).second)
+      SaveConfig();
+    return true;
+  }
+
+  bool CheckPerm(const int permission) const noexcept {
+    return permission >= use_permission_;
+  }
+
+  bool CheckIsEnable(const GId group_id) const noexcept {
+    if (enable_on_default_) return !groups_.count(group_id);
+    return groups_.count(group_id);
+  }
+
+  bool CheckToMe(const bool to_me) const noexcept {
+    return !only_to_me_ || (to_me & only_to_me_);
+  }
+
+  const plugin_func &GetFunc() const noexcept { return func_; }
+
+ private:
+  void LoadConfig() {
+    if (!std::filesystem::exists(config_path_)) {
+      config_["enable_on_default"] = enable_on_default_;
+      config_["groups"] = R"([])"_json;
+      std::ofstream(config_path_) << std::setw(4) << config_ << std::endl;
+    } else {
+      std::ifstream(config_path_) >> config_;
+    }
+    enable_on_default_ = config_["enable_on_default"].get<bool>();
+    for (std::size_t i = 0; i < config_["groups"].size(); ++i)
+      groups_.insert(config_["groups"].get<GId>());
+  }
+
+  void SaveConfig() {
+    config_["groups"] = R"([])"_json;
+    for (auto it : groups_) config_["groups"].push_back(it);
+    std::ofstream(config_path_) << std::setw(4) << config_ << std::endl;
+  }
+
+ private:
+  const std::string service_name_;
+
+  const plugin_func func_;
+  const int use_permission_;
+  const int manage_permission_;
+
+  bool enable_on_default_;
+  std::unordered_set<GId> groups_;
+
+  const bool only_to_me_;
+
+  const std::string config_path_;
+
+  Json config_;
+  std::mutex mutex_;
+};
+}  // namespace white
+
+#endif

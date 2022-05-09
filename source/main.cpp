@@ -26,6 +26,7 @@
 YAML::Node white::global_config;
 std::filesystem::path white::config::kConfigDir;
 std::filesystem::path white::config::kAssetsDir;
+std::filesystem::path white::config::kServiceDir;
 std::string white::config::BOT_NAME;
 std::unordered_set<white::QId> white::config::SUPERUSERS;
 std::unordered_set<white::QId> white::config::WHITE_LIST;
@@ -79,12 +80,20 @@ int main(int argc, char** argv) {
   }
   white::config::kConfigDir = current_working_dir / "configs";
   white::config::kAssetsDir = current_working_dir / "assets";
+  white::config::kServiceDir = current_working_dir / "services";
   if (!std::filesystem::exists(white::config::kConfigDir)) {
     if (!std::filesystem::create_directory(white::config::kConfigDir)) {
       std::cerr << "[" << config_doc_path << "]，配置目录创建失败" << std::endl;
       return 1;
     }
     std::cout << "插件配置文件目录已创建" << std::endl;
+  }
+  if (!std::filesystem::exists(white::config::kServiceDir)) {
+    if (!std::filesystem::create_directory(white::config::kServiceDir)) {
+      std::cerr << "[" << config_doc_path << "]，服务配置目录创建失败" << std::endl;
+      return 1;
+    }
+    std::cout << "服务配置目录已创建" << std::endl;
   }
 
   // 加载配置文件

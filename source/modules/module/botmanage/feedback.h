@@ -10,6 +10,7 @@
 #include "message/message_segment.h"
 #include "message/utility.h"
 #include "modules/module/botmanage/feedback_recorder.h"
+#include "permission/permission.h"
 #include "utility.h"
 
 namespace white {
@@ -19,11 +20,15 @@ class FeedBack : public Module {
  public:
   FeedBack() : Module() {}
   virtual void Register() {
-    RegisterCommand(PREFIX, {".send", "。send"}, ACT(FeedBack::Send));
-    RegisterCommand(PREFIX, {".reply", "。reply"}, ACT(FeedBack::Reply),
+    RegisterCommand(PREFIX, {".send", "。send"}, "feedback_send",
+                    ACT(FeedBack::Send), permission::NORMAL,
+                    permission::SUPERUSER);
+    RegisterCommand(PREFIX, {".reply", "。reply"}, "__feedback_reply__",
+                    ACT(FeedBack::Reply), permission::SUPERUSER,
                     permission::SUPERUSER);
     RegisterCommand(PREFIX, {".feedbacklist", "。feedbacklist"},
-                    ACT(FeedBack::List), permission::SUPERUSER);
+                    "__feedback_feedbacklist__", ACT(FeedBack::List),
+                    permission::SUPERUSER, permission::SUPERUSER);
   }
 
  private:
