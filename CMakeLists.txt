@@ -70,13 +70,8 @@ add_subdirectory(third-party/hiredis)
 # pugixml
 add_subdirectory(third-party/pugixml)
 
-# tidy-html5
-set(BUILD_SHARED_LIB OFF CACHE INTERNAL "")
-add_subdirectory(third-party/tidy-html5)
-
-# libxml2
-set(LIBXML2_WITH_PYTHON OFF CACHE INTERNAL "")
-add_subdirectory(third-party/libxml2)
+# gumbo-query
+add_subdirectory(third-party/gumbo-query)
 
 # pcre2 (for fast regex)
 set(PCRE2_SUPPORT_JIT ON CACHE INTERNAL "")
@@ -108,6 +103,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
                             third-party/cocoyaxi/include
                             ${CMAKE_BINARY_DIR}/third-party/libhv/include
                             third-party/jpcre2/src
+                            third-party/gumbo-query/src
                             third-party/Scheduler
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    
@@ -130,7 +126,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         tidy-static
                         pugixml-static
                         pcre2-8-static
-                        LibXml2
+                        gumbo_query_static
+                        libgumbo.a
 )
 
 IF(BUILD_TEST)

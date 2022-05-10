@@ -8,10 +8,10 @@
 #include <string_view>
 #include <unordered_set>
 #include <vector>
-#include <fstream>
 
 #include <hv/httpdef.h>
-#include <pugixml.hpp>
+#include "Document.h"
+#include "Node.h"
 
 #include "aiorequests.h"
 #include "database/redis_wrapper.h"
@@ -196,58 +196,28 @@ inline std::string BilibiliParser::GetBilibiliBangumiDetail(
     LOG_WARN("BilibiliParser: 无法解析Bangumi: {}", url);
     return "";
   }
-  pugi::xml_document doc;
-  doc.load_string(html::CleanHTML(r->Body()).c_str());
+  // https://www.w3schools.com/jquery/jquery_ref_selectors.asp
+  CDocument doc;
+  doc.parse(r->Body().c_str());
   // link
   std::smatch ep_ss_id;
   static std::regex ep_ss_pattern(R"((ss|ep)\d+)");
   std::regex_search(url, ep_ss_id, ep_ss_pattern);
-  auto link =
-      std::regex_replace(doc.child("html")
-                             .child("head")
-                             .find_child_by_attribute("property", "og:url")
-                             .attribute("content")
-                             .value(),
-                         ep_ss_pattern, ep_ss_id[0].str());
+  auto link = std::regex_replace(
+      doc.find("[property='og:url']").nodeAt(0).attribute("content"),
+      ep_ss_pattern, ep_ss_id[0].str());
   if (IsInCache(link, group_id)) return "";
 
   // title
-  auto media_module_node = doc.select_node("//*[@id=\"media_module\"]").node();
-  auto title_main =
-      media_module_node.parent().child("h1").first_child().value();
-  auto pub_wrapper_node =
-      media_module_node.find_child_by_attribute("class", "media-right")
-          .find_child_by_attribute("class", "pub-wrapper");
-  auto title = fmt::format(
-      "{} [{}-{}]",
-      media_module_node.parent().child("h1").attribute("title").value(),
-      pub_wrapper_node.find_child_by_attribute("class", "home-link")
-          .first_child()
-          .value(),
-      pub_wrapper_node.find_child_by_attribute("class", "pub-info")
-          .first_child()
-          .value());
+  auto title = fmt::format("{} [{}-{}]", doc.find("title").nodeAt(0).text(),
+                           doc.find(".home-link").nodeAt(0).text(),
+                           doc.find(".pub-info").nodeAt(0).text());
 
   // desciption
-  auto description = "";
-  for (const auto &node :
-       media_module_node.find_child_by_attribute("class", "media-right")
-           .children()) {
-    auto t =
-        node.find_child_by_attribute("class", "media-desc webkit-ellipsis");
-    if (!t.empty()) {
-      description =
-          t.find_child_by_attribute("class", "absolute").first_child().value();
-      break;
-    }
-  }
+  auto description = doc.find(".absolute").nodeAt(0).text();
 
   // cover image
-  auto cover_image = doc.child("html")
-                         .child("head")
-                         .find_child_by_attribute("property", "og:image")
-                         .attribute("content")
-                         .value();
+  auto cover_image = doc.find("[property='og:image']").nodeAt(0).attribute("content");
 
   auto msg = fmt::format(
       "[标题] {}\n"

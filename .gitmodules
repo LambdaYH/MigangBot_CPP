@@ -28,9 +28,6 @@
 [submodule "third-party/hiredis"]
 	path = third-party/hiredis
 	url = https://github.com/redis/hiredis.git
-[submodule "third-party/tidy-html5"]
-	path = third-party/tidy-html5
-	url = https://github.com/htacg/tidy-html5.git
 [submodule "third-party/pugixml"]
 	path = third-party/pugixml
 	url = https://github.com/zeux/pugixml.git
