@@ -18,12 +18,26 @@ class ServiceManager {
   }
 
  public:
+  bool CheckService(const std::string &service_name)
+  {
+    return service_name_map_.contains(service_name);
+  }
+
+  bool CheckServiceStatus(const std::string &service_name, const GId group_id)
+  {
+    auto range = service_name_map_.equal_range(service_name);
+    auto ret = true;
+    for (auto it = range.first; it != range.second; ++it)
+      ret &= it->second->GroupStatus(group_id);
+    return ret;
+  }
+
   bool GroupEnable(const std::string &service_name, const GId group_id,
                    const int permission) {
     auto range = service_name_map_.equal_range(service_name);
     auto ret = true;
     for (auto it = range.first; it != range.second; ++it)
-      ret |= it->second->GroupEnable(group_id, permission);
+      ret &= it->second->GroupEnable(group_id, permission);
     return ret;
   }
 
@@ -32,7 +46,7 @@ class ServiceManager {
     auto range = service_name_map_.equal_range(service_name);
     auto ret = true;
     for (auto it = range.first; it != range.second; ++it)
-      ret |= it->second->GroupDisable(group_id, permission);
+      ret &= it->second->GroupDisable(group_id, permission);
     return ret;
   }
 

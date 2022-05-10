@@ -58,6 +58,13 @@ class Service {
     return true;
   }
 
+  bool GroupStatus(const GId group_id)
+  {
+    if(enable_on_default_)
+      return !groups_.count(group_id);
+    return groups_.count(group_id);
+  }
+
  protected:
   void LoadConfig() {
     if (!std::filesystem::exists(config_path_)) {

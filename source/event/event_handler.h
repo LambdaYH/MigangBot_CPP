@@ -148,8 +148,11 @@ inline void HandleControlCommand(const std::string_view &msg, const int perm,
         msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
     if (!service_name.empty()) {
       go([group_id, &bot, name = std::string(service_name), perm] {
-        if (ServiceManager::GetInstance().GroupEnable(std::string(name),
-                                                      group_id, perm))
+        if (!ServiceManager::GetInstance().CheckService(name)) {
+          bot.send_group_msg(group_id, fmt::format("服务[{}]不存在", name));
+          return;
+        }
+        if (ServiceManager::GetInstance().GroupEnable(name, group_id, perm))
 
           bot.send_group_msg(group_id, fmt::format("已成功启用服务[{}]", name));
 
@@ -164,8 +167,11 @@ inline void HandleControlCommand(const std::string_view &msg, const int perm,
         msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
     if (!service_name.empty()) {
       go([group_id, &bot, name = std::string(service_name), perm] {
-        if (ServiceManager::GetInstance().GroupDisable(std::string(name),
-                                                       group_id, perm))
+        if (!ServiceManager::GetInstance().CheckService(name)) {
+          bot.send_group_msg(group_id, fmt::format("服务[{}]不存在", name));
+          return;
+        }
+        if (ServiceManager::GetInstance().GroupDisable(name, group_id, perm))
 
           bot.send_group_msg(group_id, fmt::format("已成功禁用服务[{}]", name));
 
