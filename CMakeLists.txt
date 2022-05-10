@@ -74,6 +74,9 @@ add_subdirectory(third-party/pugixml)
 set(BUILD_SHARED_LIB OFF CACHE INTERNAL "")
 add_subdirectory(third-party/tidy-html5)
 
+# libxml2
+add_subdirectory(third-party/libxml2)
+
 # pcre2 (for fast regex)
 set(PCRE2_SUPPORT_JIT ON CACHE INTERNAL "")
 add_subdirectory(third-party/pcre2)
@@ -126,6 +129,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         tidy-static
                         pugixml-static
                         pcre2-8-static
+                        LibXml2
 )
 
 IF(BUILD_TEST)

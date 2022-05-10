@@ -8,6 +8,7 @@
 #include <string_view>
 #include <unordered_set>
 #include <vector>
+#include <fstream>
 
 #include <hv/httpdef.h>
 #include <pugixml.hpp>
