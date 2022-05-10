@@ -13,7 +13,6 @@
 #include "bot/onebot_11/api_bot.h"
 #include "event/search_result.h"
 #include "event/type.h"
-#include "service/service.h"
 
 namespace white {
 
@@ -23,9 +22,9 @@ class Trie {
   ~Trie();
 
  public:
-  bool Insert(const std::string &key, std::shared_ptr<Service> service);
+  bool Insert(const std::string &key, std::shared_ptr<TriggeredService> service);
 
-  bool InsertFromBack(const std::string &key, std::shared_ptr<Service> service);
+  bool InsertFromBack(const std::string &key, std::shared_ptr<TriggeredService> service);
 
   const SearchResult Search(const std::string &key) const noexcept;
 
@@ -34,19 +33,19 @@ class Trie {
  private:
   struct TrieNode {
     std::unordered_map<char, std::shared_ptr<TrieNode>> childs;
-    std::shared_ptr<Service> service;
+    std::shared_ptr<TriggeredService> service;
   };
 
  private:
   std::shared_ptr<TrieNode> root_;
-  std::shared_ptr<Service> no_service_here_;
+  std::shared_ptr<TriggeredService> no_service_here_;
 };
 
 inline Trie::Trie() : root_(std::make_shared<TrieNode>()), no_service_here_() {}
 
 inline Trie::~Trie() {}
 
-inline bool Trie::Insert(const std::string &key, std::shared_ptr<Service> service) {
+inline bool Trie::Insert(const std::string &key, std::shared_ptr<TriggeredService> service) {
   auto cur_node = root_;
   for (auto ch : key) {
     ch = std::tolower(ch);
@@ -59,7 +58,7 @@ inline bool Trie::Insert(const std::string &key, std::shared_ptr<Service> servic
   return true;
 }
 
-inline bool Trie::InsertFromBack(const std::string &key, std::shared_ptr<Service> service) {
+inline bool Trie::InsertFromBack(const std::string &key, std::shared_ptr<TriggeredService> service) {
   auto cur_node = root_;
   for (auto it = key.rbegin(); it != key.rend(); ++it) {
     auto ch = std::tolower(*it);

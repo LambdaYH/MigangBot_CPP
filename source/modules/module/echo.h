@@ -19,8 +19,8 @@ class Echo : public Module {
 };
 
 inline void Echo::Register() {
-  RegisterCommand(PREFIX, {"/echo", "/回声"}, "echo", ACT(Echo::DoEcho));
-  RegisterCommand(PREFIX, {".echo", "。回声"}, "echo_at", ACT(Echo::DoEcho), true);
+  OnPrefix({"/echo", "/回声"}, "echo", ACT(Echo::DoEcho));
+  OnPrefix({".echo", "。回声"}, "echo_at", ACT(Echo::DoEcho), true);
 }
 
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot) {

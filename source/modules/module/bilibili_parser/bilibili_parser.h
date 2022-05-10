@@ -47,7 +47,7 @@ class BilibiliParser : public Module {
               "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36"}}) {}
   virtual void Register() {
-    RegisterRegex(
+    OnRegex(
         {R"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)",
          R"((av|AV)\d+)", R"((BV|bv)([a-zA-Z0-9])+)"},
         "哔哩哔哩解析", ACT(BilibiliParser::Parser), permission::GROUP_MEMBER);

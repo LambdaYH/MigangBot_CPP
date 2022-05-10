@@ -1,5 +1,6 @@
 #pragma once
 
+#include "event/Registrar.h"
 #include "modules/module_interface.h"
 
 #include <sys/sysinfo.h>
@@ -93,14 +94,12 @@ class StatusInfo : public Module {
 };
 
 inline void StatusInfo::Register() {
-  RegisterCommand(FULLMATCH, {"/ping"}, "__ping__", ACT(StatusInfo::Ping),
-                  permission::NORMAL, permission::SUPERUSER);
-  RegisterCommand(FULLMATCH, {"status", "状态"}, "__status__",
-                  ACT(StatusInfo::Status), permission::SUPERUSER,
-                  permission::SUPERUSER);
-  RegisterCommand(FULLMATCH, {"network", "网络状况"}, "__network__",
-                  ACT(StatusInfo::Network), permission::SUPERUSER,
-                  permission::SUPERUSER);
+  OnFullmatch({"/ping"}, "__ping__", ACT(StatusInfo::Ping), permission::NORMAL,
+              permission::SUPERUSER);
+  OnFullmatch({"status", "状态"}, "__status__", ACT(StatusInfo::Status),
+              permission::SUPERUSER, permission::SUPERUSER);
+  OnFullmatch({"network", "网络状况"}, "__network__", ACT(StatusInfo::Network),
+              permission::SUPERUSER, permission::SUPERUSER);
 }
 
 inline void StatusInfo::Ping(const Event &event, onebot11::ApiBot &bot) {

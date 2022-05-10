@@ -28,12 +28,12 @@ class GroupInvite : public Module {
         config_["是否自动退出被迫自动入的群"].as<bool>();
   }
   virtual void Register() override {
-    RegisterRequest("group", "invite", "__处理邀请加群__",
-                    ACT(GroupInvite::Handle_group_invite), permission::NORMAL,
-                    permission::SUPERUSER);
-    RegisterNotice("group_increase", "", "__处理群员增加__",
-                   ACT(GroupInvite::Handle_group_increase), permission::NORMAL,
-                   permission::SUPERUSER);
+    OnRequest("group", "invite", "__处理邀请加群__",
+              ACT(GroupInvite::Handle_group_invite), permission::NORMAL,
+              permission::SUPERUSER);
+    OnNotice("group_increase", "", "__处理群员增加__",
+             ACT(GroupInvite::Handle_group_increase), permission::NORMAL,
+             permission::SUPERUSER);
   }
 
  private:

@@ -65,8 +65,8 @@ class EorzeaZhanbu : public Module {
     }
   }
   virtual void Register() {
-    RegisterCommand(PREFIX, {"/zhanbu", "/占卜", "、占卜"}, "艾欧泽亚占卜",
-                    ACT(EorzeaZhanbu::Zhanbu));
+    OnPrefix({"/zhanbu", "/占卜", "、占卜"}, "艾欧泽亚占卜",
+             ACT(EorzeaZhanbu::Zhanbu));
   }
 
  private:

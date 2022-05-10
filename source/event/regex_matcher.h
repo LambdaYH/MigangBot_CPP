@@ -8,7 +8,7 @@
 #include <jpcre2.hpp>
 
 #include "event/type.h"
-#include "service/service.h"
+#include "service/triggered_service.h"
 
 namespace white {
 
@@ -17,7 +17,7 @@ using jp = jpcre2::select<char>;
 class RegexMatcher {
  public:
   RegexMatcher(const std::initializer_list<std::string> &patterns,
-               std::shared_ptr<Service> service)
+               std::shared_ptr<TriggeredService> service)
       : service_(service) {
     for (const auto &pattern : patterns)
       regex_.push_back(jp::Regex(pattern, "mSi"));
@@ -29,11 +29,11 @@ class RegexMatcher {
     return false;
   }
 
-  const std::shared_ptr<Service> &GetService() const noexcept { return service_; }
+  const std::shared_ptr<TriggeredService> &GetService() const noexcept { return service_; }
 
  private:
   std::vector<jp::Regex> regex_;
-  const std::shared_ptr<Service> service_;
+  const std::shared_ptr<TriggeredService> service_;
 };
 
 }  // namespace white

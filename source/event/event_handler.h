@@ -41,18 +41,18 @@ class EventHandler {
 
  public:
   bool RegisterCommand(const int command_type, const std::string &command,
-                       std::shared_ptr<Service> service);
+                       std::shared_ptr<TriggeredService> service);
 
   bool RegisterNotice(const std::string &notice_type,
                       const std::string &sub_type,
-                      std::shared_ptr<Service> service);
+                      std::shared_ptr<TriggeredService> service);
 
   bool RegisterRequest(const std::string &request_type,
                        const std::string &sub_type,
-                       std::shared_ptr<Service> service);
+                       std::shared_ptr<TriggeredService> service);
 
   bool RegisterRegex(const std::initializer_list<std::string> &patterns,
-                     std::shared_ptr<Service> service);
+                     std::shared_ptr<TriggeredService> service);
 
   bool Handle(Event &event, onebot11::ApiBot &bot) noexcept;
 
@@ -72,30 +72,33 @@ class EventHandler {
                                     const char message_type) const noexcept;
 
  private:
-  std::unordered_map<std::string, std::shared_ptr<Service>> command_fullmatch_;
+  std::unordered_map<std::string, std::shared_ptr<TriggeredService>>
+      command_fullmatch_;
   Trie command_prefix_;
   Trie command_suffix_;
 
   std::vector<RegexMatcher> command_regex_;
 
-  std::vector<std::shared_ptr<Service>> all_msg_handler_;
+  std::vector<std::shared_ptr<TriggeredService>> all_msg_handler_;
 
   std::unordered_map<
       std::string,
-      std::unordered_map<std::string, std::vector<std::shared_ptr<Service>>>>
+      std::unordered_map<std::string,
+                         std::vector<std::shared_ptr<TriggeredService>>>>
       notice_handler_;
   std::unordered_map<
       std::string,
-      std::unordered_map<std::string, std::vector<std::shared_ptr<Service>>>>
+      std::unordered_map<std::string,
+                         std::vector<std::shared_ptr<TriggeredService>>>>
       request_handler_;
   plugin_func no_func_avaliable_;
 
   std::unique_ptr<EventFilter> filter_;
 };
 
-inline bool EventHandler::RegisterCommand(const int command_type,
-                                          const std::string &command,
-                                          std::shared_ptr<Service> service) {
+inline bool EventHandler::RegisterCommand(
+    const int command_type, const std::string &command,
+    std::shared_ptr<TriggeredService> service) {
   switch (command_type) {
     case FULLMATCH:
       return command_fullmatch_.emplace(command, service).second;
@@ -116,25 +119,62 @@ inline bool EventHandler::RegisterCommand(const int command_type,
   return true;
 }
 
-inline bool EventHandler::RegisterNotice(const std::string &notice_type,
-                                         const std::string &sub_type,
-                                         std::shared_ptr<Service> service) {
+inline bool EventHandler::RegisterNotice(
+    const std::string &notice_type, const std::string &sub_type,
+    std::shared_ptr<TriggeredService> service) {
   notice_handler_[notice_type][sub_type].push_back(service);
   return true;
 }
 
-inline bool EventHandler::RegisterRequest(const std::string &request_type,
-                                          const std::string &sub_type,
-                                          std::shared_ptr<Service> service) {
+inline bool EventHandler::RegisterRequest(
+    const std::string &request_type, const std::string &sub_type,
+    std::shared_ptr<TriggeredService> service) {
   request_handler_[request_type][sub_type].push_back(service);
   return true;
 }
 
 inline bool EventHandler::RegisterRegex(
     const std::initializer_list<std::string> &patterns,
-    std::shared_ptr<Service> service) {
+    std::shared_ptr<TriggeredService> service) {
   command_regex_.push_back(RegexMatcher(patterns, service));
   return true;
+}
+
+inline void HandleControlCommand(const std::string_view &msg, const int perm,
+                                 const Event &event, onebot11::ApiBot &bot) {
+  if (msg.starts_with("启用") || msg.starts_with("enable")) {
+    auto group_id = event["group_id"].get<GId>();
+    auto service_name =
+        msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
+    if (!service_name.empty()) {
+      go([group_id, &bot, name = std::string(service_name), perm] {
+        if (ServiceManager::GetInstance().GroupEnable(std::string(name),
+                                                      group_id, perm))
+
+          bot.send_group_msg(group_id, fmt::format("已成功启用服务[{}]", name));
+
+        else
+          bot.send_group_msg(
+              group_id, fmt::format("未能(完全)启用服务[{}]，权限不足", name));
+      });
+    }
+  } else if (msg.starts_with("禁用") || msg.starts_with("disable")) {
+    auto group_id = event["group_id"].get<GId>();
+    auto service_name =
+        msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
+    if (!service_name.empty()) {
+      go([group_id, &bot, name = std::string(service_name), perm] {
+        if (ServiceManager::GetInstance().GroupDisable(std::string(name),
+                                                       group_id, perm))
+
+          bot.send_group_msg(group_id, fmt::format("已成功禁用服务[{}]", name));
+
+        else
+          bot.send_group_msg(
+              group_id, fmt::format("未能(完全)禁用服务[{}]，权限不足", name));
+      });
+    }
+  }
 }
 
 inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
@@ -144,85 +184,45 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
     switch (post_type[3]) {
       // message
       case 's': {
+        auto msg = event["message"].get<std::string_view>();
         auto message_type = event["message_type"].get<std::string>()[0];
-        if (message_type == 'p') {
-          if (event["sub_type"].get<std::string>()[0] == 'f')
-            LOG_INFO("Bot[{}]收到来自好友[{}({})]的消息: {}",
-                     event["self_id"].get<QId>(),
-                     event["sender"].value("nickname", ""),
-                     event["sender"].value("user_id", 0),
-                     event.value("message", "Unknown message"));
-        } else {
-          if (event["anonymous"] != nullptr) {
-            LOG_INFO("Bot[{}]收到来自群[{}]的匿名消息: {}",
-                     event["self_id"].get<QId>(), event["group_id"].get<GId>(),
-                     event.value("message", "Unknown message"));
-          } else {
-            LOG_INFO("Bot[{}]收到来自群[{}]成员[{}({})]的消息: {}",
-                     event["self_id"].get<QId>(), event["group_id"].get<GId>(),
-                     event["sender"].value("nickname", ""),
-                     event["sender"].value("user_id", 0),
-                     event.value("message", "Unknown message"));
-          }
+        auto perm = permission::GetUserPermission(event);
+        switch (message_type) {
+          case 'p':
+            if (event["sub_type"].get<std::string>()[0] == 'f')
+              LOG_INFO("Bot[{}]收到来自好友[{}({})]的消息: {}",
+                       event["self_id"].get<QId>(),
+                       event["sender"].value("nickname", ""),
+                       event["sender"].value("user_id", 0), msg);
+            break;
+          case 'g':
+            if (event["anonymous"] != nullptr)
+              LOG_INFO("Bot[{}]收到来自群[{}]的匿名消息: {}",
+                       event["self_id"].get<QId>(),
+                       event["group_id"].get<GId>(), msg);
+            else
+              LOG_INFO("Bot[{}]收到来自群[{}]成员[{}({})]的消息: {}",
+                       event["self_id"].get<QId>(),
+                       event["group_id"].get<GId>(),
+                       event["sender"].value("nickname", ""),
+                       event["sender"].value("user_id", 0), msg);
+            HandleControlCommand(msg, perm, event, bot);
+            break;
+          default:
+            break;
         }
         // pre_propose
-        auto msg = event["message"].get<std::string_view>();
-        auto perm = permission::GetUserPermission(event);
-        if (message_type == 'g') {
-          if (msg.starts_with("启用") || msg.starts_with("enable")) {
-            auto group_id = event["group_id"].get<GId>();
-            auto service_name =
-                msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
-            if (!service_name.empty()) {
-              auto name = std::string(service_name);
-              go([group_id, &bot, name, perm] {
-                if (ServiceManager::GetInstance().GroupEnable(std::string(name),
-                                                              group_id, perm))
-
-                  bot.send_group_msg(group_id,
-                                     fmt::format("已成功启用服务[{}]", name));
-
-                else
-                  bot.send_group_msg(
-                      group_id,
-                      fmt::format("未能(完全)启用服务[{}]，权限不足", name));
-              });
-            }
-          } else if (msg.starts_with("禁用") || msg.starts_with("disable")) {
-            auto group_id = event["group_id"].get<GId>();
-            auto service_name =
-                msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
-            if (!service_name.empty()) {
-              auto name = std::string(service_name);
-              go([group_id, &bot, name, perm] {
-                if (ServiceManager::GetInstance().GroupDisable(
-                        std::string(name), group_id, perm))
-
-                  bot.send_group_msg(group_id,
-                                     fmt::format("已成功禁用服务[{}]", name));
-
-                else
-                  bot.send_group_msg(
-                      group_id,
-                      fmt::format("未能(完全)禁用服务[{}]，权限不足", name));
-              });
-            }
-          }
-        }
         if (msg.starts_with("[CQ:at")) {
-          auto at_id_start = msg.find_first_of('=') + 1;
-          if (at_id_start != std::string_view::npos) {
-            auto at_id_end = msg.find_first_of(']');
-            if (at_id_end != std::string_view::npos) {
-              auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
-              auto self_id = std::to_string(event["self_id"].get<QId>());
-              if (at_id == self_id) {
-                msg = msg.substr(msg.find_first_of(']') + 1);
-                msg = msg.substr(msg.find_first_not_of(' '));
-                event["__to_me__"] = true;
-                event["message"] = std::string(msg);
-              }
-            }
+          // auto at_id_start = msg.find_first_of('=') + 1;
+          auto at_id_start = std::max(static_cast<std::size_t>(10), msg.size());
+          auto at_id_end = std::min(msg.find_first_of(']'), msg.size());
+          auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
+          auto self_id = std::to_string(event["self_id"].get<QId>());
+          if (at_id == self_id) {
+            msg = msg.substr(msg.find_first_of(']') + 1);
+            msg = msg.substr(msg.find_first_not_of(' '));
+            event["__to_me__"] = true;
+            event["message"] = std::string(msg);
           }
         }
         auto message = event["message"].get<std::string>();

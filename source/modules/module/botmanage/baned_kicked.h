@@ -7,16 +7,8 @@ namespace module {
 
 class BandedOrKicked : public Module {
  public:
-  BandedOrKicked()
-      : Module("botmanage/botmanage.yml", botmanage::kConfigExample),
-        config_(LoadConfig()) {
-    botmanage::add_friend_flag = config_["是否同意好友邀请"].as<bool>();
-  }
-  virtual void Register() override {
-    auto service = std::make_shared<Service>(
-        "被害检测", ACT(BilibiliParser::Parser), permission::GROUP_MEMBER);
-    RegisterRequest("friend", "", "被害检测", ACT(BilibiliParser::Parser), permission::GROUP_MEMBER);
-  }
+  BandedOrKicked() : Module() {}
+  virtual void Register() override {}
 
  private:
   void Handle_banded(const Event &event, onebot11::ApiBot &bot);

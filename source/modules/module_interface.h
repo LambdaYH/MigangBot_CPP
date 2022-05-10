@@ -11,12 +11,12 @@
 #include <nlohmann/json.hpp>
 #include <fmt/core.h>
 
-#include "event/event_handler.h"
+#include "event/type.h"
 #include "logger/logger.h"
 #include "message/utility.h"
 #include "permission/permission.h"
-#include "service/service_manager.h"
 #include "utility.h"
+#include "event/Registrar.h"
 
 namespace white {
 namespace module {
@@ -25,50 +25,6 @@ namespace module {
   (std::bind(&a, this, std::placeholders::_1, std::placeholders::_2))
 
 using Config = YAML::Node;
-
-template <typename... Args>
-inline void RegisterAllMessage(const int command_type, Args &&...args) {
-  auto service = std::make_shared<Service>(std::forward<Args>(args)...);
-  EventHandler::GetInstance().RegisterCommand(ALLMSG, "", service);
-  ServiceManager::GetInstance().RegisterService(service);
-}
-
-template <typename... Args>
-inline void RegisterCommand(const int command_type,
-                            const std::initializer_list<std::string> &commands,
-                            Args &&...args) {
-  auto service = std::make_shared<Service>(std::forward<Args>(args)...);
-  for (auto &command : commands) {
-    if (!EventHandler::GetInstance().RegisterCommand(command_type, command,
-                                                     service))
-      LOG_WARN("注册指令[{}]失败", command);
-  }
-  ServiceManager::GetInstance().RegisterService(service);
-}
-
-template <typename... Args>
-inline void RegisterNotice(const std::string &notice_type,
-                           const std::string &sub_type, Args &&...args) {
-  auto service = std::make_shared<Service>(std::forward<Args>(args)...);
-  EventHandler::GetInstance().RegisterNotice(notice_type, sub_type, service);
-  ServiceManager::GetInstance().RegisterService(service);
-}
-
-template <typename... Args>
-inline void RegisterRequest(const std::string &request_type,
-                            const std::string &sub_type, Args &&...args) {
-  auto service = std::make_shared<Service>(std::forward<Args>(args)...);
-  EventHandler::GetInstance().RegisterRequest(request_type, sub_type, service);
-  ServiceManager::GetInstance().RegisterService(service);
-}
-
-template <typename... Args>
-inline void RegisterRegex(const std::initializer_list<std::string> &patterns,
-                          Args &&...args) {
-  auto service = std::make_shared<Service>(std::forward<Args>(args)...);
-  EventHandler::GetInstance().RegisterRegex(patterns, service);
-  ServiceManager::GetInstance().RegisterService(service);
-}
 
 class Module {
  public:

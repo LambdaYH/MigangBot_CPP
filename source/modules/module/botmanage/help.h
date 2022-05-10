@@ -34,9 +34,8 @@ class Help : public Module {
  public:
   Help();
   virtual void Register() {
-    RegisterCommand(PREFIX, {".help", "/帮助", "。help"}, "__help__",
-                    ACT(Help::HelpMsg), permission::NORMAL,
-                    permission::SUPERUSER);
+    OnPrefix({".help", "/帮助", "。help"}, "__help__", ACT(Help::HelpMsg),
+             permission::NORMAL, permission::SUPERUSER);
   }
 
  private:

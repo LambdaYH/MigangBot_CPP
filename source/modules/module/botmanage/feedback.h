@@ -20,15 +20,12 @@ class FeedBack : public Module {
  public:
   FeedBack() : Module() {}
   virtual void Register() {
-    RegisterCommand(PREFIX, {".send", "。send"}, "feedback_send",
-                    ACT(FeedBack::Send), permission::NORMAL,
-                    permission::SUPERUSER);
-    RegisterCommand(PREFIX, {".reply", "。reply"}, "__feedback_reply__",
-                    ACT(FeedBack::Reply), permission::SUPERUSER,
-                    permission::SUPERUSER);
-    RegisterCommand(PREFIX, {".feedbacklist", "。feedbacklist"},
-                    "__feedback_feedbacklist__", ACT(FeedBack::List),
-                    permission::SUPERUSER, permission::SUPERUSER);
+    OnPrefix({".send", "。send"}, "feedback_send", ACT(FeedBack::Send),
+             permission::NORMAL, permission::SUPERUSER);
+    OnPrefix({".reply", "。reply"}, "__feedback_reply__", ACT(FeedBack::Reply),
+             permission::SUPERUSER, permission::SUPERUSER);
+    OnPrefix({".feedbacklist", "。feedbacklist"}, "__feedback_feedbacklist__",
+             ACT(FeedBack::List), permission::SUPERUSER, permission::SUPERUSER);
   }
 
  private:
