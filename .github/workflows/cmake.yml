@@ -43,7 +43,7 @@ jobs:
 
     - name: gumbo-parser
       run: | 
-          git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git
+          git clone https://github.com/google/gumbo-parser.git
           cd gumbo-parser
           ./autogen.sh
           ./configure
