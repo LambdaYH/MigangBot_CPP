@@ -1,15 +1,16 @@
 #ifndef MIGANGBOT_EVENT_EVENT_H_
 #define MIGANGBOT_EVENT_EVENT_H_
 
-#include <string>
-#include "type.h"
+#include <memory>
+
 #include <nlohmann/json.hpp>
 
-namespace white
-{
+namespace white {
 
 using Event = nlohmann::json;
 
-} // namespace white
+using EventPtr = std::shared_ptr<nlohmann::json>;
+
+}  // namespace white
 
 #endif

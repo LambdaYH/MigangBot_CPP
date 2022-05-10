@@ -1,18 +1,19 @@
 #ifndef MIGANGBOT_EVENT_SEARCH_RESULT_H_
 #define MIGANGBOT_EVENT_SEARCH_RESULT_H_
 
-#include "event/types.h"
-#include "bot/onebot_11/api_bot.h"
 #include <string>
+
+#include "bot/onebot_11/api_bot.h"
+#include "event/type.h"
+#include "service/triggered_service.h"
 
 namespace white {
 
-struct SearchResult
-{
-  const plugin_func &func;
+struct SearchResult {
+  const std::shared_ptr<TriggeredService> &service;
   const short command_size;
 };
 
-} // namespace hite
+}  // namespace white
 
 #endif

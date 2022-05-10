@@ -1,472 +1,400 @@
 #ifndef MIGANGBOT_EVENT_EVENT_HANDLER_H_
 #define MIGANGBOT_EVENT_EVENT_HANDLER_H_
 
+#include <algorithm>
+#include <array>
 #include <initializer_list>
 #include <memory>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include <vector>
-#include <array>
-#include <algorithm>
-#include <nlohmann/json.hpp>
+
+#include <co/co.h>
 #include <jpcre2.hpp>
+#include <nlohmann/json.hpp>
 
-#include "event/trie.h"
-#include "event/event_filter.h"
-#include "event/event.h"
-#include "event/regex_matcher.h"
-#include "pool/thread_pool.h"
-#include "logger/logger.h"
 #include "bot/onebot_11/api_bot.h"
-#include "utility.h"
+#include "event/event_filter.h"
+#include "event/regex_matcher.h"
+#include "event/trie.h"
+#include "event/type.h"
+#include "logger/logger.h"
 #include "permission/permission.h"
-#include "event/types.h"
+#include "utility.h"
+#include "service/service_manager.h"
 
-#include <iostream>
-
-namespace white
-{
+namespace white {
 
 // 存储命令的array的大小，取决于权限设置，Superuser总是为最大值
 constexpr auto kCommandArraySize = permission::SUPERUSER + 1;
 
-class EventHandler
-{
-public:
-    static EventHandler &GetInstance()
-    {
-        static EventHandler event_handler;
-        return event_handler;
-    }
+class EventHandler {
+ public:
+  static EventHandler &GetInstance() noexcept {
+    static EventHandler event_handler;
+    return event_handler;
+  }
 
-    void Init(std::size_t thread_num = std::thread::hardware_concurrency())
-    {
-        pool_ = std::make_unique<ThreadPool>(thread_num);
-    }
+  void InitFilter(std::unique_ptr<EventFilter> &&filter) {
+    filter_ = std::move(filter);
+  }
 
-    void InitFilter(std::unique_ptr<EventFilter> &&filter)
-    {
-        filter_ = std::move(filter);
-    }
+ public:
+  bool RegisterCommand(const int command_type, const std::string &command,
+                       std::shared_ptr<TriggeredService> service);
 
-public:
-    template<typename F>
-    bool RegisterCommand(const int command_type, const std::string &command, F &&func, int permission = permission::NORMAL, bool only_to_me = false);
+  bool RegisterNotice(const std::string &notice_type,
+                      const std::string &sub_type,
+                      std::shared_ptr<TriggeredService> service);
 
-    template<typename F>
-    bool RegisterNotice(const std::string &notice_type, const std::string &sub_type, F &&func);
+  bool RegisterRequest(const std::string &request_type,
+                       const std::string &sub_type,
+                       std::shared_ptr<TriggeredService> service);
 
-    template<typename F>
-    bool RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func);
+  bool RegisterRegex(const std::initializer_list<std::string> &patterns,
+                     std::shared_ptr<TriggeredService> service);
 
-    template<typename F>
-    bool RegisterRegex(const std::initializer_list<std::string> &patterns, F &&func, int permission = permission::NORMAL);
+  bool Handle(Event &event, onebot11::ApiBot &bot) noexcept;
 
-    bool Handle(Event &event, onebot11::ApiBot &bot);
+ public:
+  EventHandler(const EventHandler &) = delete;
+  EventHandler &operator=(const EventHandler &) = delete;
+  EventHandler(const EventHandler &&) = delete;
+  EventHandler &operator=(const EventHandler &&) = delete;
 
-    template<typename F>
-    void AddTask(F &&func);
+ private:
+  EventHandler() {}
+  ~EventHandler() {}
 
-public:
-    EventHandler(const EventHandler &) = delete;
-    EventHandler &operator=(const EventHandler &) = delete;
-    EventHandler(const EventHandler &&) = delete;
-    EventHandler &operator=(const EventHandler &&) = delete;
+ private:
+  const plugin_func &MatchedHandler(Event &event, const int perm,
+                                    const std::string &message,
+                                    const char message_type) const noexcept;
 
-private:
-    EventHandler() {}
-    ~EventHandler() {}
+ private:
+  std::unordered_map<std::string, std::shared_ptr<TriggeredService>>
+      command_fullmatch_;
+  Trie command_prefix_;
+  Trie command_suffix_;
 
-private:
-    const plugin_func &MatchedHandler(Event &event, const std::string &message) const;
-    const SearchResult MatchHelper(int permission, const std::string &message, bool only_to_me) const;
+  std::vector<RegexMatcher> command_regex_;
 
-private:
-    std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize> command_fullmatch_each_perm_;
-    std::array<Trie, kCommandArraySize> command_prefix_each_perm_;
-    std::array<Trie, kCommandArraySize> command_suffix_each_perm_;
-    std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize> command_keyword_each_perm_;
+  std::vector<std::shared_ptr<TriggeredService>> all_msg_handler_;
 
-    std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize> command_fullmatch_each_perm_to_me_;
-    std::array<Trie, kCommandArraySize> command_prefix_each_perm_to_me_;
-    std::array<Trie, kCommandArraySize> command_suffix_each_perm_to_me_;
-    std::array<std::unordered_map<std::string, plugin_func>, kCommandArraySize> command_keyword_each_perm_to_me_;
+  std::unordered_map<
+      std::string,
+      std::unordered_map<std::string,
+                         std::vector<std::shared_ptr<TriggeredService>>>>
+      notice_handler_;
+  std::unordered_map<
+      std::string,
+      std::unordered_map<std::string,
+                         std::vector<std::shared_ptr<TriggeredService>>>>
+      request_handler_;
+  plugin_func no_func_avaliable_;
 
-    std::array<std::vector<RegexMatcher>, kCommandArraySize> command_regex_each_perm_;
-
-    std::array<std::vector<plugin_func>, kCommandArraySize> all_msg_handler_each_perm_;
-
-    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<plugin_func>>> notice_handler_;
-    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<plugin_func>>> request_handler_;
-    plugin_func no_func_avaliable_;
-
-    std::unique_ptr<EventFilter> filter_;
-    std::unique_ptr<ThreadPool> pool_;
+  std::unique_ptr<EventFilter> filter_;
 };
 
+inline bool EventHandler::RegisterCommand(
+    const int command_type, const std::string &command,
+    std::shared_ptr<TriggeredService> service) {
+  switch (command_type) {
+    case FULLMATCH:
+      return command_fullmatch_.emplace(command, service).second;
+      break;
+    case PREFIX:
+      return command_prefix_.Insert(command, service);
+      break;
+    case SUFFIX:
+      return command_suffix_.Insert(command, service);
+      break;
+    case ALLMSG:
+      all_msg_handler_.push_back(service);
+      return true;
+      break;
+    default:
+      return command_fullmatch_.emplace(command, service).second;
+  }
+  return true;
+}
 
+inline bool EventHandler::RegisterNotice(
+    const std::string &notice_type, const std::string &sub_type,
+    std::shared_ptr<TriggeredService> service) {
+  notice_handler_[notice_type][sub_type].push_back(service);
+  return true;
+}
 
-template<typename F>
-inline bool EventHandler::RegisterCommand(const int command_type, const std::string &command, F &&func, int permission, bool only_to_me)
-{
-    switch(command_type)
-    {
-        case FULLMATCH:
-            if(only_to_me)
-                return command_fullmatch_each_perm_to_me_[permission].emplace(std::move(command), std::forward<F>(func)).second;
-            return command_fullmatch_each_perm_[permission].emplace(std::move(command), std::forward<F>(func)).second;
+inline bool EventHandler::RegisterRequest(
+    const std::string &request_type, const std::string &sub_type,
+    std::shared_ptr<TriggeredService> service) {
+  request_handler_[request_type][sub_type].push_back(service);
+  return true;
+}
+
+inline bool EventHandler::RegisterRegex(
+    const std::initializer_list<std::string> &patterns,
+    std::shared_ptr<TriggeredService> service) {
+  command_regex_.push_back(RegexMatcher(patterns, service));
+  return true;
+}
+
+inline void HandleControlCommand(const std::string_view &msg, const int perm,
+                                 const Event &event, onebot11::ApiBot &bot) {
+  if (msg.starts_with("启用") || msg.starts_with("enable")) {
+    auto group_id = event["group_id"].get<GId>();
+    auto service_name =
+        msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
+    if (!service_name.empty()) {
+      go([group_id, &bot, name = std::string(service_name), perm] {
+        if (ServiceManager::GetInstance().GroupEnable(std::string(name),
+                                                      group_id, perm))
+
+          bot.send_group_msg(group_id, fmt::format("已成功启用服务[{}]", name));
+
+        else
+          bot.send_group_msg(
+              group_id, fmt::format("未能(完全)启用服务[{}]，权限不足", name));
+      });
+    }
+  } else if (msg.starts_with("禁用") || msg.starts_with("disable")) {
+    auto group_id = event["group_id"].get<GId>();
+    auto service_name =
+        msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
+    if (!service_name.empty()) {
+      go([group_id, &bot, name = std::string(service_name), perm] {
+        if (ServiceManager::GetInstance().GroupDisable(std::string(name),
+                                                       group_id, perm))
+
+          bot.send_group_msg(group_id, fmt::format("已成功禁用服务[{}]", name));
+
+        else
+          bot.send_group_msg(
+              group_id, fmt::format("未能(完全)禁用服务[{}]，权限不足", name));
+      });
+    }
+  }
+}
+
+inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
+  if (filter_ && !filter_->operator()(event)) return false;
+  if (event.contains("post_type")) {
+    auto post_type = event["post_type"].get<std::string>();
+    switch (post_type[3]) {
+      // message
+      case 's': {
+        auto msg = event["message"].get<std::string_view>();
+        auto message_type = event["message_type"].get<std::string>()[0];
+        auto perm = permission::GetUserPermission(event);
+        switch (message_type) {
+          case 'p':
+            if (event["sub_type"].get<std::string>()[0] == 'f')
+              LOG_INFO("Bot[{}]收到来自好友[{}({})]的消息: {}",
+                       event["self_id"].get<QId>(),
+                       event["sender"].value("nickname", ""),
+                       event["sender"].value("user_id", 0), msg);
             break;
-        case PREFIX:
-            if(only_to_me)
-                return command_prefix_each_perm_to_me_[permission].Insert(std::move(command), std::forward<F>(func));
-            return command_prefix_each_perm_[permission].Insert(std::move(command), std::forward<F>(func));
+          case 'g':
+            if (event["anonymous"] != nullptr)
+              LOG_INFO("Bot[{}]收到来自群[{}]的匿名消息: {}",
+                       event["self_id"].get<QId>(),
+                       event["group_id"].get<GId>(), msg);
+            else
+              LOG_INFO("Bot[{}]收到来自群[{}]成员[{}({})]的消息: {}",
+                       event["self_id"].get<QId>(),
+                       event["group_id"].get<GId>(),
+                       event["sender"].value("nickname", ""),
+                       event["sender"].value("user_id", 0), msg);
+            HandleControlCommand(msg, perm, event, bot);
             break;
-        case SUFFIX:
-        {
-            if(only_to_me)
-                return command_suffix_each_perm_to_me_[permission].InsertFromBack(std::move(command), std::forward<F>(func));
-            return command_suffix_each_perm_[permission].InsertFromBack(std::move(command), std::forward<F>(func));
+          default:
             break;
         }
-        case KEYWORD:
-            if(only_to_me)
-                return command_keyword_each_perm_to_me_[permission].emplace(std::move(command), std::forward<F>(func)).second;
-            return command_fullmatch_each_perm_[permission].emplace(std::move(command), std::forward<F>(func)).second;
-            break;
-        case ALLMSG:
-            all_msg_handler_each_perm_[permission].push_back(std::forward<F>(func));
-            return true;
-            break;
-        default:
-            return command_fullmatch_each_perm_[permission].emplace(std::move(command), std::forward<F>(func)).second;
-    }
-    return true;
-}
-
-template<typename F>
-inline bool EventHandler::RegisterNotice(const std::string &notice_type, const std::string &sub_type, F &&func)
-{
-    notice_handler_[notice_type][sub_type].push_back(std::forward<F>(func));
-    return true;
-}
-
-template<typename F>
-inline bool EventHandler::RegisterRequest(const std::string &request_type, const std::string &sub_type, F &&func)
-{
-    request_handler_[request_type][sub_type].push_back(std::forward<F>(func));
-    return true;
-}
-
-template<typename F>
-inline bool EventHandler::RegisterRegex(const std::initializer_list<std::string> &patterns, F &&func, int permission)
-{
-    command_regex_each_perm_[permission].push_back(RegexMatcher(patterns, std::forward<F>(func)));
-    return true;
-}
-
-inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot)
-{
-    if(filter_ && !filter_->operator()(event))
-        return false;
-    if(event.contains("post_type"))
-    {
-        auto post_type = event["post_type"].get<std::string>();
-        switch(post_type[3])
-        {
-            // message
-            case 's':
-            {
-                if(event["message_type"].get<std::string>()[0] == 'p')
-                {
-                    if(event["sub_type"].get<std::string>()[0] == 'f')
-                        LOG_INFO("Bot[{}]收到来自好友[{}({})]的消息: {}", 
-                            event["self_id"].get<QId>(), 
-                            event["sender"].value("nickname", ""),
-                            event["sender"].value("user_id", 0),
-                            event.value("message", "Unknown message")
-                        );
-                }else
-                {
-                    if(event["anonymous"] != nullptr)
-                    {
-                        LOG_INFO("Bot[{}]收到来自群[{}]的匿名消息: {}", 
-                            event["self_id"].get<QId>(), 
-                            event["group_id"].get<GId>(),
-                            event.value("message", "Unknown message")
-                        );
-                    }else
-                    {
-                        LOG_INFO("Bot[{}]收到来自群[{}]成员[{}({})]的消息: {}", 
-                            event["self_id"].get<QId>(), 
-                            event["group_id"].get<GId>(),
-                            event["sender"].value("nickname", ""),
-                            event["sender"].value("user_id", 0),
-                            event.value("message", "Unknown message")
-                        );
-                    }   
+        // pre_propose
+        if (msg.starts_with("[CQ:at")) {
+          // auto at_id_start = msg.find_first_of('=') + 1;
+          auto at_id_start = std::max(static_cast<std::size_t>(10), msg.size());
+          auto at_id_end = std::min(msg.find_first_of(']'), msg.size());
+          auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
+          auto self_id = std::to_string(event["self_id"].get<QId>());
+          if (at_id == self_id) {
+            msg = msg.substr(msg.find_first_of(']') + 1);
+            msg = msg.substr(msg.find_first_not_of(' '));
+            event["__to_me__"] = true;
+            event["message"] = std::string(msg);
+          }
+        }
+        auto message = event["message"].get<std::string>();
+        const auto &func = MatchedHandler(event, perm, message, message_type);
+        if (func)
+          go([&func, event, &bot]() {
+            func(event, bot);
+          });  // 原对象会消失，event必须拷贝
+        else {
+          // check_regex
+          // check all
+          switch (message_type) {
+            case 'g': {
+              auto group_id = event["group_id"].get<GId>();
+              for (auto &regex_matcher : command_regex_) {
+                if (regex_matcher.Check(message)) {
+                  const auto &service = regex_matcher.GetService();
+                  if (service->CheckIsEnable(group_id) &&
+                      service->CheckPerm(perm))
+                    go([&service, event, &bot] {
+                      service->GetFunc()(event, bot);
+                    });
                 }
-                auto message = event["message"].get<std::string>();
-                auto func = MatchedHandler(event, message);
-                if(func)
-                    pool_->AddTask(std::bind(func, event, std::ref(bot))); // 原对象会消失，event必须拷贝
-                else
-                {
-                    // check_regex
-                    // check all
-                    switch(permission::GetUserPermission(event))
-                    {
-                        case permission::SUPERUSER:
-                            for(auto &regex_matcher : command_regex_each_perm_[permission::SUPERUSER])
-                                if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
-                            for(const auto &func : all_msg_handler_each_perm_[permission::SUPERUSER])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
-                        case permission::WHITE_LIST:
-                            for(auto &regex_matcher : command_regex_each_perm_[permission::WHITE_LIST])
-                                if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
-                            for(const auto &func : all_msg_handler_each_perm_[permission::WHITE_LIST])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
-                        case permission::GROUP_OWNER:
-                            for(auto &regex_matcher : command_regex_each_perm_[permission::GROUP_OWNER])
-                                if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
-                            for(const auto &func : all_msg_handler_each_perm_[permission::GROUP_OWNER])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
-                        case permission::GROUP_ADMIN:
-                            for(auto &regex_matcher : command_regex_each_perm_[permission::GROUP_ADMIN])
-                                if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
-                            for(const auto &func : all_msg_handler_each_perm_[permission::GROUP_ADMIN])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
-                        case permission::GROUP_MEMBER:
-                            for(auto &regex_matcher : command_regex_each_perm_[permission::GROUP_MEMBER])
-                                if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
-                            for(const auto &func : all_msg_handler_each_perm_[permission::GROUP_MEMBER])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
-                        case permission::PRIVATE:
-                            for(auto &regex_matcher : command_regex_each_perm_[permission::PRIVATE])
-                                if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
-                            for(const auto &func : all_msg_handler_each_perm_[permission::PRIVATE])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
-                        case permission::NORMAL:
-                            for(auto &regex_matcher : command_regex_each_perm_[permission::NORMAL])
-                                if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
-                            for(const auto &func : all_msg_handler_each_perm_[permission::NORMAL])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
-                        case permission::BLACK:
-                            for(auto &regex_matcher : command_regex_each_perm_[permission::BLACK])
-                                if(regex_matcher.Check(message))
-                                    pool_->AddTask(std::bind(regex_matcher.GetFunc(), event, std::ref(bot)));
-                            for(const auto &func : all_msg_handler_each_perm_[permission::BLACK])
-                                pool_->AddTask(std::bind(func, event, std::ref(bot)));
-                        default:
-                            break;
-                    } 
-                }  
-            }
-            break;
-            // notice
-            case 'i':
-            {
-                auto notice_type = event.value("notice_type", "");
-                auto sub_type = event.value("sub_type", "");
-                LOG_INFO("Bot[{}] 收到一个通知事件: {}.{}", event["self_id"].get<QId>(), notice_type, sub_type);
-                if(notice_handler_.count(notice_type) && notice_handler_.at(notice_type).count(sub_type))
-                {
-                    for(auto &func : notice_handler_.at(notice_type).at(sub_type))
-                        pool_->AddTask(std::bind(func, event, std::ref(bot)));
+              }
+              for (const auto &service : all_msg_handler_)
+                if (service->CheckIsEnable(group_id) &&
+                    service->CheckPerm(perm))
+                  go([&service, event, &bot] {
+                    service->GetFunc()(event, bot);
+                  });
+            } break;
+            case 'p': {
+              for (auto &regex_matcher : command_regex_) {
+                if (regex_matcher.Check(message)) {
+                  const auto &service = regex_matcher.GetService();
+                  if (service->CheckPerm(perm))
+                    go([&service, event, &bot] {
+                      service->GetFunc()(event, bot);
+                    });
                 }
-            }
-            break;
-            // request
-            case 'u':
-            {
-                auto request_type = event.value("request_type", "");
-                auto sub_type = event.value("sub_type", "");
-                LOG_INFO("Bot[{}] 收到一个请求事件: {}.{}", event["self_id"].get<QId>(), request_type, sub_type);
-                if(request_handler_.count(request_type) && request_handler_.at(request_type).count(sub_type))
-                {
-                    for(auto &func : request_handler_.at(request_type).at(sub_type))
-                        pool_->AddTask(std::bind(func, event, std::ref(bot)));
-                }
-            }
-            break;
-            // meta_event
-            case 'a':
-            {
-                auto meta_event_type = event["meta_event_type"].get<std::string>();
-                if(meta_event_type[0] == 'l')
-                {
-                    auto sub_type = event["sub_type"].get<std::string>();
-                    switch(sub_type[0])
-                    {
-                        case 'e':
-                        case 'c':
-                            LOG_INFO("Bot[{}]已成功建立连接", event["self_id"].get<QId>());
-                            break;
-                        case 'd':
-                            LOG_INFO("Bot[{}]已断开连接", event["self_id"].get<QId>());
-                            break;
-                    }
-                }else
-                {
-                    LOG_DEBUG("Bot[{}]与[{}]收到一次心跳连接", event["self_id"].get<QId>(), event["time"].get<int64_t>());
-                }
-            }
-            break;
+              }
+              for (const auto &service : all_msg_handler_)
+                if (service->CheckPerm(perm))
+                  go([&service, event, &bot] {
+                    service->GetFunc()(event, bot);
+                  });
+            } break;
             default:
-                break;
+              break;
+          }
         }
+      } break;
+      // notice
+      case 'i': {
+        auto notice_type = event.value("notice_type", "");
+        auto sub_type = event.value("sub_type", "");
+        LOG_INFO("Bot[{}] 收到一个通知事件: {}.{}", event["self_id"].get<QId>(),
+                 notice_type, sub_type);
+        if (notice_handler_.count(notice_type) &&
+            notice_handler_.at(notice_type).count(sub_type)) {
+          for (const auto &service :
+               notice_handler_.at(notice_type).at(sub_type))
+            if (!event.contains("group_id") ||
+                service->CheckIsEnable(event["group_id"].get<GId>()))
+              go([&service, event, &bot]() { service->GetFunc()(event, bot); });
+        }
+        if (!sub_type.empty()) {
+          if (notice_handler_.count(notice_type) &&
+              notice_handler_.at(notice_type).count("")) {
+            for (const auto &service : notice_handler_.at(notice_type).at(""))
+              if (!event.contains("group_id") ||
+                  service->CheckIsEnable(event["group_id"].get<GId>()))
+                go([&service, event, &bot]() {
+                  service->GetFunc()(event, bot);
+                });
+          }
+        }
+      } break;
+      // request
+      case 'u': {
+        auto request_type = event.value("request_type", "");
+        auto sub_type = event.value("sub_type", "");
+        LOG_INFO("Bot[{}] 收到一个请求事件: {}.{}", event["self_id"].get<QId>(),
+                 request_type, sub_type);
+        if (request_handler_.count(request_type) &&
+            request_handler_.at(request_type).count(sub_type)) {
+          for (const auto &service :
+               request_handler_.at(request_type).at(sub_type))
+            if (!event.contains("group_id") ||
+                service->CheckIsEnable(event["group_id"].get<GId>()))
+              go([&service, event, &bot]() { service->GetFunc()(event, bot); });
+        }
+      } break;
+      // meta_event
+      case 'a': {
+        auto meta_event_type = event["meta_event_type"].get<std::string>();
+        if (meta_event_type[0] == 'l') {
+          auto sub_type = event["sub_type"].get<std::string>();
+          switch (sub_type[0]) {
+            case 'e':
+            case 'c':
+              LOG_INFO("Bot[{}]已成功建立连接", event["self_id"].get<QId>());
+              break;
+            case 'd':
+              LOG_INFO("Bot[{}]已断开连接", event["self_id"].get<QId>());
+              break;
+          }
+        } else {
+          LOG_DEBUG("Bot[{}]与[{}]收到一次心跳连接",
+                    event["self_id"].get<QId>(), event["time"].get<int64_t>());
+        }
+      } break;
+      default:
+        break;
     }
-    return true;
+  }
+  return true;
 }
 
-inline const plugin_func &EventHandler::MatchedHandler(Event &event, const std::string &message) const
-{
-    if(message.empty())
-        return no_func_avaliable_;
-    if(event.is_null())
-        return no_func_avaliable_;
-    std::string_view msg(message);
-    bool only_to_me = false;
-    if(msg.starts_with("[CQ:at"))
-    {
-        auto at_id_start = msg.find_first_of('=') + 1;
-        if(at_id_start != std::string_view::npos)
-        {
-            auto at_id_end = msg.find_first_of(']');
-            if(at_id_end != std::string_view::npos)
-            {
-                auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
-                auto self_id = std::to_string(event["self_id"].get<QId>());
-                if(at_id == self_id)
-                {
-                    only_to_me = true;
-                    msg = msg.substr(msg.find_first_of(']') + 1);
-                    msg = msg.substr(msg.find_first_not_of(' '));
-                    event["__to_me__"] = true;
-                }
-            }
-        }
-    }
-    auto msg_str = std::string(msg);
-    auto perm = permission::GetUserPermission(event);
-    switch(perm)
-    {
-        case permission::SUPERUSER:
-        {
-            auto func_ret = MatchHelper(permission::SUPERUSER, msg_str, only_to_me);
-            if (func_ret.func)
-            {
-                event["__command_size__"] = func_ret.command_size;
-                return func_ret.func;
-            }
-        }
-        case permission::WHITE_LIST:
-        {
-            auto func_ret = MatchHelper(permission::WHITE_LIST, msg_str, only_to_me);
-            if (func_ret.func)
-            {
-                event["__command_size__"] = func_ret.command_size;
-                return func_ret.func;
-            }
-        }       
-        case permission::GROUP_OWNER:
-        {
-            auto func_ret = MatchHelper(permission::GROUP_OWNER, msg_str, only_to_me);
-            if (func_ret.func)
-            {
-                event["__command_size__"] = func_ret.command_size;
-                return func_ret.func;
-            }
-        }            
-        case permission::GROUP_ADMIN:
-        {
-            auto func_ret = MatchHelper(permission::GROUP_ADMIN, msg_str, only_to_me);
-            if (func_ret.func)
-            {
-                event["__command_size__"] = func_ret.command_size;
-                return func_ret.func;
-            }
-        } 
-        case permission::GROUP_MEMBER:
-        {
-            auto func_ret = MatchHelper(permission::GROUP_MEMBER, msg_str, only_to_me);
-            if (func_ret.func)
-            {
-                event["__command_size__"] = func_ret.command_size;
-                return func_ret.func;
-            }
-        }
-        case permission::PRIVATE:
-        {
-            auto func_ret = MatchHelper(permission::PRIVATE, msg_str, only_to_me);
-            if (func_ret.func)
-            {
-                event["__command_size__"] = func_ret.command_size;
-                return func_ret.func;
-            }
-        }
-        case permission::NORMAL:
-        {
-            auto func_ret = MatchHelper(permission::NORMAL, msg_str, only_to_me);
-            if (func_ret.func)
-            {
-                event["__command_size__"] = func_ret.command_size;
-                return func_ret.func;
-            }
-        }   
-        case permission::BLACK:
-        {
-            auto func_ret = MatchHelper(permission::BLACK, msg_str, only_to_me);
-            if (func_ret.func)
-            {
-                event["__command_size__"] = func_ret.command_size;
-                return func_ret.func;
-            }
-        }
-        default:
-            return no_func_avaliable_;
-    }   
-    return no_func_avaliable_;
-}
+inline const plugin_func &EventHandler::MatchedHandler(
+    Event &event, const int perm, const std::string &message,
+    const char message_type) const noexcept {
+  if (message.empty()) return no_func_avaliable_;
+  switch (message_type) {
+    case 'g': {
+      auto group_id = event["group_id"].get<GId>();
+      if (command_fullmatch_.count(message)) {
+        auto &service = command_fullmatch_.at(message);
+        if (service->CheckIsEnable(group_id) && service->CheckPerm(perm) &&
+            service->CheckToMe(event.contains("__to_me__")))
+          return service->GetFunc();
+      }
+      auto prefix_search = command_prefix_.Search(message);
+      if (prefix_search.service &&
+          prefix_search.service->CheckIsEnable(group_id) &&
+          prefix_search.service->CheckPerm(perm) &&
+          prefix_search.service->CheckToMe(event.contains("__to_me__"))) {
+        event["__command_size__"] = prefix_search.command_size;
+        return prefix_search.service->GetFunc();
+      }
 
-inline const SearchResult EventHandler::MatchHelper(int permission, const std::string &message, bool only_to_me) const
-{
-    if(only_to_me)
-    {
-        if (command_fullmatch_each_perm_to_me_[permission].count(message))
-            return {command_fullmatch_each_perm_to_me_[permission].at(message), 0};
-        auto &func_prefix_result = command_prefix_each_perm_to_me_[permission].Search(message);
-        if(func_prefix_result.func)
-            return func_prefix_result;
-        auto &func_suffix_result = command_suffix_each_perm_to_me_[permission].SearchFromBack(message);
-        if(func_suffix_result.func)
-            return func_suffix_result;
-    }else
-    {
-        if (command_fullmatch_each_perm_[permission].count(message))
-            return {command_fullmatch_each_perm_[permission].at(message), 0};
-        auto &func_prefix_result = command_prefix_each_perm_[permission].Search(message);
-        if(func_prefix_result.func)
-            return func_prefix_result;
-        auto &func_suffix_result = command_suffix_each_perm_[permission].SearchFromBack(message);
-        if(func_suffix_result.func)
-            return func_suffix_result;
-    }
-    return {no_func_avaliable_, 0};
-}
+      auto suffix_search = command_suffix_.Search(message);
+      if (suffix_search.service &&
+          suffix_search.service->CheckIsEnable(group_id) &&
+          suffix_search.service->CheckPerm(perm) &&
+          suffix_search.service->CheckToMe(event.contains("__to_me__"))) {
+        event["__command_size__"] = prefix_search.command_size;
+        return prefix_search.service->GetFunc();
+      }
+    } break;
+    case 'p': {
+      if (command_fullmatch_.count(message)) {
+        auto &service = command_fullmatch_.at(message);
+        if (service->CheckPerm(perm)) return service->GetFunc();
+      }
+      auto prefix_search = command_prefix_.Search(message);
+      if (prefix_search.service && prefix_search.service->CheckPerm(perm)) {
+        event["__command_size__"] = prefix_search.command_size;
+        return prefix_search.service->GetFunc();
+      }
 
-template<typename F>
-inline void EventHandler::AddTask(F &&func)
-{
-    pool_->AddTask(std::forward<F>(func));
+      auto suffix_search = command_suffix_.Search(message);
+      if (suffix_search.service && suffix_search.service->CheckPerm(perm)) {
+        event["__command_size__"] = suffix_search.command_size;
+        return suffix_search.service->GetFunc();
+      }
+    } break;
+    default:
+      break;
+  }
+  return no_func_avaliable_;
 }
-
-} // namespace white
+}  // namespace white
 
 #endif

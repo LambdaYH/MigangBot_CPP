@@ -1,40 +1,32 @@
-#ifndef MIGANGBOT_MODULES_MODULE_ECHO_H_
-#define MIGANGBOT_MODULES_MODULE_ECHO_H_
+#pragma once
 
 #include "modules/module_interface.h"
-#include <functional>
-#include <queue>
-#include <condition_variable>
-#include <mutex>
+
 #include <string_view>
 
-namespace white
-{
-namespace module
-{
+#include "co/co.h"
 
-class Echo : public Module
-{
-public:
-    Echo() : Module() {}
-    virtual void Register();
+namespace white {
+namespace module {
 
-private:
-    void DoEcho(const Event &event, onebot11::ApiBot &bot);
+class Echo : public Module {
+ public:
+  Echo() : Module() {}
+  virtual void Register();
+
+ private:
+  void DoEcho(const Event &event, onebot11::ApiBot &bot);
 };
 
-inline void Echo::Register()
-{
-    RegisterCommand(PREFIX, {"/echo", "/回声"}, func(Echo::DoEcho), permission::NORMAL);
+inline void Echo::Register() {
+  OnPrefix({"/echo", "/回声"}, "echo", ACT(Echo::DoEcho));
+  OnPrefix({".echo", "。回声"}, "echo_at", ACT(Echo::DoEcho), true);
 }
 
-inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot)
-{
-    auto text = message::ExtraPlainText(event);
-    bot.send_msg(event, text);
+inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot) {
+  auto text = message::ExtraPlainText(event);
+  auto ret = bot.send_msg(event, text).Ret();
 }
 
-} // namespace module
-} // namespace white
-
-#endif
+}  // namespace module
+}  // namespace white

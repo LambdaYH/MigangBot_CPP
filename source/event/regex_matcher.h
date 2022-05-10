@@ -1,51 +1,41 @@
 #ifndef MIGANGBOT_EVENT_EVENT_REGEX_MATCHER_H_
 #define MIGANGBOT_EVENT_EVENT_REGEX_MATCHER_H_
 
-#include <vector>
-#include <string_view>
 #include <initializer_list>
-#include <jpcre2.hpp>
-#include "event/types.h"
+#include <string_view>
+#include <vector>
 
-namespace white
-{
+#include <jpcre2.hpp>
+
+#include "event/type.h"
+#include "service/triggered_service.h"
+
+namespace white {
 
 using jp = jpcre2::select<char>;
 
-class RegexMatcher
-{
-public:
-    RegexMatcher(const std::initializer_list<std::string> &patterns, const plugin_func &&func) : func_(std::move(func))
-    {
-        for(const auto &pattern : patterns)
-            regex_.push_back(jp::Regex(pattern, "mSi"));
-    }
+class RegexMatcher {
+ public:
+  RegexMatcher(const std::initializer_list<std::string> &patterns,
+               std::shared_ptr<TriggeredService> service)
+      : service_(service) {
+    for (const auto &pattern : patterns)
+      regex_.push_back(jp::Regex(pattern, "mSi"));
+  }
 
-    RegexMatcher(const std::initializer_list<std::string> &patterns, const plugin_func &func) : func_(func)
-    {
-        for(const auto &pattern : patterns)
-            regex_.push_back(jp::Regex(pattern, "mSi"));
-    }
+  bool Check(const std::string &str) noexcept {
+    for (auto &re : regex_)
+      if (re.match(str)) return true;
+    return false;
+  }
 
-    bool Check(const std::string &str)
-    {
-        for(auto &re : regex_)
-            if(re.match(str))
-                return true;
-        return false;
-    }
+  const std::shared_ptr<TriggeredService> &GetService() const noexcept { return service_; }
 
-    const plugin_func &GetFunc() const
-    {
-        return func_;
-    }
-
-private:
-    std::vector<jp::Regex> regex_;
-    const plugin_func func_;
-
+ private:
+  std::vector<jp::Regex> regex_;
+  const std::shared_ptr<TriggeredService> service_;
 };
 
-} // namespace white
+}  // namespace white
 
 #endif
