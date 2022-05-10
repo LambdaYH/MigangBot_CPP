@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <exception>
 #include <initializer_list>
 #include <memory>
 #include <string>
@@ -235,7 +236,11 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
         const auto &func = MatchedHandler(event, perm, message, message_type);
         if (func)
           go([&func, event, &bot]() {
-            func(event, bot);
+            try {
+              func(event, bot);
+            } catch (const std::exception &e) {
+              LOG_ERROR("Exception Happened: {}", e.what());
+            }
           });  // 原对象会消失，event必须拷贝
         else {
           // check_regex
@@ -249,7 +254,11 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                   if (service->CheckIsEnable(group_id) &&
                       service->CheckPerm(perm))
                     go([&service, event, &bot] {
-                      service->GetFunc()(event, bot);
+                      try {
+                        service->GetFunc()(event, bot);
+                      } catch (const std::exception &e) {
+                        LOG_ERROR("Exception Happened: {}", e.what());
+                      }
                     });
                 }
               }
@@ -257,7 +266,11 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                 if (service->CheckIsEnable(group_id) &&
                     service->CheckPerm(perm))
                   go([&service, event, &bot] {
-                    service->GetFunc()(event, bot);
+                    try {
+                      service->GetFunc()(event, bot);
+                    } catch (const std::exception &e) {
+                      LOG_ERROR("Exception Happened: {}", e.what());
+                    }
                   });
             } break;
             case 'p': {
@@ -266,14 +279,22 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                   const auto &service = regex_matcher.GetService();
                   if (service->CheckPerm(perm))
                     go([&service, event, &bot] {
-                      service->GetFunc()(event, bot);
+                      try {
+                        service->GetFunc()(event, bot);
+                      } catch (const std::exception &e) {
+                        LOG_ERROR("Exception Happened: {}", e.what());
+                      }
                     });
                 }
               }
               for (const auto &service : all_msg_handler_)
                 if (service->CheckPerm(perm))
                   go([&service, event, &bot] {
-                    service->GetFunc()(event, bot);
+                    try {
+                      service->GetFunc()(event, bot);
+                    } catch (const std::exception &e) {
+                      LOG_ERROR("Exception Happened: {}", e.what());
+                    }
                   });
             } break;
             default:
@@ -293,7 +314,13 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                notice_handler_.at(notice_type).at(sub_type))
             if (!event.contains("group_id") ||
                 service->CheckIsEnable(event["group_id"].get<GId>()))
-              go([&service, event, &bot]() { service->GetFunc()(event, bot); });
+              go([&service, event, &bot]() {
+                try {
+                  service->GetFunc()(event, bot);
+                } catch (std::exception &e) {
+                  LOG_ERROR("Exception Happened: {}", e.what());
+                }
+              });
         }
         if (!sub_type.empty()) {
           if (notice_handler_.count(notice_type) &&
@@ -302,7 +329,11 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
               if (!event.contains("group_id") ||
                   service->CheckIsEnable(event["group_id"].get<GId>()))
                 go([&service, event, &bot]() {
-                  service->GetFunc()(event, bot);
+                  try {
+                    service->GetFunc()(event, bot);
+                  } catch (std::exception &e) {
+                    LOG_ERROR("Exception Happened: {}", e.what());
+                  }
                 });
           }
         }
@@ -319,7 +350,13 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                request_handler_.at(request_type).at(sub_type))
             if (!event.contains("group_id") ||
                 service->CheckIsEnable(event["group_id"].get<GId>()))
-              go([&service, event, &bot]() { service->GetFunc()(event, bot); });
+              go([&service, event, &bot]() {
+                try {
+                  service->GetFunc()(event, bot);
+                } catch (std::exception &e) {
+                  LOG_ERROR("Exception Happened: {}", e.what());
+                }
+              });
         }
       } break;
       // meta_event

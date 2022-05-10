@@ -129,7 +129,7 @@ inline std::string CleanHTML(const std::string &html) {
 
   // Configure Tidy
   // The flags tell Tidy to output XML and disable showing warnings
-  bool configSuccess = tidyOptSetBool(tidyDoc, TidyXmlOut, yes) &&
+  bool configSuccess = tidyOptSetBool(tidyDoc, TidyXhtmlOut, yes) &&
                        tidyOptSetBool(tidyDoc, TidyQuiet, yes) &&
                        tidyOptSetBool(tidyDoc, TidyNumEntities, yes) &&
                        tidyOptSetBool(tidyDoc, TidyShowWarnings, no);
