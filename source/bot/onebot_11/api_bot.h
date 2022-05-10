@@ -15,6 +15,7 @@
 #include "api/onebot_11/api_impl.h"
 #include "bot/convert_to_string.h"
 #include "bot/onebot_11/future_wrapper.h"
+#include "bot/onebot_11/desired_value.h"
 #include "event/event.h"
 #include "logger/logger.h"
 #include "type.h"
@@ -85,43 +86,14 @@ class ApiBot {
  private:
   template <typename T>
   void EchoFunction(std::weak_ptr<co_promise<T>> weak_p, const Json &value) {
-    if (weak_p.expired()) return;
+    auto shared_p = weak_p.lock();
+    if (!shared_p) return;
     try {
-      auto shared_p = weak_p.lock();
-      if constexpr (std::is_same<T, MessageID>::value) {
-        if (value.is_null())
-          shared_p->set_value({0});
-        else
-          shared_p->set_value({value["message_id"].get<MsgId>()});
-      } else if constexpr (std::is_same<T, GroupInfo>::value) {
-        if (value.is_null())
-          shared_p->set_value({0, "", 0, 0});
-        else
-          shared_p->set_value({value["group_id"].get<GId>(),
-                               value["group_name"].get<std::string>(),
-                               value["member_count"].get<int>(),
-                               value["max_member_count"].get<int>()});
-      } else if constexpr (std::is_same<T, UserInfo>::value) {
-        if (value.is_null())
-          shared_p->set_value({0, "", "", 0});
-        else
-          shared_p->set_value({value["user_id"].get<QId>(),
-                               value["nickname"].get<std::string>(),
-                               value["sex"].get<std::string>(),
-                               value["age"].get<int32_t>()});
-      } else if constexpr (std::is_same<T, std::vector<GroupInfo>>::value) {
-        if (value.is_null())
-          shared_p->set_value({});
-        else {
-          std::vector<GroupInfo> v;
-          for (std::size_t i = 0; i < value.size(); ++i)
-            v.push_back({value[i]["group_id"].get<GId>(),
-                         value[i]["group_name"].get<std::string>(),
-                         value[i]["member_count"].get<int>(),
-                         value[i]["max_member_count"].get<int>()});
-          shared_p->set_value(std::move(v));
-        }
+      if (value.is_null()) {
+        shared_p->set_value(DefaultValue<T>());
+        return;
       }
+      shared_p->set_value(DesiredValue<T>(value));
     } catch (const std::exception &e) {
       LOG_ERROR("Exception In EchoFunction: {}", e.what());
     }
@@ -211,8 +183,8 @@ inline void ApiBot::FeedMessageTo(QId user_id, const std::string &message) {
   while (!someone_need_message_.at(user_id).empty()) {
     auto weak_p = someone_need_message_.at(user_id).front();
     someone_need_message_.at(user_id).pop();
-    if (!weak_p.expired()) {
-      weak_p.lock()->set_value(message);
+    if (auto shared_p = weak_p.lock()) {
+      shared_p->set_value(message);
       break;
     }
   }
@@ -227,8 +199,8 @@ inline void ApiBot::FeedMessage(GId group_id, QId user_id,
   while (!someone_group_message_.at(group_id).at(user_id).empty()) {
     auto weak_p = someone_group_message_.at(group_id).at(user_id).front();
     someone_group_message_.at(group_id).at(user_id).pop();
-    if (!weak_p.expired()) {
-      weak_p.lock()->set_value(message);
+    if (auto shared_p = weak_p.lock()) {
+      shared_p->set_value(message);
       break;
     }
   }

@@ -5,6 +5,7 @@
 
 #include "co_future.h"
 #include "type.h"
+#include "bot/onebot_11/default_value.h"
 
 namespace white {
 namespace onebot11 {
@@ -15,22 +16,13 @@ class FutureWrapper {
   FutureWrapper(std::shared_ptr<std::promise<T>> &&p)
       : promise_(std::move(p)), future_(promise_->get_future()) {}
 
-  T Ret() {
-    auto status = future_.wait_for(std::chrono::seconds(30));
+  T Ret(std::size_t seconds = 30) {
+    auto status = future_.wait_for(std::chrono::seconds(seconds));
     switch (status) {
       case std::future_status::timeout:
-      case std::future_status::deferred: {
-        if constexpr (std::is_same<T, MessageID>::value)
-          return {0};
-        else if constexpr (std::is_same<T, std::string>::value)
-          return "";
-        else if constexpr (std::is_same<T, GroupInfo>::value)
-          return {0, "", 0, 0};
-        else if constexpr (std::is_same<T, UserInfo>::value)
-          return {0, "", "", 0};
-        else if constexpr (std::is_same<T, std::vector<GroupInfo>>::value)
-          return {};
-      } break;
+      case std::future_status::deferred:
+        return DefaultValue<T>();
+        break;
       case std::future_status::ready:
         break;
     }
@@ -48,19 +40,12 @@ class CoFutureWrapper {
   CoFutureWrapper(std::shared_ptr<co_promise<T>> &&p)
       : promise_(std::move(p)), future_(std::move(promise_->get_future())) {}
 
-  T Ret() {
-    auto status = future_.wait_for(30000);
+  T Ret(uint32 ms = 30000) {
+    auto status = future_.wait_for(ms);
     switch (status) {
-      case co_future_status::timeout: {
-        if constexpr (std::is_same<T, MessageID>::value)
-          return {0};
-        else if constexpr (std::is_same<T, std::string>::value)
-          return "";
-        else if constexpr (std::is_same<T, GroupInfo>::value)
-          return {0, "", 0, 0};
-        else if constexpr (std::is_same<T, std::vector<GroupInfo>>::value)
-          return {};
-      } break;
+      case co_future_status::timeout:
+        return DefaultValue<T>();
+        break;
       case co_future_status::ready:
         break;
     }

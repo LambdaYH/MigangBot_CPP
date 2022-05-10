@@ -75,6 +75,7 @@ set(BUILD_SHARED_LIB OFF CACHE INTERNAL "")
 add_subdirectory(third-party/tidy-html5)
 
 # libxml2
+set(LIBXML2_WITH_PYTHON OFF CACHE INTERNAL "")
 add_subdirectory(third-party/libxml2)
 
 # pcre2 (for fast regex)
