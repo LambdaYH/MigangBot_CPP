@@ -123,7 +123,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         utf8::cpp
                         ${Tencentcloud-sdk-cpp_LIBS}
                         hiredis_static
-                        tidy-static
                         pugixml-static
                         pcre2-8-static
                         gumbo_query_static
