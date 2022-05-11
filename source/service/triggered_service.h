@@ -59,7 +59,14 @@ class TriggeredService : public Service {
     return !only_to_me_ || to_me;
   }
 
-  const plugin_func &GetFunc() const noexcept { return func_; }
+  template <typename... Args>
+  void Run(Args &&...args) {
+    try {
+      func_(std::forward<Args>(args)...);
+    } catch (const std::exception &e) {
+      LOG_ERROR("Exception Happened: {}", e.what());
+    }
+  }
 
  private:
   const plugin_func func_;
