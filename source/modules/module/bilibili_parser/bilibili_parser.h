@@ -59,7 +59,7 @@ class BilibiliParser : public Module {
 
   std::string ExtractDetails(const std::string &url, const GId group_id);
 
-  std::string GetBilibiliVideoDetail(std::string &url, const GId group_id);
+  std::string GetBilibiliVideoDetail(const std::string &url, const GId group_id);
 
   std::string GetBilibiliBangumiDetail(const std::string &url,
                                        const GId group_id);
@@ -133,7 +133,7 @@ inline Json BilibiliParser::GetJson(const std::string &url) {
   return r->GetJson();
 }
 
-inline std::string BilibiliParser::GetBilibiliVideoDetail(std::string &url,
+inline std::string BilibiliParser::GetBilibiliVideoDetail(const std::string &url,
                                                           const GId group_id) {
   auto cache = GetFromCache(url);
   if (!cache.empty()) {
@@ -141,15 +141,16 @@ inline std::string BilibiliParser::GetBilibiliVideoDetail(std::string &url,
     return cache;
   }
   std::smatch aid, bvid;
+  std::string api_url;
   if (std::regex_search(url, aid, aid_pattern_))
-    url = fmt::format("https://api.bilibili.com/x/web-interface/view?aid={}",
+    api_url = fmt::format("https://api.bilibili.com/x/web-interface/view?aid={}",
                       aid[0].str().substr(2));
   else if (std::regex_search(url, bvid, bvid_pattern_))
-    url = fmt::format("https://api.bilibili.com/x/web-interface/view?bvid={}",
+    api_url = fmt::format("https://api.bilibili.com/x/web-interface/view?bvid={}",
                       bvid[0].str());
-  auto details = GetJson(url);
+  auto details = GetJson(api_url);
   if (!details.contains("code") || details["code"].get<int>() != 0) {
-    LOG_WARN("BilibiliParser: 无法解析Video: {}", url);
+    LOG_WARN("BilibiliParser: 无法解析Video: {}", api_url);
     return "";
   }
   details = details["data"];
@@ -163,7 +164,7 @@ inline std::string BilibiliParser::GetBilibiliVideoDetail(std::string &url,
   if (std::regex_search(url, part, std::regex(R"(\?p=\d+)")) &&
       part[0].str() != "?p=1") {
     title +=
-        "[P" + std::regex_replace(part[0].str(), std::regex("?p="), "") + "]";
+        "[P" + std::regex_replace(part[0].str(), std::regex(R"(\?p=)"), "") + "]";
     link += part[0].str();
   }
   if (IsInCache(link, group_id)) return "";
@@ -217,7 +218,8 @@ inline std::string BilibiliParser::GetBilibiliBangumiDetail(
   auto description = doc.find(".absolute").nodeAt(0).text();
 
   // cover image
-  auto cover_image = doc.find("[property='og:image']").nodeAt(0).attribute("content");
+  auto cover_image =
+      doc.find("[property='og:image']").nodeAt(0).attribute("content");
 
   auto msg = fmt::format(
       "[标题] {}\n"
@@ -289,7 +291,6 @@ inline std::string BilibiliParser::GetLiveSummary(const std::string &url,
 
 inline std::string BilibiliParser::ExtractDetails(const std::string &url,
                                                   const GId group_id) {
-  auto r_url = message::RStrip(url);
   static auto start_with_what =
       [](const std::string_view &view,
          const std::unordered_set<std::string> &set) -> bool {
@@ -297,12 +298,12 @@ inline std::string BilibiliParser::ExtractDetails(const std::string &url,
       if (view.starts_with(u)) return true;
     return false;
   };
-  if (start_with_what(r_url, video_keywords_)) {
-    return GetBilibiliVideoDetail(r_url, group_id);
-  } else if (start_with_what(r_url, bangumi_keywords_)) {
-    return GetBilibiliBangumiDetail(r_url, group_id);
-  } else if (start_with_what(r_url, live_keywords_)) {
-    return GetLiveSummary(r_url, group_id);
+  if (start_with_what(url, video_keywords_)) {
+    return GetBilibiliVideoDetail(url, group_id);
+  } else if (start_with_what(url, bangumi_keywords_)) {
+    return GetBilibiliBangumiDetail(url, group_id);
+  } else if (start_with_what(url, live_keywords_)) {
+    return GetLiveSummary(url, group_id);
   }
   return "";
 }
@@ -341,13 +342,14 @@ inline void BilibiliParser::Parser(const Event &event, onebot11::ApiBot &bot) {
   for (auto &url : url_list) {
     if (checkurl(url)) url = GetRealUrl(url);
     if (IsInCache(url, group_id)) continue;
+    url = message::RStrip(url);
     LOG_DEBUG("BilibiliParser: 即将开始解析 {}", url);
     auto msg = ExtractDetails(url, group_id);
     if (msg.empty()) continue;
-    auto ret = bot.send_msg(event, msg).Ret();
+    auto ret = bot.send(event, msg).Ret();
     if (ret.message_id == 0) {
       LOG_WARN("解析消息发送失败");
-      bot.send_msg(
+      bot.send(
           event, "由于风控等原因链接解析结果无法发送(如有误检测请忽略)", true);
     }
   }

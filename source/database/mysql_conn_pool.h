@@ -31,8 +31,8 @@ class MySQLConnPool {
  public:
   MySQLConnPool(const MySQLConnPool &) = delete;
   MySQLConnPool &operator=(const MySQLConnPool &) = delete;
-  MySQLConnPool(const MySQLConnPool &&) = delete;
-  MySQLConnPool &operator=(const MySQLConnPool &&) = delete;
+  MySQLConnPool(MySQLConnPool &&) = delete;
+  MySQLConnPool &operator=(MySQLConnPool &&) = delete;
 
  private:
   MySQLConnPool() {}

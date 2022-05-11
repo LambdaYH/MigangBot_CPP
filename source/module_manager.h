@@ -32,8 +32,8 @@ class ModuleManager {
  public:
   ModuleManager(const ModuleManager &) = delete;
   ModuleManager &operator=(const ModuleManager &) = delete;
-  ModuleManager(const ModuleManager &&) = delete;
-  ModuleManager &operator=(const ModuleManager &&) = delete;
+  ModuleManager(ModuleManager &&) = delete;
+  ModuleManager &operator=(ModuleManager &&) = delete;
 
  private:
   ModuleManager() {}

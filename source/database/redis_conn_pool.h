@@ -30,8 +30,8 @@ class RedisConnPool {
  public:
   RedisConnPool(const RedisConnPool &) = delete;
   RedisConnPool &operator=(const RedisConnPool &) = delete;
-  RedisConnPool(const RedisConnPool &&) = delete;
-  RedisConnPool &operator=(const RedisConnPool &&) = delete;
+  RedisConnPool(RedisConnPool &&) = delete;
+  RedisConnPool &operator=(RedisConnPool &&) = delete;
 
  private:
   RedisConnPool() {}

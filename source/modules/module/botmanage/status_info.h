@@ -103,19 +103,19 @@ inline void StatusInfo::Register() {
 }
 
 inline void StatusInfo::Ping(const Event &event, onebot11::ApiBot &bot) {
-  bot.send_msg(event, fmt::format("[MigangBot]\n{}\n{}", GetCPUStatus(),
+  bot.send(event, fmt::format("[MigangBot]\n{}\n{}", GetCPUStatus(),
                                   status_info::GetLatency(event)));
 }
 
 inline void StatusInfo::Status(const Event &event, onebot11::ApiBot &bot) {
-  bot.send_msg(event, fmt::format("[MigangBot]\n{}\n{}\n{}\n{}",
+  bot.send(event, fmt::format("[MigangBot]\n{}\n{}\n{}\n{}",
                                   status_info::GetDiskStatus(), GetCPUStatus(),
                                   status_info::GetMemoryStatus(),
                                   status_info::GetLatency(event)));
 }
 
 inline void StatusInfo::Network(const Event &event, onebot11::ApiBot &bot) {
-  bot.send_msg(event, status_info::GetNetworkStatus());
+  bot.send(event, status_info::GetNetworkStatus());
 }
 
 // https://stackoverflow.com/questions/63166/how-to-determine-cpu-and-memory-consumption-from-inside-a-process

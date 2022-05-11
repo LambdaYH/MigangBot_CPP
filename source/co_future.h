@@ -46,11 +46,11 @@ class co_future {
   co_future(const co_future &) = delete;
   co_future &operator=(const co_future &) = delete;
 
-  co_future(const co_future &&rhs) : state_(rhs.state_) {}
+  co_future(co_future &&rhs) : state_(std::move(rhs.state_)) {}
 
-  co_future &operator=(const co_future &&rhs) {
+  co_future &operator=(co_future &&rhs) {
     if (&rhs != this) {
-      state_ = rhs.state_;
+      state_ = std::move(rhs.state_);
     }
     return *this;
   }
@@ -71,11 +71,11 @@ class co_promise {
   co_promise(const co_promise &) = delete;
   co_promise &operator=(const co_promise &) = delete;
 
-  co_promise(const co_promise &&rhs) : state_(rhs.state_) {}
+  co_promise(co_promise &&rhs) : state_(std::move(rhs.state_)) {}
 
-  co_promise &operator=(const co_promise &&rhs) {
+  co_promise &operator=(co_promise &&rhs) {
     if (&rhs != this) {
-      this->state_ = rhs.state_;
+      this->state_ = std::move(rhs.state_);
     }
     return *this;
   }

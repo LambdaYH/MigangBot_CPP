@@ -37,7 +37,7 @@ class Bot : public std::enable_shared_from_this<Bot> {
 
   void Process(const std::string &message) noexcept;
 
-  void Notify(const std::string &msg);
+  void Notify(std::string &&msg);
 
   void SetEchoFunction(const std::time_t echo_code,
                        std::function<void(const Json &)> &&func);
@@ -48,7 +48,7 @@ class Bot : public std::enable_shared_from_this<Bot> {
   WebSocketChannelPtr channel_;
   tbb::concurrent_unordered_map<std::time_t, std::function<void(const Json &)>>
       echo_function_;
-  std::function<void(const std::string &)> notify_;
+  std::function<void(std::string &&)> notify_;
   std::function<void(const std::time_t, std::function<void(const Json &)> &&)>
       set_echo_function_;
   onebot11::ApiBot api_bot_;
@@ -78,9 +78,9 @@ inline void Bot::OnRun() {
 
 inline void Bot::OnRead(const std::string &msg) noexcept { Process(msg); }
 
-inline void Bot::Notify(const std::string &msg) {
+inline void Bot::Notify(std::string &&msg) {
   LOG_DEBUG("Msg To sent: {}", msg);
-  channel_->send(msg);
+  channel_->send(std::move(msg));
 }
 
 inline void Bot::SetEchoFunction(const std::time_t echo_code,

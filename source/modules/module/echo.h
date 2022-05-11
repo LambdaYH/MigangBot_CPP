@@ -25,7 +25,7 @@ inline void Echo::Register() {
 
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot) {
   auto text = message::ExtraPlainText(event);
-  auto ret = bot.send_msg(event, text).Ret();
+  auto ret = bot.send(event, text).Ret();
 }
 
 }  // namespace module

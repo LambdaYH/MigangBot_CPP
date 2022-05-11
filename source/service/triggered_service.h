@@ -60,7 +60,7 @@ class TriggeredService : public Service {
   }
 
   template <typename... Args>
-  void Run(Args &&...args) {
+  void Run(Args &&...args) const noexcept {
     try {
       func_(std::forward<Args>(args)...);
     } catch (const std::exception &e) {

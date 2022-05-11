@@ -44,7 +44,7 @@ inline void KeywordsExtraction::Register() {
 inline void KeywordsExtraction::KeywordEX(const Event &event,
                                           onebot11::ApiBot &bot) {
   auto msg = message::ExtraPlainText(event);
-  bot.send_msg(event, GetKeywords(msg));
+  bot.send(event, GetKeywords(msg));
 }
 
 inline std::string KeywordsExtraction::GetKeywords(const std::string &text) {

@@ -56,8 +56,8 @@ class EventHandler {
  public:
   EventHandler(const EventHandler &) = delete;
   EventHandler &operator=(const EventHandler &) = delete;
-  EventHandler(const EventHandler &&) = delete;
-  EventHandler &operator=(const EventHandler &&) = delete;
+  EventHandler(EventHandler &&) = delete;
+  EventHandler &operator=(EventHandler &&) = delete;
 
  private:
   EventHandler() : filter_(std::make_unique<EventFilter>()) {}
@@ -211,7 +211,7 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
         // pre_propose
         if (msg.starts_with("[CQ:at")) {
           // auto at_id_start = msg.find_first_of('=') + 1;
-          auto at_id_start = std::max(static_cast<std::size_t>(10), msg.size());
+          auto at_id_start = std::min(static_cast<std::size_t>(10), msg.size());
           auto at_id_end = std::min(msg.find_first_of(']'), msg.size());
           auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
           auto self_id = std::to_string(event["self_id"].get<QId>());
