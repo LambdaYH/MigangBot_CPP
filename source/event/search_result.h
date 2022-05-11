@@ -3,7 +3,6 @@
 
 #include <string>
 #include <memory>
-#include <type_traits>
 
 #include "bot/onebot_11/api_bot.h"
 #include "event/type.h"
