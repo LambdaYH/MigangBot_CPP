@@ -9,7 +9,7 @@
 
 namespace white {
 inline Bosma::Scheduler &Schedule() {
-  static Bosma::Scheduler scheduler(std::thread::hardware_concurrency());
+  static Bosma::Scheduler scheduler;
   return scheduler;
 }
 

@@ -121,9 +121,9 @@ class ApiBot {
   }
 
  private:
-  std::function<void(const std::string &)> &notify_;
-  std::function<void(const std::time_t, std::function<void(const Json &)> &&)>
-      &set_echo_function_;
+  const std::function<void(const std::string &)> &notify_;
+  const std::function<void(const std::time_t, std::function<void(const Json &)>
+                                                  &&)> &set_echo_function_;
   std::mt19937 random_engine_;
   std::uniform_int_distribution<std::time_t> u_;
 
