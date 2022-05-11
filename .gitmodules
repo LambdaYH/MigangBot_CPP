@@ -28,9 +28,6 @@
 [submodule "third-party/hiredis"]
 	path = third-party/hiredis
 	url = https://github.com/redis/hiredis.git
-[submodule "third-party/tidy-html5"]
-	path = third-party/tidy-html5
-	url = https://github.com/htacg/tidy-html5.git
 [submodule "third-party/pugixml"]
 	path = third-party/pugixml
 	url = https://github.com/zeux/pugixml.git
@@ -46,3 +43,7 @@
 [submodule "third-party/Scheduler"]
 	path = third-party/Scheduler
 	url = https://github.com/LambdaYH/Scheduler.git
+	branch = co
+[submodule "third-party/gumbo-query"]
+	path = third-party/gumbo-query
+	url = https://github.com/lazytiger/gumbo-query.git

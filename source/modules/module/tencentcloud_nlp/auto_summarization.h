@@ -46,7 +46,7 @@ inline void AutoSummarization::Register() {
 inline void AutoSummarization::SummarizationExtraction(const Event &event,
                                                        onebot11::ApiBot &bot) {
   auto msg = message::ExtraPlainText(event);
-  bot.send_msg(event, GetSummarization(msg));
+  bot.send(event, GetSummarization(msg));
 }
 
 inline std::string AutoSummarization::GetSummarization(

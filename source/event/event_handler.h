@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <exception>
 #include <initializer_list>
 #include <memory>
 #include <string>
@@ -35,10 +36,6 @@ class EventHandler {
     return event_handler;
   }
 
-  void InitFilter(std::unique_ptr<EventFilter> &&filter) {
-    filter_ = std::move(filter);
-  }
-
  public:
   bool RegisterCommand(const int command_type, const std::string &command,
                        std::shared_ptr<TriggeredService> service);
@@ -59,17 +56,12 @@ class EventHandler {
  public:
   EventHandler(const EventHandler &) = delete;
   EventHandler &operator=(const EventHandler &) = delete;
-  EventHandler(const EventHandler &&) = delete;
-  EventHandler &operator=(const EventHandler &&) = delete;
+  EventHandler(EventHandler &&) = delete;
+  EventHandler &operator=(EventHandler &&) = delete;
 
  private:
-  EventHandler() {}
+  EventHandler() : filter_(std::make_unique<EventFilter>()) {}
   ~EventHandler() {}
-
- private:
-  const plugin_func &MatchedHandler(Event &event, const int perm,
-                                    const std::string &message,
-                                    const char message_type) const noexcept;
 
  private:
   std::unordered_map<std::string, std::shared_ptr<TriggeredService>>
@@ -91,7 +83,6 @@ class EventHandler {
       std::unordered_map<std::string,
                          std::vector<std::shared_ptr<TriggeredService>>>>
       request_handler_;
-  plugin_func no_func_avaliable_;
 
   std::unique_ptr<EventFilter> filter_;
 };
@@ -148,8 +139,11 @@ inline void HandleControlCommand(const std::string_view &msg, const int perm,
         msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
     if (!service_name.empty()) {
       go([group_id, &bot, name = std::string(service_name), perm] {
-        if (ServiceManager::GetInstance().GroupEnable(std::string(name),
-                                                      group_id, perm))
+        if (!ServiceManager::GetInstance().CheckService(name)) {
+          bot.send_group_msg(group_id, fmt::format("服务[{}]不存在", name));
+          return;
+        }
+        if (ServiceManager::GetInstance().GroupEnable(name, group_id, perm))
 
           bot.send_group_msg(group_id, fmt::format("已成功启用服务[{}]", name));
 
@@ -164,8 +158,11 @@ inline void HandleControlCommand(const std::string_view &msg, const int perm,
         msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
     if (!service_name.empty()) {
       go([group_id, &bot, name = std::string(service_name), perm] {
-        if (ServiceManager::GetInstance().GroupDisable(std::string(name),
-                                                       group_id, perm))
+        if (!ServiceManager::GetInstance().CheckService(name)) {
+          bot.send_group_msg(group_id, fmt::format("服务[{}]不存在", name));
+          return;
+        }
+        if (ServiceManager::GetInstance().GroupDisable(name, group_id, perm))
 
           bot.send_group_msg(group_id, fmt::format("已成功禁用服务[{}]", name));
 
@@ -178,7 +175,7 @@ inline void HandleControlCommand(const std::string_view &msg, const int perm,
 }
 
 inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
-  if (filter_ && !filter_->operator()(event)) return false;
+  if (!filter_->Filter(event)) return false;
   if (event.contains("post_type")) {
     auto post_type = event["post_type"].get<std::string>();
     switch (post_type[3]) {
@@ -214,7 +211,7 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
         // pre_propose
         if (msg.starts_with("[CQ:at")) {
           // auto at_id_start = msg.find_first_of('=') + 1;
-          auto at_id_start = std::max(static_cast<std::size_t>(10), msg.size());
+          auto at_id_start = std::min(static_cast<std::size_t>(10), msg.size());
           auto at_id_end = std::min(msg.find_first_of(']'), msg.size());
           auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
           auto self_id = std::to_string(event["self_id"].get<QId>());
@@ -226,53 +223,83 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
           }
         }
         auto message = event["message"].get<std::string>();
-        const auto &func = MatchedHandler(event, perm, message, message_type);
-        if (func)
-          go([&func, event, &bot]() {
-            func(event, bot);
-          });  // 原对象会消失，event必须拷贝
-        else {
-          // check_regex
-          // check all
-          switch (message_type) {
-            case 'g': {
-              auto group_id = event["group_id"].get<GId>();
-              for (auto &regex_matcher : command_regex_) {
-                if (regex_matcher.Check(message)) {
-                  const auto &service = regex_matcher.GetService();
-                  if (service->CheckIsEnable(group_id) &&
-                      service->CheckPerm(perm))
-                    go([&service, event, &bot] {
-                      service->GetFunc()(event, bot);
-                    });
-                }
-              }
-              for (const auto &service : all_msg_handler_)
+        switch (message_type) {
+          case 'g': {
+            auto group_id = event["group_id"].get<GId>();
+
+            // command match
+            if (command_fullmatch_.count(message)) {
+              const auto &service = command_fullmatch_.at(message);
+              if (service->CheckIsEnable(group_id) &&
+                  service->CheckPerm(perm) &&
+                  service->CheckToMe(event.contains("__to_me__")))
+                go([&service, event, &bot] { service->Run(event, bot); });
+            }
+            {
+              auto &service = command_prefix_.Search(message, event);
+              if (service && service->CheckIsEnable(group_id) &&
+                  service->CheckPerm(perm) &&
+                  service->CheckToMe(event.contains("__to_me__")))
+                go([&service, event, &bot] { service->Run(event, bot); });
+            }
+            {
+              auto &service = command_suffix_.SearchFromBack(message, event);
+              if (service && service->CheckIsEnable(group_id) &&
+                  service->CheckPerm(perm) &&
+                  service->CheckToMe(event.contains("__to_me__")))
+                go([&service, event, &bot] { service->Run(event, bot); });
+            }
+
+            // regex match
+            for (auto &regex_matcher : command_regex_) {
+              if (regex_matcher.Check(message)) {
+                const auto &service = regex_matcher.GetService();
                 if (service->CheckIsEnable(group_id) &&
                     service->CheckPerm(perm))
-                  go([&service, event, &bot] {
-                    service->GetFunc()(event, bot);
-                  });
-            } break;
-            case 'p': {
-              for (auto &regex_matcher : command_regex_) {
-                if (regex_matcher.Check(message)) {
-                  const auto &service = regex_matcher.GetService();
-                  if (service->CheckPerm(perm))
-                    go([&service, event, &bot] {
-                      service->GetFunc()(event, bot);
-                    });
-                }
+                  go([&service, event, &bot] { service->Run(event, bot); });
               }
-              for (const auto &service : all_msg_handler_)
+            }
+
+            // match all
+            for (const auto &service : all_msg_handler_)
+              if (service->CheckIsEnable(group_id) && service->CheckPerm(perm))
+                go([&service, event, &bot] { service->Run(event, bot); });
+          } break;
+          case 'p': {
+            // commmand match
+            if (command_fullmatch_.count(message)) {
+              const auto &service = command_fullmatch_.at(message);
+              if (service->CheckPerm(perm))
+                go([&service, event, &bot] { service->Run(event, bot); });
+            }
+            {
+              const auto &service = command_prefix_.Search(message, event);
+              if (service && service->CheckPerm(perm))
+                go([&service, event, &bot] { service->Run(event, bot); });
+            }
+            {
+              const auto &service =
+                  command_suffix_.SearchFromBack(message, event);
+              if (service && service->CheckPerm(perm))
+                go([&service, event, &bot] { service->Run(event, bot); });
+            }
+
+            // regex_match
+            for (auto &regex_matcher : command_regex_) {
+              if (regex_matcher.Check(message)) {
+                const auto &service = regex_matcher.GetService();
                 if (service->CheckPerm(perm))
-                  go([&service, event, &bot] {
-                    service->GetFunc()(event, bot);
-                  });
-            } break;
-            default:
-              break;
-          }
+                  go([&service, event, &bot] { service->Run(event, bot); });
+              }
+            }
+
+            // match all
+            for (const auto &service : all_msg_handler_)
+              if (service->CheckPerm(perm))
+                go([&service, event, &bot] { service->Run(event, bot); });
+          } break;
+          default:
+            break;
         }
       } break;
       // notice
@@ -287,7 +314,7 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                notice_handler_.at(notice_type).at(sub_type))
             if (!event.contains("group_id") ||
                 service->CheckIsEnable(event["group_id"].get<GId>()))
-              go([&service, event, &bot]() { service->GetFunc()(event, bot); });
+              go([&service, event, &bot]() { service->Run(event, bot); });
         }
         if (!sub_type.empty()) {
           if (notice_handler_.count(notice_type) &&
@@ -295,9 +322,7 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
             for (const auto &service : notice_handler_.at(notice_type).at(""))
               if (!event.contains("group_id") ||
                   service->CheckIsEnable(event["group_id"].get<GId>()))
-                go([&service, event, &bot]() {
-                  service->GetFunc()(event, bot);
-                });
+                go([&service, event, &bot]() { service->Run(event, bot); });
           }
         }
       } break;
@@ -313,7 +338,7 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                request_handler_.at(request_type).at(sub_type))
             if (!event.contains("group_id") ||
                 service->CheckIsEnable(event["group_id"].get<GId>()))
-              go([&service, event, &bot]() { service->GetFunc()(event, bot); });
+              go([&service, event, &bot]() { service->Run(event, bot); });
         }
       } break;
       // meta_event
@@ -340,60 +365,6 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
     }
   }
   return true;
-}
-
-inline const plugin_func &EventHandler::MatchedHandler(
-    Event &event, const int perm, const std::string &message,
-    const char message_type) const noexcept {
-  if (message.empty()) return no_func_avaliable_;
-  switch (message_type) {
-    case 'g': {
-      auto group_id = event["group_id"].get<GId>();
-      if (command_fullmatch_.count(message)) {
-        auto &service = command_fullmatch_.at(message);
-        if (service->CheckIsEnable(group_id) && service->CheckPerm(perm) &&
-            service->CheckToMe(event.contains("__to_me__")))
-          return service->GetFunc();
-      }
-      auto prefix_search = command_prefix_.Search(message);
-      if (prefix_search.service &&
-          prefix_search.service->CheckIsEnable(group_id) &&
-          prefix_search.service->CheckPerm(perm) &&
-          prefix_search.service->CheckToMe(event.contains("__to_me__"))) {
-        event["__command_size__"] = prefix_search.command_size;
-        return prefix_search.service->GetFunc();
-      }
-
-      auto suffix_search = command_suffix_.Search(message);
-      if (suffix_search.service &&
-          suffix_search.service->CheckIsEnable(group_id) &&
-          suffix_search.service->CheckPerm(perm) &&
-          suffix_search.service->CheckToMe(event.contains("__to_me__"))) {
-        event["__command_size__"] = prefix_search.command_size;
-        return prefix_search.service->GetFunc();
-      }
-    } break;
-    case 'p': {
-      if (command_fullmatch_.count(message)) {
-        auto &service = command_fullmatch_.at(message);
-        if (service->CheckPerm(perm)) return service->GetFunc();
-      }
-      auto prefix_search = command_prefix_.Search(message);
-      if (prefix_search.service && prefix_search.service->CheckPerm(perm)) {
-        event["__command_size__"] = prefix_search.command_size;
-        return prefix_search.service->GetFunc();
-      }
-
-      auto suffix_search = command_suffix_.Search(message);
-      if (suffix_search.service && suffix_search.service->CheckPerm(perm)) {
-        event["__command_size__"] = suffix_search.command_size;
-        return suffix_search.service->GetFunc();
-      }
-    } break;
-    default:
-      break;
-  }
-  return no_func_avaliable_;
 }
 }  // namespace white
 

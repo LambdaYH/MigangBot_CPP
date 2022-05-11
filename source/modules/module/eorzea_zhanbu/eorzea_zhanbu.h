@@ -96,21 +96,21 @@ class EorzeaZhanbu : public Module {
 inline void EorzeaZhanbu::Zhanbu(const Event &event, onebot11::ApiBot &bot) {
   auto text = message::Strip(message::ExtraPlainText(event));
   if (!text.empty()) {
-    auto msg_id = bot.send_msg(event,
+    auto msg_id = bot.send(event,
                                eorzea_zhanbu::GetEventZhanbu(
                                    event["user_id"].get<QId>(), text),
                                true)
                       .Ret();
     if (msg_id.message_id == 0)
-      bot.send_msg(
+      bot.send(
           event, *select_randomly(exception_msg_.begin(), exception_msg_.end()),
           true);
   } else {
     auto msg_id =
-        bot.send_msg(event, GetEorzeaZhanbu(event["user_id"].get<QId>()), true)
+        bot.send(event, GetEorzeaZhanbu(event["user_id"].get<QId>()), true)
             .Ret();
     if (msg_id.message_id == 0)
-      bot.send_msg(
+      bot.send(
           event, *select_randomly(exception_msg_.begin(), exception_msg_.end()),
           true);
   }

@@ -17,7 +17,6 @@
 #include "database/mysql_conn_pool.h"
 #include "database/redis_conn_pool.h"
 #include "event/event_handler.h"
-#include "event/onebot_11/event_filter.h"
 #include "global_config.h"
 #include "logger/logger.h"
 #include "module_list.h"
@@ -58,13 +57,6 @@ constexpr auto kGlobalConfigExample =
     "Dev:\n"
     "  SqlPool: 5                       # 数据库连接池连接数\n"
     "  RedisPool: 5                     # Redis连接池连接数";
-
-template <typename T>
-inline void InitEventFilter() {
-  if (std::is_base_of<white::EventFilter, T>::value)
-    white::EventHandler::GetInstance().InitFilter(
-        std::unique_ptr<white::EventFilter>(new T));
-}
 
 int main(int argc, char** argv) {
   // load config
@@ -111,9 +103,6 @@ int main(int argc, char** argv) {
   auto const log_level =
       white::global_config["Server"]["Log_level"].as<std::string>();
   white::LOG_INIT(log_file, log_level);
-
-  // 初始化事件处理器
-  InitEventFilter<white::onebot11::EventFilterOnebot11>();
 
   // 初始化数据库连接池
   white::sql::MySQLConnPool::GetInstance().Init(

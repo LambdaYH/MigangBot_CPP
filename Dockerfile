@@ -9,13 +9,19 @@ RUN     apt update \
                     uuid-dev \
                     default-libmysqlclient-dev \
                     libopencv-dev \
-                    redis-server
+                    redis-server \
+                    libtool
 WORKDIR /build_temp
 COPY . /build_temp
 RUN     git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git \
     &&  cd tencentcloud-sdk-cpp \
     &&  mkdir build && cd build \
     &&  cmake -DBUILD_SHARED_LIBS=off -DBUILD_MODULES="nlp" .. \
+    &&  make && make install \
+    &&  git clone https://github.com/google/gumbo-parser.git \
+    &&  cd gumbo-parser \
+    &&  ./autogen.sh \
+    &&  ./configure \
     &&  make && make install \
     &&  cd /build_temp \
     &&  cmake -DCMAKE_BUILD_TYPE=Release . \

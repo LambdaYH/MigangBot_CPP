@@ -9,7 +9,14 @@ namespace white {
 
 class EventFilter {
  public:
-  virtual const bool operator()(const Event &msg) const = 0;
+  const bool Filter(const Event &event) const noexcept {
+    if (event.contains("post_type"))
+      if (event.value("message_type", "") == "private" &&
+          event.value("sub_type", "") == "group")
+        return false;
+    if (event.contains("retcode")) return false;
+    return true;
+  }
 };
 
 }  // namespace white

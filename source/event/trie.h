@@ -22,84 +22,103 @@ class Trie {
   ~Trie();
 
  public:
-  bool Insert(const std::string &key, std::shared_ptr<TriggeredService> service);
+  bool Insert(const std::string &key,
+              std::shared_ptr<TriggeredService> service);
 
-  bool InsertFromBack(const std::string &key, std::shared_ptr<TriggeredService> service);
+  bool InsertFromBack(const std::string &key,
+                      std::shared_ptr<TriggeredService> service);
 
-  const SearchResult Search(const std::string &key) const noexcept;
+  const std::shared_ptr<TriggeredService> &Search(const std::string &key,
+                                                  Event &event) const noexcept;
 
-  const SearchResult SearchFromBack(const std::string &key) const noexcept;
+  const std::shared_ptr<TriggeredService> &SearchFromBack(
+      const std::string &key, Event &event) const noexcept;
 
  private:
   struct TrieNode {
-    std::unordered_map<char, std::shared_ptr<TrieNode>> childs;
+    std::unordered_map<char, std::unique_ptr<TrieNode>> childs;
     std::shared_ptr<TriggeredService> service;
   };
 
  private:
-  std::shared_ptr<TrieNode> root_;
-  std::shared_ptr<TriggeredService> no_service_here_;
+  const std::unique_ptr<TrieNode> root_;
+  const std::shared_ptr<TriggeredService> empty_;
 };
 
-inline Trie::Trie() : root_(std::make_shared<TrieNode>()), no_service_here_() {}
+inline Trie::Trie() : root_(std::make_unique<TrieNode>()) {}
 
 inline Trie::~Trie() {}
 
-inline bool Trie::Insert(const std::string &key, std::shared_ptr<TriggeredService> service) {
-  auto cur_node = root_;
+inline bool Trie::Insert(const std::string &key,
+                         std::shared_ptr<TriggeredService> service) {
+  auto cur_node = root_.get();
   for (auto ch : key) {
     ch = std::tolower(ch);
     if (!cur_node->childs.count(ch))
-      cur_node->childs.emplace(ch, std::make_shared<TrieNode>());
-    cur_node = cur_node->childs[ch];
+      cur_node->childs.emplace(ch, std::make_unique<TrieNode>());
+    cur_node = cur_node->childs[ch].get();
   }
   if (cur_node->service) return false;
   cur_node->service = service;
   return true;
 }
 
-inline bool Trie::InsertFromBack(const std::string &key, std::shared_ptr<TriggeredService> service) {
-  auto cur_node = root_;
+inline bool Trie::InsertFromBack(const std::string &key,
+                                 std::shared_ptr<TriggeredService> service) {
+  auto cur_node = root_.get();
   for (auto it = key.rbegin(); it != key.rend(); ++it) {
     auto ch = std::tolower(*it);
     if (!cur_node->childs.count(ch))
-      cur_node->childs.emplace(ch, std::make_shared<TrieNode>());
-    cur_node = cur_node->childs[ch];
+      cur_node->childs.emplace(ch, std::make_unique<TrieNode>());
+    cur_node = cur_node->childs[ch].get();
   }
   if (cur_node->service) return false;
   cur_node->service = service;
   return true;
 }
 
-inline const SearchResult Trie::Search(const std::string &key) const noexcept {
-  auto cur_node = root_;
+inline const std::shared_ptr<TriggeredService> &Trie::Search(
+    const std::string &key, Event &event) const noexcept {
+  auto cur_node = root_.get();
   short command_size{0};
   for (auto ch : key) {
     ch = std::tolower(ch);
     if (ch == ' ') break;
     ++command_size;
-    if (!cur_node->childs.count(ch)) return {no_service_here_, 0};
-    cur_node = cur_node->childs[ch];
-    if (cur_node->service) return {cur_node->service, command_size};
+    if (!cur_node->childs.count(ch)) return empty_;
+    cur_node = cur_node->childs[ch].get();
+    if (cur_node->service) {
+      event["__command_size__"] = command_size;
+      return cur_node->service;
+    }
   }
-  if (cur_node->service) return {cur_node->service, command_size};
-  return {no_service_here_, 0};
+  if (cur_node->service) {
+    event["__command_size__"] = command_size;
+    return cur_node->service;
+  }
+  return empty_;
 }
 
-inline const SearchResult Trie::SearchFromBack(
-    const std::string &key) const noexcept {
-  auto cur_node = root_;
+inline const std::shared_ptr<TriggeredService> &Trie::SearchFromBack(
+    const std::string &key, Event &event) const noexcept {
+  auto cur_node = root_.get();
   short command_size{0};
   for (auto it = key.rbegin(); it != key.rend(); ++it) {
     auto ch = std::tolower(*it);
     if (ch == ' ') break;
     --command_size;
-    if (!cur_node->childs.count(ch)) return {no_service_here_, 0};
-    cur_node = cur_node->childs[ch];
-    if (cur_node->service) return {cur_node->service, command_size};
+    if (!cur_node->childs.count(ch)) return empty_;
+    cur_node = cur_node->childs[ch].get();
+    if (cur_node->service) {
+      event["__command_size__"] = command_size;
+      return cur_node->service;
+    }
   }
-  if (cur_node->service) return {cur_node->service, command_size};
-  return {no_service_here_, 0};
+  if (cur_node->service) {
+    event["__command_size__"] = command_size;
+    return cur_node->service;
+  }
+  return empty_;
 }
 
 }  // namespace white

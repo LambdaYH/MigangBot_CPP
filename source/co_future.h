@@ -2,6 +2,7 @@
 #define MIGANGBOT_CO_FUTURE_H_
 
 #include <co/co.h>
+#include <memory>
 
 namespace white {
 
@@ -13,88 +14,100 @@ class co_promise;
 enum class co_future_status { ready, timeout };
 
 template <typename T>
+struct shared_state {
+  co::Event event_;
+  T value_;
+  bool is_complete_;
+  shared_state(bool is_complete) : is_complete_(is_complete) {}
+};
+
+// co_ promise must live longer than co_ future
+template <typename T>
 class co_future {
   friend class co_promise<T>;
 
  public:
+  // block in coroutine
   T get() {
-    if (!is_complete_) event_.wait();
-    return std::move(value_);
+    if (!state_->is_complete_) state_->event_.wait();
+    return std::move(state_->value_);
   }
 
   void wait() {
-    if (!is_complete_) event_.wait();
+    if (!state_->is_complete_) state_->event_.wait();
   }
 
   co_future_status wait_for(uint32 ms) {
-    if (is_complete_) return co_future_status::ready;
-    if (event_.wait(ms)) return co_future_status::ready;
+    if (state_->is_complete_) return co_future_status::ready;
+    if (state_->event_.wait(ms)) return co_future_status::ready;
     return co_future_status::timeout;
   }
 
- private:
-  co_future(T &value, co::Event &event, bool &is_complete)
-      : value_(value), event_(event), is_complete_(is_complete) {}
+  co_future(const co_future &) = delete;
+  co_future &operator=(const co_future &) = delete;
+
+  co_future(co_future &&rhs) : state_(std::move(rhs.state_)) {}
+
+  co_future &operator=(co_future &&rhs) {
+    if (&rhs != this) {
+      state_ = std::move(rhs.state_);
+    }
+    return *this;
+  }
 
  private:
-  co::Event &event_;
-  T &value_;
-  bool &is_complete_;
+  co_future(shared_state<T> *state) : state_(state) {}
+
+ private:
+  shared_state<T> *state_;
 };
 
 template <typename T>
 class co_promise {
  public:
-  co_promise() : is_complete_(false) {}
+  co_promise() : state_(std::make_unique<shared_state<T>>(false)) {}
   ~co_promise() {}
 
   co_promise(const co_promise &) = delete;
   co_promise &operator=(const co_promise &) = delete;
 
-  co_promise(const co_promise &&p) {
-    this->event_ = std::move(p.event_);
-    this->value_ = std::move(p.value_);
-    this->is_complete_ = std::move(is_complete_);
-  }
+  co_promise(co_promise &&rhs) : state_(std::move(rhs.state_)) {}
 
-  co_promise &&operator=(const co_promise &&p) {
-    this->event_ = std::move(p.event_);
-    this->value_ = std::move(p.value_);
-    this->is_complete_ = std::move(is_complete_);
+  co_promise &operator=(co_promise &&rhs) {
+    if (&rhs != this) {
+      this->state_ = std::move(rhs.state_);
+    }
+    return *this;
   }
 
  public:
-  co_future<T> get_future() {
-    return co_future<T>(value_, event_, is_complete_);
-  }
+  co_future<T> get_future() { return co_future<T>(state_.get()); }
 
   void set_value(const T &value) {
-    value_ = value;
-    is_complete_ = true;
-    event_.signal();
+    state_->value_ = value;
+    state_->is_complete_ = true;
+    state_->event_.signal();
   }
 
   void set_value(T &value) {
-    value_ = value;
-    is_complete_ = true;
-    event_.signal();
+    state_->value_ = value;
+    state_->is_complete_ = true;
+    state_->event_.signal();
   }
 
   void set_value(T &&value) {
-    value_ = std::move(value);
-    is_complete_ = true;
-    event_.signal();
+    state_->value_ = std::move(value);
+    state_->is_complete_ = true;
+    state_->event_.signal();
   }
 
   void set_value() {
-    is_complete_ = true;
-    event_.signal();
+    state_->is_complete_ = true;
+    state_->event_.signal();
   }
 
  private:
-  co::Event event_;
-  T value_;
-  bool is_complete_;
+  std::unique_ptr<shared_state<T>> state_;
 };
 
 }  // namespace white

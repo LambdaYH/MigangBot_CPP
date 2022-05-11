@@ -9,12 +9,14 @@
 #include <mutex>
 #include <queue>
 #include <random>
+#include <type_traits>
+#include <utility>
 
 #include <co/co.h>
 
 #include "api/onebot_11/api_impl.h"
-#include "bot/convert_to_string.h"
 #include "bot/onebot_11/future_wrapper.h"
+#include "bot/onebot_11/desired_value.h"
 #include "event/event.h"
 #include "logger/logger.h"
 #include "type.h"
@@ -24,27 +26,22 @@ namespace onebot11 {
 
 class ApiBot {
  public:
-  template <typename T>
-  CoFutureWrapper<MessageID> send_private_msg(const QId user_id,
-                                              const T &message,
+  template <typename Str>
+  CoFutureWrapper<MessageID> send_private_msg(const QId user_id, Str &&message,
                                               bool auto_escape = false);
 
-  template <typename T>
-  CoFutureWrapper<MessageID> send_group_msg(const GId group_id,
-                                            const T &message,
+  template <typename Str>
+  CoFutureWrapper<MessageID> send_group_msg(const GId group_id, Str &&message,
                                             bool auto_escape = false);
 
-  template <typename T>
-  CoFutureWrapper<MessageID> send_msg(const Event &event, const T &message,
-                                      bool at_sender = false,
+  template <typename Type, typename Str, typename ID>
+  CoFutureWrapper<MessageID> send_msg(Type &&type, Str &&message, ID &&id,
                                       bool auto_escape = false);
 
-  template <typename T>
-  CoFutureWrapper<MessageID> send(const Event &event, const T &message,
+  template <typename Str>
+  CoFutureWrapper<MessageID> send(const Event &event, Str &&message,
                                   bool at_sender = false,
-                                  bool auto_escape = false) {
-    return send_msg<T>(event, message, at_sender, auto_escape);
-  }
+                                  bool auto_escape = false);
 
   CoFutureWrapper<GroupInfo> get_group_info(const GId group_id,
                                             bool no_cache = false);
@@ -55,8 +52,12 @@ class ApiBot {
                                               bool no_cache = false);
 
   void delete_msg(const MsgId msg_id);
-  void reject(const Event &event, const std::string &reason = "");
+
+  template <typename Str>
+  void reject(const Event &event, Str &&reason = "");
+
   void approve(const Event &event);
+
   void set_group_leave(const GId group_id, bool is_dismiss = false);
 
  public:
@@ -68,12 +69,14 @@ class ApiBot {
 
   bool IsNeedMessage(GId group_id, QId user_id) const;
 
-  void FeedMessageTo(QId user_id, const std::string &message);
+  template<typename Str>
+  void FeedMessageTo(QId user_id, Str &&message);
 
-  void FeedMessage(GId group_id, QId user_id, const std::string &message);
+  template<typename Str>
+  void FeedMessage(GId group_id, QId user_id, Str &&message);
 
  public:
-  ApiBot(std::function<void(const std::string &)> &notify,
+  ApiBot(std::function<void(std::string &&)> &notify,
          std::function<void(const std::time_t, std::function<void(const Json &)>
                                                    &&)> &set_echo_function)
       : notify_(notify),
@@ -85,43 +88,14 @@ class ApiBot {
  private:
   template <typename T>
   void EchoFunction(std::weak_ptr<co_promise<T>> weak_p, const Json &value) {
-    if (weak_p.expired()) return;
+    auto shared_p = weak_p.lock();
+    if (!shared_p) return;
     try {
-      auto shared_p = weak_p.lock();
-      if constexpr (std::is_same<T, MessageID>::value) {
-        if (value.is_null())
-          shared_p->set_value({0});
-        else
-          shared_p->set_value({value["message_id"].get<MsgId>()});
-      } else if constexpr (std::is_same<T, GroupInfo>::value) {
-        if (value.is_null())
-          shared_p->set_value({0, "", 0, 0});
-        else
-          shared_p->set_value({value["group_id"].get<GId>(),
-                               value["group_name"].get<std::string>(),
-                               value["member_count"].get<int>(),
-                               value["max_member_count"].get<int>()});
-      } else if constexpr (std::is_same<T, UserInfo>::value) {
-        if (value.is_null())
-          shared_p->set_value({0, "", "", 0});
-        else
-          shared_p->set_value({value["user_id"].get<QId>(),
-                               value["nickname"].get<std::string>(),
-                               value["sex"].get<std::string>(),
-                               value["age"].get<int32_t>()});
-      } else if constexpr (std::is_same<T, std::vector<GroupInfo>>::value) {
-        if (value.is_null())
-          shared_p->set_value({});
-        else {
-          std::vector<GroupInfo> v;
-          for (std::size_t i = 0; i < value.size(); ++i)
-            v.push_back({value[i]["group_id"].get<GId>(),
-                         value[i]["group_name"].get<std::string>(),
-                         value[i]["member_count"].get<int>(),
-                         value[i]["max_member_count"].get<int>()});
-          shared_p->set_value(std::move(v));
-        }
+      if (value.is_null()) {
+        shared_p->set_value(DefaultValue<T>());
+        return;
       }
+      shared_p->set_value(DesiredValue<T>(value));
     } catch (const std::exception &e) {
       LOG_ERROR("Exception In EchoFunction: {}", e.what());
     }
@@ -149,9 +123,9 @@ class ApiBot {
   }
 
  private:
-  std::function<void(const std::string &)> &notify_;
-  std::function<void(const std::time_t, std::function<void(const Json &)> &&)>
-      &set_echo_function_;
+  const std::function<void(std::string &&)> &notify_;
+  const std::function<void(const std::time_t, std::function<void(const Json &)>
+                                                  &&)> &set_echo_function_;
   std::mt19937 random_engine_;
   std::uniform_int_distribution<std::time_t> u_;
 
@@ -206,13 +180,14 @@ inline bool ApiBot::IsNeedMessage(GId group_id, QId user_id) const {
          someone_group_message_.at(group_id).count(user_id);
 }
 
-inline void ApiBot::FeedMessageTo(QId user_id, const std::string &message) {
+template<typename Str>
+inline void ApiBot::FeedMessageTo(QId user_id, Str &&message) {
   std::lock_guard<std::mutex> locker(someone_need_message_mutex_.at(user_id));
   while (!someone_need_message_.at(user_id).empty()) {
     auto weak_p = someone_need_message_.at(user_id).front();
     someone_need_message_.at(user_id).pop();
-    if (!weak_p.expired()) {
-      weak_p.lock()->set_value(message);
+    if (auto shared_p = weak_p.lock()) {
+      shared_p->set_value(std::forward<Str>(message));
       break;
     }
   }
@@ -220,15 +195,16 @@ inline void ApiBot::FeedMessageTo(QId user_id, const std::string &message) {
     someone_need_message_.erase(user_id);
 }
 
+template<typename Str>
 inline void ApiBot::FeedMessage(GId group_id, QId user_id,
-                                const std::string &message) {
+                                Str &&message) {
   std::lock_guard<std::mutex> locker(
       someone_group_message_mutex_.at(group_id).at(user_id));
   while (!someone_group_message_.at(group_id).at(user_id).empty()) {
     auto weak_p = someone_group_message_.at(group_id).at(user_id).front();
     someone_group_message_.at(group_id).at(user_id).pop();
-    if (!weak_p.expired()) {
-      weak_p.lock()->set_value(message);
+    if (auto shared_p = weak_p.lock()) {
+      shared_p->set_value(std::forward<Str>(message));
       break;
     }
   }
@@ -238,47 +214,53 @@ inline void ApiBot::FeedMessage(GId group_id, QId user_id,
     someone_group_message_.erase(group_id);
 }
 
-template <typename T>
+template <typename Str>
 inline CoFutureWrapper<MessageID> ApiBot::send_private_msg(
-    const uint64_t user_id, const T &message, bool auto_escape) {
-  Json msg = api_impl::send_private_msg(user_id, ConvertToString(message),
+    const uint64_t user_id, Str &&message, bool auto_escape) {
+  Json msg = api_impl::send_private_msg(user_id, std::forward<Str>(message),
                                         auto_escape);
   auto ret = Echo<MessageID>(msg);
   notify_(msg.dump());
   return ret;
 }
 
-template <typename T>
+template <typename Str>
 inline CoFutureWrapper<MessageID> ApiBot::send_group_msg(const GId group_id,
-                                                         const T &message,
+                                                         Str &&message,
                                                          bool auto_escape) {
-  Json msg =
-      api_impl::send_group_msg(group_id, ConvertToString(message), auto_escape);
+  Json msg = api_impl::send_group_msg(group_id, std::forward<Str>(message),
+                                      auto_escape);
   auto ret = Echo<MessageID>(msg);
   notify_(msg.dump());
   return ret;
 }
 
-template <typename T>
-inline CoFutureWrapper<MessageID> ApiBot::send_msg(const Event &event,
-                                                   const T &message,
-                                                   bool at_sender,
-                                                   bool auto_escape) {
-  Json msg;
-  if (event.value("message_type", "private") == "group")
-    msg = api_impl::send_msg<true>(
-        event.value("user_id", 0), event.value("group_id", 0),
-        at_sender ? fmt::format("[CQ:at,qq={}]{}", event.value("user_id", 0),
-                                ConvertToString(message))
-                  : ConvertToString(message),
-        auto_escape);
-  else
-    msg = api_impl::send_msg<false>(event.value("user_id", 0),
-                                    event.value("group_id", 0),
-                                    ConvertToString(message), auto_escape);
+template <typename Type, typename Str, typename ID>
+inline CoFutureWrapper<MessageID> ApiBot::send_msg(Type &&type, Str &&message,
+                                                   ID &&id, bool auto_escape) {
+  Json msg = api_impl::send_msg(std::forward<Type>(type), std::forward<Str>(message), std::forward<ID>(id), auto_escape);
   auto ret = Echo<MessageID>(msg);
   notify_(msg.dump());
   return ret;
+}
+
+template <typename Str>
+inline CoFutureWrapper<MessageID> ApiBot::send(const Event &event,
+                                               Str &&message, bool at_sender,
+                                               bool auto_escape) {
+  Json msg;
+  if (event.value("message_type", "private") == "group") {
+    if (at_sender)
+      return send_group_msg(
+          event["group_id"].get<GId>(),
+          fmt::format("[CQ:at,qq={}] {}", event["user_id"].get<QId>(), std::forward<Str>(message)),
+          auto_escape);
+    else
+      return send_group_msg(event["group_id"].get<GId>(),
+                            std::forward<Str>(message), auto_escape);
+  }
+  return send_private_msg(event["user_id"].get<QId>(),
+                          std::forward<Str>(message));
 }
 
 inline CoFutureWrapper<GroupInfo> ApiBot::get_group_info(const GId group_id,
@@ -310,7 +292,8 @@ inline void ApiBot::delete_msg(MsgId msg_id) {
   notify_(msg.dump());
 }
 
-inline void ApiBot::reject(const Event &event, const std::string &reason) {
+template <typename Str>
+inline void ApiBot::reject(const Event &event, Str &&reason) {
   auto flag = event["flag"].get<std::string>();
   auto request_type = event["request_type"].get<std::string>();
   if (request_type == "friend") {
@@ -318,7 +301,7 @@ inline void ApiBot::reject(const Event &event, const std::string &reason) {
     notify_(msg.dump());
   } else if (request_type == "group" &&
              event["sub_type"].get<std::string>() == "invite") {
-    auto msg = api_impl::set_group_add_request(flag, "invite", reason, false);
+    auto msg = api_impl::set_group_add_request(flag, "invite", std::forward<Str>(reason), false);
     notify_(msg.dump());
   }
 }
