@@ -29,6 +29,8 @@ class Service {
     LoadConfig();
   }
 
+  virtual ~Service() = default;
+
  public:
   const std::string &GetServiceName() const noexcept { return service_name_; }
 

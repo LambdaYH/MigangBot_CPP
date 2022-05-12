@@ -7,11 +7,11 @@
 #include <initializer_list>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <nlohmann/json.hpp>
 #include <fmt/core.h>
 
-#include "event/type.h"
 #include "logger/logger.h"
 #include "message/utility.h"
 #include "permission/permission.h"
@@ -21,8 +21,11 @@
 namespace white {
 namespace module {
 
-#define ACT(a) \
-  (std::bind(&a, this, std::placeholders::_1, std::placeholders::_2))
+#define ACT_InClass(func) \
+  [this](const Event &event, onebot11::ApiBot &bot) { func(event, bot); }
+
+#define ACT_OutClass(func) \
+  [](const Event &event, onebot11::ApiBot &bot) { func(event, bot); };
 
 using Config = YAML::Node;
 

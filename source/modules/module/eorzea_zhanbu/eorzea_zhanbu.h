@@ -66,7 +66,7 @@ class EorzeaZhanbu : public Module {
   }
   virtual void Register() {
     OnPrefix({"/zhanbu", "/占卜", "、占卜"}, "艾欧泽亚占卜",
-             ACT(EorzeaZhanbu::Zhanbu));
+             ACT_InClass(EorzeaZhanbu::Zhanbu));
   }
 
  private:
@@ -117,7 +117,7 @@ inline void EorzeaZhanbu::Zhanbu(const Event &event, onebot11::ApiBot &bot) {
 }
 
 inline std::string EorzeaZhanbu::GetEorzeaZhanbu(const QId uid) {
-  auto cur_time = datetime::GetTimeStampS();
+  auto cur_time = datetime::GetCurrentLocalTimeStamp();
   auto record = recorder_.GetZhanbuRecord(uid);
   static auto basemap_base_path = config::kAssetsDir / "images" / "zhanbu";
   if (record.empty() || std::stoll(record.back()) <= cur_time) {

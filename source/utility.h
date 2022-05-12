@@ -77,6 +77,11 @@ inline std::time_t LastSecondOfToday() {
   return std::mktime(tm);
 }
 
+inline std::time_t GetCurrentLocalTimeStamp() {
+  std::time_t result = std::time(nullptr);
+  return std::mktime(localtime(&result));
+}
+
 }  // namespace datetime
 
 namespace html {

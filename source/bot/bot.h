@@ -2,19 +2,21 @@
 #define MIGANGBOT_BOT_BOT_H_
 
 #include <condition_variable>
+#include <ctime>
 #include <functional>
 #include <mutex>
 #include <queue>
 #include <string>
 #include <thread>
+#include <tuple>
 #include <utility>
 
 #include <nlohmann/json.hpp>
 #include <hv/WebSocketServer.h>
 #include <oneapi/tbb/concurrent_unordered_map.h>
 
-
 #include "bot/onebot_11/api_bot.h"
+#include "closure.h"
 #include "event/event.h"
 #include "event/event_handler.h"
 #include "global_config.h"
@@ -39,28 +41,23 @@ class Bot : public std::enable_shared_from_this<Bot> {
 
   void Notify(std::string &&msg);
 
-  void SetEchoFunction(const std::time_t echo_code,
-                       std::function<void(const Json &)> &&func);
-
+  template <typename F>
+  void SetEchoFunction(const std::time_t echo_code, F &&func);
   bool EventProcess(const Event &event) noexcept;
 
  private:
   WebSocketChannelPtr channel_;
   tbb::concurrent_unordered_map<std::time_t, std::function<void(const Json &)>>
       echo_function_;
-  std::function<void(std::string &&)> notify_;
-  std::function<void(const std::time_t, std::function<void(const Json &)> &&)>
-      set_echo_function_;
   onebot11::ApiBot api_bot_;
-  std::list<onebot11::ApiBot*>::iterator botset_it_;
+  std::list<onebot11::ApiBot *>::iterator botset_it_;
 };
 
 inline Bot::Bot()
-    : notify_(std::bind(&Bot::Notify, this, std::placeholders::_1)),
-      set_echo_function_(std::bind(&Bot::SetEchoFunction, this,
-                                   std::placeholders::_1,
-                                   std::placeholders::_2)),
-      api_bot_(notify_, set_echo_function_) {}
+    : api_bot_([this](std::string &&msg) { Notify(std::move(msg)); },
+               [this](const auto time_t, auto &&func) {
+                 SetEchoFunction(time_t, std::forward<decltype(func)>(func));
+               }) {}
 
 inline Bot::~Bot() { BotSet::GetInstance().RemoveBot(botset_it_); }
 
@@ -83,9 +80,9 @@ inline void Bot::Notify(std::string &&msg) {
   channel_->send(std::move(msg));
 }
 
-inline void Bot::SetEchoFunction(const std::time_t echo_code,
-                                 std::function<void(const Json &)> &&func) {
-  echo_function_[echo_code] = std::move(func);
+template <typename F>
+inline void Bot::SetEchoFunction(const std::time_t echo_code, F &&func) {
+  echo_function_[echo_code] = std::forward<F>(func);
 }
 
 inline void Bot::Process(const std::string &message) noexcept {

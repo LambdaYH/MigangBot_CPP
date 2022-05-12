@@ -38,7 +38,7 @@ class KeywordsExtraction : public Module {
 
 inline void KeywordsExtraction::Register() {
   OnPrefix({"关键词提取", "/关键词提取"}, "关键词提取",
-           ACT(KeywordsExtraction::KeywordEX));
+           ACT_InClass(KeywordsExtraction::KeywordEX));
 }
 
 inline void KeywordsExtraction::KeywordEX(const Event &event,

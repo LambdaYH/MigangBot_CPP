@@ -94,11 +94,11 @@ class StatusInfo : public Module {
 };
 
 inline void StatusInfo::Register() {
-  OnFullmatch({"/ping"}, "__ping__", ACT(StatusInfo::Ping), permission::NORMAL,
+  OnFullmatch({"/ping"}, "__ping__", ACT_InClass(StatusInfo::Ping), permission::NORMAL,
               permission::SUPERUSER);
-  OnFullmatch({"status", "状态"}, "__status__", ACT(StatusInfo::Status),
+  OnFullmatch({"status", "状态"}, "__status__", ACT_InClass(StatusInfo::Status),
               permission::SUPERUSER, permission::SUPERUSER);
-  OnFullmatch({"network", "网络状况"}, "__network__", ACT(StatusInfo::Network),
+  OnFullmatch({"network", "网络状况"}, "__network__", ACT_InClass(StatusInfo::Network),
               permission::SUPERUSER, permission::SUPERUSER);
 }
 

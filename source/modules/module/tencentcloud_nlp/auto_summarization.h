@@ -40,7 +40,7 @@ class AutoSummarization : public Module {
 
 inline void AutoSummarization::Register() {
   OnPrefix({"摘要提取", "/摘要提取"}, "摘要提取",
-           ACT(AutoSummarization::SummarizationExtraction));
+           ACT_InClass(AutoSummarization::SummarizationExtraction));
 }
 
 inline void AutoSummarization::SummarizationExtraction(const Event &event,

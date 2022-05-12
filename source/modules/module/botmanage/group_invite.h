@@ -29,10 +29,10 @@ class GroupInvite : public Module {
   }
   virtual void Register() override {
     OnRequest("group", "invite", "__处理邀请加群__",
-              ACT(GroupInvite::Handle_group_invite), permission::NORMAL,
+              ACT_InClass(GroupInvite::Handle_group_invite), permission::NORMAL,
               permission::SUPERUSER);
     OnNotice("group_increase", "", "__处理群员增加__",
-             ACT(GroupInvite::Handle_group_increase), permission::NORMAL,
+             ACT_InClass(GroupInvite::Handle_group_increase), permission::NORMAL,
              permission::SUPERUSER);
   }
 
