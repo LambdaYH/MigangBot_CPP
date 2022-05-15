@@ -11,7 +11,7 @@
 #include <nlohmann/json.hpp>
 
 #include "bot/onebot_11/api_bot.h"
-#include "event/search_result.h"
+#include "service/triggered_service.h"
 #include "event/type.h"
 
 namespace white {

@@ -25,7 +25,7 @@ class FriendInvite : public Module {
   }
   virtual void Register() override {
     OnRequest("friend", "", "__处理好友邀请__",
-              ACT(FriendInvite::Handle_friend_invite), permission::NORMAL,
+              ACT_InClass(FriendInvite::Handle_friend_invite), permission::NORMAL,
               permission::SUPERUSER);
   }
 

@@ -51,7 +51,7 @@ class BilibiliParser : public Module {
     OnRegex(
         {R"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)",
          R"((av|AV)\d+)", R"((BV|bv)([a-zA-Z0-9])+)"},
-        "哔哩哔哩解析", ACT(BilibiliParser::Parser), permission::GROUP_MEMBER);
+        "哔哩哔哩解析", ACT_InClass(BilibiliParser::Parser), permission::GROUP_MEMBER);
   }
 
  private:

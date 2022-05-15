@@ -78,6 +78,13 @@ inline void OnRequest(const std::string &request_type,
   ServiceManager::GetInstance().RegisterService(service);
 }
 
+template <typename... Args>
+inline std::shared_ptr<ScheduleService> OnSchedule(Args &&...args) {
+  auto service = std::make_shared<ScheduleService>(std::forward<Args>(args)...);
+  ServiceManager::GetInstance().RegisterService(service);
+  return service;
+}
+
 }  // namespace white
 
 #endif

@@ -11,6 +11,8 @@
 #include <regex>
 #include <string>
 
+#include <tidy.h>
+#include <tidybuffio.h>
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <utf8.h>
@@ -25,6 +27,25 @@ inline std::string ReverseUTF8(const std::string &str) {
 
 inline bool IsDigitStr(const std::string &str) {
   return std::all_of(str.begin(), str.end(), isdigit);
+}
+
+// https://stackoverflow.com/questions/3418231/replace-part-of-a-string-with-another-string
+inline bool Replace(std::string& str, const std::string& from, const std::string& to) {
+    size_t start_pos = str.find(from);
+    if(start_pos == std::string::npos)
+        return false;
+    str.replace(start_pos, from.length(), to);
+    return true;
+}
+
+inline void ReplaceAll(std::string& str, const std::string& from, const std::string& to) {
+    if(from.empty())
+        return;
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+    }
 }
 
 // https://stackoverflow.com/questions/6942273/how-to-get-a-random-element-from-a-c-container
@@ -77,6 +98,11 @@ inline std::time_t LastSecondOfToday() {
   return std::mktime(tm);
 }
 
+inline std::time_t GetCurrentLocalTimeStamp() {
+  std::time_t result = std::time(nullptr);
+  return std::mktime(localtime(&result));
+}
+
 }  // namespace datetime
 
 namespace html {
@@ -110,12 +136,57 @@ inline std::string encode(const std::string &data) {
 }
 
 inline std::string unescape(const std::string &data) {
-  auto ret = std::regex_replace(data, std::regex("&amp;"), "&");
-  ret = std::regex_replace(ret, std::regex("&quot;"), "\"");
-  ret = std::regex_replace(ret, std::regex("&apos;"), "\'");
-  ret = std::regex_replace(ret, std::regex("&lt;"), "<");
-  ret = std::regex_replace(ret, std::regex("&gt;"), ">");
+  auto ret = data;
+  ReplaceAll(ret, "&amp;", "&");
+  ReplaceAll(ret, "&quot;", "\"");
+  ReplaceAll(ret, "&apos;", "\'");
+  ReplaceAll(ret, "&lt;", "<");
+  ReplaceAll(ret, "&gt;", ">");
   return ret;
+}
+
+// convert html to xml
+// https://blog.laplante.io/2013/02/parsing-html-with-C/
+inline std::string CleanHTML(const std::string &html) {
+  // Initialize a Tidy document
+  TidyDoc tidyDoc = tidyCreate();
+  TidyBuffer tidyOutputBuffer = {0};
+
+  // Configure Tidy
+  // The flags tell Tidy to output XML and disable showing warnings
+  bool configSuccess = tidyOptSetBool(tidyDoc, TidyXhtmlOut, yes) &&
+                       tidyOptSetBool(tidyDoc, TidyQuiet, yes) &&
+                       tidyOptSetBool(tidyDoc, TidyNumEntities, yes) &&
+                       tidyOptSetBool(tidyDoc, TidyLiteralAttribs, yes) &&
+                       tidyOptSetBool(tidyDoc, TidyShowWarnings, no);
+
+  int tidyResponseCode = -1;
+
+  // Parse input
+  if (configSuccess)
+    tidyResponseCode = tidyParseString(tidyDoc, html.c_str());
+
+  // Process HTML
+  if (tidyResponseCode >= 0)
+    tidyResponseCode = tidyCleanAndRepair(tidyDoc);
+
+  // Output the HTML to our buffer
+  if (tidyResponseCode >= 0)
+    tidyResponseCode = tidySaveBuffer(tidyDoc, &tidyOutputBuffer);
+
+  // Any errors from Tidy?
+  if (tidyResponseCode < 0)
+    throw fmt::format(
+        "Tidy encountered an error while parsing an HTML response. Tidy "
+        "response code: {}",
+        tidyResponseCode);
+
+  // Grab the result from the buffer and then free Tidy's memory
+  std::string tidyResult = (char *)tidyOutputBuffer.bp;
+  tidyBufFree(&tidyOutputBuffer);
+  tidyRelease(tidyDoc);
+
+  return tidyResult;
 }
 
 }  // namespace html

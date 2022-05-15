@@ -18,6 +18,8 @@
 
 #include "modules/module/bilibili_parser/bilibili_parser.h"
 
+#include "modules/module/weibo/weibo_push.h"
+
 namespace white {
 namespace module {
 
@@ -41,6 +43,9 @@ inline void InitModuleList() {
 
   // bilibili_parser
   AddModule<BilibiliParser>();
+
+  // weibo
+  AddModule<Weibo>();
 }
 
 }  // namespace module

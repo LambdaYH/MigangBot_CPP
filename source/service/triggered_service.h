@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "bot/onebot_11/api_bot.h"
 #include "event/type.h"
 #include "global_config.h"
 #include "permission/permission.h"
@@ -21,29 +22,33 @@
 namespace white {
 class TriggeredService : public Service {
  public:
-  template <typename F>
-  TriggeredService(const std::string &service_name, F &&func,
+  template <typename Func>
+  TriggeredService(const std::string &service_name, Func &&func,
                    const int use_permission, const int manage_permission,
                    const bool enable_on_default = true,
                    const bool only_to_me = false)
       : Service(service_name, manage_permission, enable_on_default),
-        func_(std::move(func)),
+        func_(new onebot11::FunctionForPlugin(std::forward<Func>(func))),
         use_permission_(use_permission),
         only_to_me_(only_to_me) {}
-  template <typename F>
-  TriggeredService(const std::string &service_name, F &&func,
+
+  template <typename Func>
+  TriggeredService(const std::string &service_name, Func &&func,
                    const int use_permission,
                    const bool enable_on_default = true,
                    const bool only_to_me = false)
-      : TriggeredService(service_name, std::forward<F>(func), use_permission,
+      : TriggeredService(service_name, std::forward<Func>(func), use_permission,
                          permission::GROUP_ADMIN, enable_on_default,
                          only_to_me) {}
-  template <typename F>
-  TriggeredService(const std::string &service_name, F &&func,
+
+  template <typename Func>
+  TriggeredService(const std::string &service_name, Func &&func,
                    const bool only_to_me = false)
-      : TriggeredService(service_name, std::forward<F>(func),
+      : TriggeredService(service_name, std::forward<Func>(func),
                          permission::NORMAL, permission::GROUP_ADMIN, true,
                          only_to_me) {}
+
+  virtual ~TriggeredService() { delete func_; };
 
  public:
   bool CheckPerm(const int permission) const noexcept {
@@ -62,14 +67,14 @@ class TriggeredService : public Service {
   template <typename... Args>
   void Run(Args &&...args) const noexcept {
     try {
-      func_(std::forward<Args>(args)...);
+      func_->Run(std::forward<Args>(args)...);
     } catch (const std::exception &e) {
       LOG_ERROR("Exception Happened: {}", e.what());
     }
   }
 
  private:
-  const plugin_func func_;
+  const onebot11::ClosureForPlugin *const func_;
   const int use_permission_;
 
   const bool only_to_me_;

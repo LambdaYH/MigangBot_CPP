@@ -70,6 +70,9 @@ add_subdirectory(third-party/hiredis)
 # pugixml
 add_subdirectory(third-party/pugixml)
 
+# tidy-html5
+add_subdirectory(third-party/tidy-html5)
+
 # gumbo-query
 add_subdirectory(third-party/gumbo-query)
 
@@ -104,7 +107,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
                             ${CMAKE_BINARY_DIR}/third-party/libhv/include
                             third-party/jpcre2/src
                             third-party/gumbo-query/src
-                            third-party/Scheduler
                             ${LIBMYSQLCLIENT_INCLUDE_DIRS}
 )    
 
@@ -127,6 +129,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         pcre2-8-static
                         gumbo_query_static
                         libgumbo.a
+                        tidy-static
 )
 
 IF(BUILD_TEST)

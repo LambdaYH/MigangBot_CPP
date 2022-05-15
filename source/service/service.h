@@ -29,6 +29,8 @@ class Service {
     LoadConfig();
   }
 
+  virtual ~Service() = default;
+
  public:
   const std::string &GetServiceName() const noexcept { return service_name_; }
 
@@ -76,7 +78,7 @@ class Service {
     }
     enable_on_default_ = config_["enable_on_default"].get<bool>();
     for (std::size_t i = 0; i < config_["groups"].size(); ++i)
-      groups_.insert(config_["groups"].get<GId>());
+      groups_.insert(config_["groups"][i].get<GId>());
   }
 
   void SaveConfig() {

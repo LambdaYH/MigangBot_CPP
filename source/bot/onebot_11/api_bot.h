@@ -20,9 +20,28 @@
 #include "event/event.h"
 #include "logger/logger.h"
 #include "type.h"
+#include "closure.h"
 
 namespace white {
 namespace onebot11 {
+
+class ApiBot;
+
+using ClosureForPlugin = Closure<const Event &, onebot11::ApiBot &>;
+
+template <typename F>
+class FunctionForPlugin : public ClosureForPlugin {
+ public:
+  FunctionForPlugin(F &&func) : func_(std::forward<F>(func)) {}
+  virtual ~FunctionForPlugin() = default;
+
+  virtual void Run(const Event &event, onebot11::ApiBot &bot) const {
+    func_(event, bot);
+  }
+
+ private:
+  std::remove_reference_t<F> func_;
+};
 
 class ApiBot {
  public:
@@ -69,25 +88,28 @@ class ApiBot {
 
   bool IsNeedMessage(GId group_id, QId user_id) const;
 
-  template<typename Str>
+  template <typename Str>
   void FeedMessageTo(QId user_id, Str &&message);
 
-  template<typename Str>
+  template <typename Str>
   void FeedMessage(GId group_id, QId user_id, Str &&message);
 
  public:
-  ApiBot(std::function<void(std::string &&)> &notify,
-         std::function<void(const std::time_t, std::function<void(const Json &)>
-                                                   &&)> &set_echo_function)
-      : notify_(notify),
-        set_echo_function_(set_echo_function),
+  template<typename Notify, typename SetEcho>
+  ApiBot(Notify &&notify, SetEcho &&set_echo_function)
+      : notify_(new FunctionForNotify(std::forward<Notify>(notify))),
+        set_echo_function_(new FunctionForSetEcho(std::forward<SetEcho>(set_echo_function))),
         u_(-10000, 10000) {}
 
-  ~ApiBot() {}
+  ~ApiBot() {
+    delete notify_;
+    delete set_echo_function_;
+  }
 
  private:
   template <typename T>
-  void EchoFunction(std::weak_ptr<co_promise<T>> weak_p, const Json &value) {
+  void EchoFunction(const std::weak_ptr<co_promise<T>> &weak_p,
+                    const Json &value) {
     auto shared_p = weak_p.lock();
     if (!shared_p) return;
     try {
@@ -115,17 +137,17 @@ class ApiBot {
             10000;  // 用纳秒会导致接受的和发送的不一致，姑且用微秒吧
     msg["echo"] = echo_code;  // 多线程下降低冲突的可能性，加个随机数
     auto promise = std::make_shared<co_promise<T>>();
-    auto func = std::bind(&ApiBot::EchoFunction<T>, this,
-                          std::weak_ptr(promise), std::placeholders::_1);
-    CoFutureWrapper<T> ret{std::move(promise)};
-    set_echo_function_(echo_code, std::move(func));
-    return ret;
+    set_echo_function_->Run(
+        echo_code, [this, weak_p = std::weak_ptr(promise)](const Json &value) {
+          EchoFunction(weak_p, value);
+        });
+    return CoFutureWrapper{std::move(promise)};
   }
 
  private:
-  const std::function<void(std::string &&)> &notify_;
-  const std::function<void(const std::time_t, std::function<void(const Json &)>
-                                                  &&)> &set_echo_function_;
+  const ClosureNotify *const notify_;
+  const ClosureSetEcho *const set_echo_function_;
+
   std::mt19937 random_engine_;
   std::uniform_int_distribution<std::time_t> u_;
 
@@ -180,7 +202,7 @@ inline bool ApiBot::IsNeedMessage(GId group_id, QId user_id) const {
          someone_group_message_.at(group_id).count(user_id);
 }
 
-template<typename Str>
+template <typename Str>
 inline void ApiBot::FeedMessageTo(QId user_id, Str &&message) {
   std::lock_guard<std::mutex> locker(someone_need_message_mutex_.at(user_id));
   while (!someone_need_message_.at(user_id).empty()) {
@@ -195,9 +217,8 @@ inline void ApiBot::FeedMessageTo(QId user_id, Str &&message) {
     someone_need_message_.erase(user_id);
 }
 
-template<typename Str>
-inline void ApiBot::FeedMessage(GId group_id, QId user_id,
-                                Str &&message) {
+template <typename Str>
+inline void ApiBot::FeedMessage(GId group_id, QId user_id, Str &&message) {
   std::lock_guard<std::mutex> locker(
       someone_group_message_mutex_.at(group_id).at(user_id));
   while (!someone_group_message_.at(group_id).at(user_id).empty()) {
@@ -220,7 +241,7 @@ inline CoFutureWrapper<MessageID> ApiBot::send_private_msg(
   Json msg = api_impl::send_private_msg(user_id, std::forward<Str>(message),
                                         auto_escape);
   auto ret = Echo<MessageID>(msg);
-  notify_(msg.dump());
+  notify_->Run(msg.dump());
   return ret;
 }
 
@@ -231,16 +252,18 @@ inline CoFutureWrapper<MessageID> ApiBot::send_group_msg(const GId group_id,
   Json msg = api_impl::send_group_msg(group_id, std::forward<Str>(message),
                                       auto_escape);
   auto ret = Echo<MessageID>(msg);
-  notify_(msg.dump());
+  notify_->Run(msg.dump());
   return ret;
 }
 
 template <typename Type, typename Str, typename ID>
 inline CoFutureWrapper<MessageID> ApiBot::send_msg(Type &&type, Str &&message,
                                                    ID &&id, bool auto_escape) {
-  Json msg = api_impl::send_msg(std::forward<Type>(type), std::forward<Str>(message), std::forward<ID>(id), auto_escape);
+  Json msg =
+      api_impl::send_msg(std::forward<Type>(type), std::forward<Str>(message),
+                         std::forward<ID>(id), auto_escape);
   auto ret = Echo<MessageID>(msg);
-  notify_(msg.dump());
+  notify_->Run(msg.dump());
   return ret;
 }
 
@@ -253,7 +276,8 @@ inline CoFutureWrapper<MessageID> ApiBot::send(const Event &event,
     if (at_sender)
       return send_group_msg(
           event["group_id"].get<GId>(),
-          fmt::format("[CQ:at,qq={}] {}", event["user_id"].get<QId>(), std::forward<Str>(message)),
+          fmt::format("[CQ:at,qq={}] {}", event["user_id"].get<QId>(),
+                      std::forward<Str>(message)),
           auto_escape);
     else
       return send_group_msg(event["group_id"].get<GId>(),
@@ -267,7 +291,7 @@ inline CoFutureWrapper<GroupInfo> ApiBot::get_group_info(const GId group_id,
                                                          bool no_cache) {
   Json msg = api_impl::get_group_info(group_id, no_cache);
   auto ret = Echo<GroupInfo>(msg);
-  notify_(msg.dump());
+  notify_->Run(msg.dump());
   return ret;
 }
 
@@ -275,7 +299,7 @@ inline CoFutureWrapper<std::vector<GroupInfo>> ApiBot::get_group_list(
     bool no_cache) {
   Json msg = api_impl::get_group_list(no_cache);
   auto ret = Echo<std::vector<GroupInfo>>(msg);
-  notify_(msg.dump());
+  notify_->Run(msg.dump());
   return ret;
 }
 
@@ -283,13 +307,13 @@ inline CoFutureWrapper<UserInfo> ApiBot::get_stranger_info(const QId user_id,
                                                            bool no_cache) {
   auto msg = api_impl::get_stranger_info(user_id);
   auto ret = Echo<UserInfo>(msg);
-  notify_(msg.dump());
+  notify_->Run(msg.dump());
   return ret;
 }
 
 inline void ApiBot::delete_msg(MsgId msg_id) {
   Json msg = api_impl::delete_msg(msg_id);
-  notify_(msg.dump());
+  notify_->Run(msg.dump());
 }
 
 template <typename Str>
@@ -298,11 +322,12 @@ inline void ApiBot::reject(const Event &event, Str &&reason) {
   auto request_type = event["request_type"].get<std::string>();
   if (request_type == "friend") {
     auto msg = api_impl::set_friend_add_request(flag, false);
-    notify_(msg.dump());
+    notify_->Run(msg.dump());
   } else if (request_type == "group" &&
              event["sub_type"].get<std::string>() == "invite") {
-    auto msg = api_impl::set_group_add_request(flag, "invite", std::forward<Str>(reason), false);
-    notify_(msg.dump());
+    auto msg = api_impl::set_group_add_request(
+        flag, "invite", std::forward<Str>(reason), false);
+    notify_->Run(msg.dump());
   }
 }
 
@@ -311,17 +336,17 @@ inline void ApiBot::approve(const Event &event) {
   auto request_type = event["request_type"].get<std::string>();
   if (request_type == "friend") {
     auto msg = api_impl::set_friend_add_request(flag, true);
-    notify_(msg.dump());
+    notify_->Run(msg.dump());
   } else if (request_type == "group" &&
              event["sub_type"].get<std::string>() == "invite") {
     auto msg = api_impl::set_group_add_request(flag, "invite", "", true);
-    notify_(msg.dump());
+    notify_->Run(msg.dump());
   }
 }
 
 inline void ApiBot::set_group_leave(const GId group_id, bool is_dismiss) {
   auto msg = api_impl::set_group_leave(group_id, is_dismiss);
-  notify_(msg.dump());
+  notify_->Run(msg.dump());
 }
 
 }  // namespace onebot11
