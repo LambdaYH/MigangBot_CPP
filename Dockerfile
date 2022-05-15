@@ -24,10 +24,11 @@ RUN     git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git \
     &&  ./configure \
     &&  make && make install \
     &&  cd /build_temp \
-    &&  cmake -DCMAKE_BUILD_TYPE=Release . \
+    &&  mkdir build && cd build \
+    &&  cmake -DCMAKE_BUILD_TYPE=Release .. \
     &&  make \
     &&  mkdir /MigangBot \
-    &&  cp /build_temp/bin/MigangBot /MigangBot \
+    &&  cp /build_temp/build/bin/MigangBot /MigangBot \
     &&  cp /build_temp/resources/* -r /MigangBot \
     &&  rm -rf /build_temp/
 WORKDIR /MigangBot
