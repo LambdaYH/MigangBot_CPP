@@ -10,6 +10,8 @@
 #include "modules/module/botmanage/group_invite.h"
 #include "modules/module/botmanage/help.h"
 #include "modules/module/botmanage/status_info.h"
+#include "modules/module/botmanage/baned_kicked.h"
+#include "modules/module/botmanage/dismiss.h"
 
 #include "modules/module/tencentcloud_nlp/auto_summarization.h"
 #include "modules/module/tencentcloud_nlp/keywords_extraction.h"
@@ -33,6 +35,8 @@ inline void InitModuleList() {
   AddModule<FeedBack>();
   AddModule<FriendInvite>();
   AddModule<GroupInvite>();
+  AddModule<BandedOrKicked>();
+  AddModule<Dismiss>();
 
   // tencentcloud_nlp
   AddModule<AutoSummarization>();

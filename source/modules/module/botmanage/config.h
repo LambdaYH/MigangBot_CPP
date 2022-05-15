@@ -25,9 +25,15 @@ constexpr auto kConfigExample =
     "目前群数量过多，目前处于关闭自动入群(严格模式)"
     "状态，随后将自动退群，敬请谅解！";
 
-inline bool IsBlackUser(QId uid) { return false; }
+void Init();
 
-inline bool IsBlackGroup(GId gid) { return false; }
+void AddToQQBlackList(QId uid, const std::string &reason);
+
+void AddToGroupBlackList(GId gid, const std::string &reason);
+
+bool IsBlackUser(QId uid);
+
+bool IsBlackGroup(GId gid);
 
 }  // namespace botmanage
 }  // namespace module
