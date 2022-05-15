@@ -4,7 +4,7 @@
 #include <mutex>
 #include <list>
 
-#include "Scheduler.h"
+#include "schedule/Bosma/Scheduler.h"
 #include "bot/onebot_11/api_bot.h"
 
 namespace white {
@@ -46,6 +46,10 @@ class BotSet {
  private:
   std::list<onebot11::ApiBot *> bots_;
   std::mutex mutex_;
+};
+
+inline const std::list<onebot11::ApiBot *> &Bots() {
+  return BotSet::GetInstance().GetBots();
 };
 
 }  // namespace white

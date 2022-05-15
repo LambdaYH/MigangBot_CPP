@@ -88,6 +88,8 @@ int main(int argc, char** argv) {
     std::cout << "服务配置目录已创建" << std::endl;
   }
 
+  flag::init(argc, argv);
+
   // 加载配置文件
   white::global_config = YAML::LoadFile(config_doc_path);
 
@@ -140,7 +142,6 @@ int main(int argc, char** argv) {
   white::Server server(port, address);
 
   // init schedule ...
-  flag::init(argc, argv);
   server.Run();
 
   return EXIT_SUCCESS;

@@ -40,10 +40,9 @@
 [submodule "third-party/cocoyaxi"]
 	path = third-party/cocoyaxi
 	url = https://github.com/idealvin/cocoyaxi.git
-[submodule "third-party/Scheduler"]
-	path = third-party/Scheduler
-	url = https://github.com/LambdaYH/Scheduler.git
-	branch = co
 [submodule "third-party/gumbo-query"]
 	path = third-party/gumbo-query
 	url = https://github.com/lazytiger/gumbo-query.git
+[submodule "third-party/tidy-html5"]
+	path = third-party/tidy-html5
+	url = https://github.com/htacg/tidy-html5.git
