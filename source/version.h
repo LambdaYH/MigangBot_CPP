@@ -3,7 +3,7 @@
 
 namespace white {
 
-constexpr auto kMigangBotVersion = "v0.0.3";
+constexpr auto kMigangBotVersion = "v0.0.4";
 
 }  // namespace white
 

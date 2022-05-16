@@ -8,7 +8,6 @@
 namespace white {
 namespace permission {
 
-// 在event_handler中用于vector索引，禁止越界
 constexpr auto BLACK = 0;
 constexpr auto NORMAL = 1;
 constexpr auto PRIVATE = 2;
@@ -17,6 +16,7 @@ constexpr auto GROUP_ADMIN = 4;
 constexpr auto GROUP_OWNER = 5;
 constexpr auto WHITE_LIST = 6;
 constexpr auto SUPERUSER = 7;
+constexpr auto ALWAYS_ON = 8;
 
 inline const auto GetUserPermission(const Event &event) {
   QId user_id = event["user_id"].get<QId>();

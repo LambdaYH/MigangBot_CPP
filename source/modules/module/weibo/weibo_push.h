@@ -130,6 +130,7 @@ inline void Weibo::WeiboPuller() {
       transform_if(
           formatted_wb.begin(), formatted_wb.end(), std::back_inserter(weibos),
           [this, &cur_time](const auto &fwb) {
+            // Todo: 使用时间来去重避免数据量过大时索引较慢
             if (recorder_.IsExist(fwb.second)) return false;
             recorder_.RecordWeibo(fwb.second, cur_time);
             return true;

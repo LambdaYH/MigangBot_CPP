@@ -31,6 +31,9 @@ class BotSet {
     bots_.erase(it);
   }
 
+  // 需要改进
+  // 当调用该bot的一瞬间，Bot析构了，将会导致访问空悬指针的问题
+  // 其他情况下，析构后不会影响迭代器
   const auto &GetBots() { return bots_; }
 
  public:

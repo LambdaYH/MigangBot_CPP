@@ -25,7 +25,7 @@ namespace module {
   [this](const Event &event, onebot11::ApiBot &bot) { func(event, bot); }
 
 #define ACT_OutClass(func) \
-  [](const Event &event, onebot11::ApiBot &bot) { func(event, bot); };
+  [](const Event &event, onebot11::ApiBot &bot) { func(event, bot); }
 
 using Config = YAML::Node;
 

@@ -5,6 +5,7 @@
 
 #include "modules/module/echo.h"
 
+#include "modules/module/botmanage/sv.h"
 #include "modules/module/botmanage/feedback.h"
 #include "modules/module/botmanage/friend_invite.h"
 #include "modules/module/botmanage/group_invite.h"
@@ -30,6 +31,7 @@ inline void InitModuleList() {
   AddModule<Echo>();
 
   // botmanage
+  AddModule<SV>();
   AddModule<Help>();
   AddModule<StatusInfo>();
   AddModule<FeedBack>();

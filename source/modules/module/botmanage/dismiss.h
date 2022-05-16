@@ -25,7 +25,7 @@ class Dismiss : public Module {
 
 inline void Dismiss::HandleDismiss(const Event &event, onebot11::ApiBot &bot) {
   if (!event.contains("group_id")) return;
-  auto qid = message::ExtraPlainText(event);
+  auto qid = message::Strip(message::ExtraPlainText(event), ' ');
   if (qid == "2215") {
     auto group_id = event["group_id"].get<GId>();
     bot.send_group_msg(group_id, "哼!走了");

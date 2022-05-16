@@ -23,28 +23,51 @@ namespace white {
 class TriggeredService : public Service {
  public:
   template <typename Func>
-  TriggeredService(const std::string &service_name, Func &&func,
+  TriggeredService(const std::string &service_name, const std::string &description, Func &&func,
                    const int use_permission, const int manage_permission,
                    const bool enable_on_default = true,
                    const bool only_to_me = false)
-      : Service(service_name, manage_permission, enable_on_default),
+      : Service(service_name, description, manage_permission, enable_on_default),
         func_(new onebot11::FunctionForPlugin(std::forward<Func>(func))),
         use_permission_(use_permission),
         only_to_me_(only_to_me) {}
 
   template <typename Func>
   TriggeredService(const std::string &service_name, Func &&func,
+                  const int use_permission, const int manage_permission,
+                  const bool enable_on_default = true,
+                  const bool only_to_me = false)
+    : TriggeredService(service_name, "", std::forward<Func>(func), use_permission, manage_permission, enable_on_default, only_to_me) {}
+
+  template <typename Func>
+  TriggeredService(const std::string &service_name, Func &&func,
                    const int use_permission,
                    const bool enable_on_default = true,
                    const bool only_to_me = false)
-      : TriggeredService(service_name, std::forward<Func>(func), use_permission,
+      : TriggeredService(service_name, "", std::forward<Func>(func), use_permission,
+                         permission::GROUP_ADMIN, enable_on_default,
+                         only_to_me) {}
+
+  template <typename Func>
+  TriggeredService(const std::string &service_name, const std::string &description, Func &&func,
+                   const bool only_to_me = false)
+      : TriggeredService(service_name, description, std::forward<Func>(func),
+                         permission::NORMAL, permission::GROUP_ADMIN, true,
+                         only_to_me) {}
+
+    template <typename Func>
+  TriggeredService(const std::string &service_name, const std::string &description, Func &&func,
+                   const int use_permission,
+                   const bool enable_on_default = true,
+                   const bool only_to_me = false)
+      : TriggeredService(service_name, description, std::forward<Func>(func), use_permission,
                          permission::GROUP_ADMIN, enable_on_default,
                          only_to_me) {}
 
   template <typename Func>
   TriggeredService(const std::string &service_name, Func &&func,
                    const bool only_to_me = false)
-      : TriggeredService(service_name, std::forward<Func>(func),
+      : TriggeredService(service_name, "", std::forward<Func>(func),
                          permission::NORMAL, permission::GROUP_ADMIN, true,
                          only_to_me) {}
 

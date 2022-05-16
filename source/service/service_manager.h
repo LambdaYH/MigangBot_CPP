@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 #include "type.h"
 #include <service/service.h>
 #include <service/triggered_service.h>
@@ -23,12 +24,11 @@ class ServiceManager {
     return service_name_map_.contains(service_name);
   }
 
-  bool CheckServiceStatus(const std::string &service_name, const GId group_id)
-  {
+  std::vector<int> CheckPermission(const std::string &service_name) {
     auto range = service_name_map_.equal_range(service_name);
-    auto ret = true;
+    std::vector<int> ret;
     for (auto it = range.first; it != range.second; ++it)
-      ret &= it->second->GroupStatus(group_id);
+      ret.emplace_back(it->second->Permission());
     return ret;
   }
 
@@ -52,6 +52,20 @@ class ServiceManager {
 
   void RegisterService(std::shared_ptr<Service> service) {
     service_name_map_.emplace(service->GetServiceName(), service);
+  }
+
+  auto GetServiceList(){
+    std::vector<std::pair<std::string, std::string>> ret;
+    for(auto &[name, sv] : service_name_map_)
+      ret.emplace_back(name, sv->GetDescription());
+    return ret;
+  }
+
+  auto GetServiceList(GId group_id){
+    std::vector<std::tuple<std::string, std::string, bool>> ret;
+    for(auto &[name, sv] : service_name_map_)
+      ret.emplace_back(name, sv->GetDescription(), sv->GroupStatus(group_id));
+    return ret;
   }
 
  public:

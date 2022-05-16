@@ -36,12 +36,26 @@ inline void transform_if(InputIt first, InputIt last, OutputIt dest, Pred pred,
 // everyschedule task must own its own service
 class ScheduleService : public Service {
  public:
+  ScheduleService(const std::string &service_name,
+                  const std::string &description, const int manage_permission,
+                  const bool enable_on_default = true)
+      : Service(service_name, description, manage_permission,
+                enable_on_default) {}
+
   ScheduleService(const std::string &service_name, const int manage_permission,
                   const bool enable_on_default = true)
-      : Service(service_name, manage_permission, enable_on_default) {}
+      : ScheduleService(service_name, "", manage_permission,
+                        enable_on_default) {}
+
   ScheduleService(const std::string &service_name,
                   const bool enable_on_default = true)
-      : ScheduleService(service_name, permission::GROUP_ADMIN,
+      : ScheduleService(service_name, "", permission::GROUP_ADMIN,
+                        enable_on_default) {}
+
+  ScheduleService(const std::string &service_name,
+                  const std::string &description,
+                  const bool enable_on_default = true)
+      : ScheduleService(service_name, description, permission::GROUP_ADMIN,
                         enable_on_default) {}
 
  public:

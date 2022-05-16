@@ -8,6 +8,8 @@
 #include <pugixml.hpp>
 #include <co/hash.h>
 
+#include "logger/logger.h"
+#include "message/utility.h"
 #include "utility.h"
 #include "aiorequests.h"
 
@@ -87,7 +89,7 @@ inline std::string GetText(const std::string &text_body) {
   std::string ret;
   XmlAllText walker(ret);
   doc.child("html").child("body").traverse(walker);
-  return html::unescape(std::string(fastring(ret).strip('\n').c_str()));
+  return html::unescape(message::Strip(ret, '\n'));
 }
 
 inline Json GetPics(const Json &weibo_info) {
@@ -143,8 +145,8 @@ inline Json GetLongWeibo(const std::string &id) {
       Json weibo_info = Json::parse(html_view);
       return ParseWeibo(weibo_info);
     } catch (const Json::exception &e) {
-      // LOG
-      // sleep and retry
+      LOG_WARN("weibo: 抓取异常 {}", e.what());
+      co::sleep(1000);
     }
   }
   return Json{};

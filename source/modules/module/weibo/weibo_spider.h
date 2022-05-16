@@ -1,6 +1,6 @@
 #pragma once
 
-#include <queue>
+#include <list>
 #include <string>
 #include <vector>
 #include <unordered_set>
@@ -28,7 +28,7 @@ class WeiboSpider {
 
  private:
   std::unordered_set<std::string> received_weibo_ids_;
-  std::queue<std::string> received_weibo_queue_;
+  std::list<std::string> received_weibo_list_;
   const std::vector<std::string> filter_words_;
   const bool filter_;
   const std::string user_id_;
@@ -50,14 +50,14 @@ inline std::vector<Json> WeiboSpider::GetLastestWeibos() {
                  wb["retweet"]["text"].get<std::string>().find(word) !=
                      std::string::npos)) {
               received_weibo_ids_.emplace(wb["id"].get<std::string>());
-              received_weibo_queue_.push(wb["id"].get<std::string>());
+              received_weibo_list_.emplace_back(wb["id"].get<std::string>());
             }
           }
           if (received_weibo_ids_.count(wb["id"].get<std::string>())) {
             continue;
           }
           if (!filter_ || !wb.contains("retweet")) {
-            received_weibo_queue_.push(wb["id"].get<std::string>());
+            received_weibo_list_.emplace_back(wb["id"].get<std::string>());
             received_weibo_ids_.emplace(wb["id"].get<std::string>());
             lastest_weibo.push_back(std::move(wb));
           }
@@ -69,9 +69,9 @@ inline std::vector<Json> WeiboSpider::GetLastestWeibos() {
 }
 
 inline void WeiboSpider::CleanBuffer() {
-  while(received_weibo_queue_.size() > 10) {
-    received_weibo_ids_.erase(received_weibo_queue_.front());
-    received_weibo_queue_.pop();
+  while(received_weibo_list_.size() > 10) {
+    received_weibo_ids_.erase(received_weibo_list_.front());
+    received_weibo_list_.front();
   }
 }
 
