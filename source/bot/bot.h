@@ -86,12 +86,9 @@ inline void Bot::SetEchoFunction(const std::time_t echo_code, F &&func) {
 }
 
 inline void Bot::Process(const std::string &message) noexcept {
-  static auto event_handle = [this](auto &event) {
-    EventHandler::GetInstance().Handle(event, api_bot_);
-  };
   try {
     auto msg = Json::parse(message);
-    if (EventProcess(msg)) event_handle(msg);
+    if (EventProcess(msg)) EventHandler::GetInstance().Handle(msg, api_bot_);
   } catch (Json::exception &e) {
     LOG_ERROR("Exception: {}", e.what());
   }

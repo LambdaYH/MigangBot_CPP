@@ -9,6 +9,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <utility>
 
 #include "schedule/Bosma/croncpp.h"
 #include "schedule/Bosma/InterruptableSleep.h"
@@ -259,11 +260,19 @@ class Scheduler {
     return random_id;
   }
 
-  void add_task(const Clock::time_point time, std::shared_ptr<Task> t) {
+  template <typename TaskPtr>
+  void add_task(const Clock::time_point time, TaskPtr &&t) {
     std::lock_guard<std::mutex> l(lock);
-    tasks.emplace(time, std::weak_ptr<Task>(t));
+    tasks.emplace(time, t);
     if (t->task_unique_id_.empty()) t->task_unique_id_ = get_random_id();
-    id_to_task.emplace(t->task_unique_id_, std::move(t));
+    id_to_task.emplace(t->task_unique_id_, std::forward<TaskPtr>(t));
+    sleeper.interrupt();
+  }
+
+  template <typename TaskPtr>
+  void add_task_interval(const Clock::time_point time, TaskPtr &&t) {
+    std::lock_guard<std::mutex> l(lock);
+    tasks.emplace(time, std::forward<TaskPtr>(t));
     sleeper.interrupt();
   }
 
@@ -293,24 +302,23 @@ class Scheduler {
             }
             // no risk of race-condition,
             // add_task() will wait for manage_tasks() to release lock
-            if (task->interval) add_task(task->get_new_time(), std::move(task));
+            if (task->interval)
+              add_task_interval(task->get_new_time(), std::move(task));
           });
         } else {
-          go([task]() {
+          // calculate time of next run and add the new task to the tasks to be
+          // recurred
+          if (task->recur)
+            recurred_tasks.emplace(task->get_new_time(), std::move(task_weak));
+          go([task = std::move(task)]() {
             try {
               task->f();
             } catch (const std::exception &e) {
               white::LOG_ERROR("Exception in schedule task: {}", e.what());
             }
           });
-          // calculate time of next run and add the new task to the tasks to be
-          // recurred
-
-          if (task->recur)
-            recurred_tasks.emplace(task->get_new_time(), std::move(task_weak));
         }
       }
-
       // remove the completed tasks
       tasks.erase(tasks.begin(), end_of_tasks_to_run);
 

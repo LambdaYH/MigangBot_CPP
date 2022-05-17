@@ -59,6 +59,8 @@ constexpr auto kGlobalConfigExample =
     "  RedisPool: 5                     # Redis连接池连接数";
 
 int main(int argc, char** argv) {
+  hlog_disable();
+  flag::init(argc, argv);
   // load config
   std::filesystem::path current_working_dir = std::filesystem::current_path();
   std::filesystem::path config_doc_path = current_working_dir / "config.yml";
@@ -87,8 +89,6 @@ int main(int argc, char** argv) {
     }
     std::cout << "服务配置目录已创建" << std::endl;
   }
-
-  flag::init(argc, argv);
 
   // 加载配置文件
   white::global_config = YAML::LoadFile(config_doc_path);
@@ -137,12 +137,7 @@ int main(int argc, char** argv) {
   white::LOG_INFO("MigangBot已初始化");
   white::LOG_INFO("监听地址: {}:{}", address, port);
 
-  hlog_disable();
-
-  white::Server server(port, address);
-
-  // init schedule ...
-  server.Run();
+  white::Server(port, address).Run();
 
   return EXIT_SUCCESS;
 }

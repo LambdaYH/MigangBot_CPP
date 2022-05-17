@@ -14,9 +14,11 @@ class WeiboRecorder {
     sql::MySQLWrapper sql_wrapper;
     std::string query =
         "CREATE TABLE IF NOT EXISTS Weibos\n"
-        "(weibo_id    char(25)    NOT NULL,\n"
+        "(id          INT         NOT NULL AUTO_INCREMENT,\n"
+        "weibo_id     char(25)    NOT NULL,\n"
         "push_time    char(20)    NOT NULL,\n"
-        "PRIMARY KEY(weibo_id))";
+        "content      TEXT        NOT NULL,\n"
+        "PRIMARY KEY(id))";
     int ec;
     sql_wrapper.Execute(query, &ec);
     if (ec) {
@@ -25,15 +27,16 @@ class WeiboRecorder {
     }
   }
 
-  bool RecordWeibo(const std::string &weibo_id,
-                   const std::string &push_time) {
+  bool RecordWeibo(const std::string &weibo_id, const std::string &push_time,
+                   const std::string &content) {
     sql::MySQLWrapper sql_wrapper;
     auto query = fmt::format(
-        "INSERT INTO Weibos(weibo_id, push_time)\n"
+        "INSERT INTO Weibos(weibo_id, push_time, content)\n"
         "VALUES(\n"
         "\"{}\",\n"
+        "\"{}\",\n"
         "\"{}\")",
-        weibo_id, push_time);
+        weibo_id, push_time, content);
     int ec;
     sql_wrapper.Execute(query, &ec);
     if (ec) {
@@ -43,10 +46,13 @@ class WeiboRecorder {
     return true;
   }
 
-  bool IsExist(const std::string &weibo_id){
+  bool IsExist(const std::string &weibo_id) {
     sql::MySQLWrapper sql_wrapper;
     int ec;
-    sql_wrapper.Execute(fmt::format("SELECT weibo_id FROM Weibos WHERE weibo_id=\"{}\"", weibo_id), &ec);
+    sql_wrapper.Execute(
+        fmt::format("SELECT weibo_id FROM Weibos WHERE weibo_id=\"{}\"",
+                    weibo_id),
+        &ec);
     if (ec) {
       LOG_ERROR("WeiboRecorder: 更新表发生错误。");
       return false;

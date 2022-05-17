@@ -22,8 +22,10 @@ namespace module {
 namespace weibo {
 
 inline Json GetJson(const std::string &params) {
-  auto r = aiorequests::Get(fmt::format(
-      "{}://m.weibo.cn/api/container/getIndex?{}", kHttpPrefix, params));
+  auto r =
+      aiorequests::Get(fmt::format("{}://m.weibo.cn/api/container/getIndex?{}",
+                                   kHttpPrefix, params),
+                       15);
   return r->GetJson();
 }
 
@@ -55,7 +57,7 @@ struct XmlAllText : pugi::xml_tree_walker {
 };
 
 inline std::time_t ParseTime(const std::string &expr) {
-  std::tm tm;
+  std::tm tm{}; // 局部变量不默认初始化为0
   std::stringstream(expr) >> std::get_time(&tm, "%a %b %d %H:%M:%S +0800 %Y");
   return std::mktime(&tm);
 }
@@ -118,11 +120,11 @@ inline std::string GetVideoInfo(const Json &weibo_info) {
 inline Json ParseWeibo(const Json &weibo_info) {
   Json weibo;
   if (weibo_info.contains("user")) {
-    weibo["user_id"] = weibo_info["user"]["id"].get<uint64_t>();
+    // weibo["user_id"] = weibo_info["user"]["id"].get<uint64_t>();
     weibo["screen_name"] = weibo_info["user"]["screen_name"].get<std::string>();
   }
   weibo["id"] = weibo_info["id"].get<std::string>();
-  weibo["bid"] = weibo_info["bid"].get<std::string>();
+  // weibo["bid"] = weibo_info["bid"].get<std::string>();
   auto text_body = weibo_info["text"].get<std::string>();
   weibo["text"] = GetText(text_body);
   weibo["pics"] = GetPics(weibo_info);
@@ -139,13 +141,14 @@ inline Json GetLongWeibo(const std::string &id) {
     std::string_view html_view(html);
     auto pos_start = html_view.find("\"status\":");
     auto pos_end = html_view.rfind("},");
-    html_view = html_view.substr(pos_start, pos_end - pos_start + 1);
-    html_view.remove_prefix(html_view.find_first_of("{"));
     try {
+      html_view = html_view.substr(pos_start, pos_end - pos_start + 1);
+      html_view.remove_prefix(html_view.find_first_of("{"));
       Json weibo_info = Json::parse(html_view);
       return ParseWeibo(weibo_info);
     } catch (const Json::exception &e) {
       LOG_WARN("weibo: 抓取异常 {}", e.what());
+      LOG_DEBUG("抓取异常的网页信息: {}", html);
       co::sleep(1000);
     }
   }

@@ -167,12 +167,11 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
           auto at_id_start = std::min(static_cast<std::size_t>(10), msg.size());
           auto at_id_end = std::min(msg.find_first_of(']'), msg.size());
           auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
-          auto self_id = std::to_string(event["self_id"].get<QId>());
-          if (at_id == self_id) {
+          if (at_id == std::to_string(event["self_id"].get<QId>())) {
             msg = msg.substr(msg.find_first_of(']') + 1);
             msg = msg.substr(msg.find_first_not_of(' '));
             event["__to_me__"] = true;
-            event["message"] = std::string(msg);
+            event["message"] = msg;
           }
         }
         auto message = event["message"].get<std::string>();

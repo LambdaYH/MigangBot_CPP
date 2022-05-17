@@ -6,7 +6,6 @@
 #include <iterator>
 #include <unordered_map>
 
-#include "fmt/format.h"
 #include "modules/module_interface.h"
 #include "modules/module/weibo/weibo_spider.h"
 #include "modules/module/weibo/weibo_recorder.h"
@@ -38,7 +37,7 @@ constexpr auto kConfigExample =
     "    闪耀暖暖官微:\n"
     "      user_id: \"6498105282\"\n"
     "      filter: false\n"
-    "      filter_words: [\"微博抽奖平台\"]";
+    "      filter_words: []";
 
 inline std::pair<std::string, std::string> weibo_to_text(Json &wb) {
   std::string msg(fmt::format("{}\'s Weibo:\n=====================",
@@ -71,11 +70,10 @@ inline std::pair<std::string, std::string> weibo_to_text(Json &wb) {
 
 class Weibo : public Module {
  public:
-  Weibo()
-      : Module("weibo/weibo.yml", weibo::kConfigExample),
-        config_(LoadConfig()) {
-    for (auto weibo_sub_service = config_.begin();
-         weibo_sub_service != config_.end(); ++weibo_sub_service) {
+  Weibo() : Module("weibo/weibo.yml", weibo::kConfigExample) {
+    auto config = LoadConfig();
+    for (auto weibo_sub_service = config.begin();
+         weibo_sub_service != config.end(); ++weibo_sub_service) {
       auto sv_name = weibo_sub_service->first.as<std::string>();
       enable_on_default_.emplace(
           sv_name, weibo_sub_service->second["enable_on_default"].as<bool>());
@@ -99,7 +97,7 @@ class Weibo : public Module {
       svs_.emplace(name, OnSchedule(name, permission::GROUP_ADMIN,
                                     enable_on_default_.at(name)));
     }
-    Schedule().every(std::chrono::minutes(1), [this]() { WeiboPuller(); });
+    Schedule().interval(1min, [this]() { WeiboPuller(); });
     Schedule().cron("5 5 * * *", [this]() { CleanBuffer(); });
   }
 
@@ -108,7 +106,6 @@ class Weibo : public Module {
   inline void CleanBuffer();
 
  private:
-  Config config_;
   std::unordered_map<std::string, std::shared_ptr<ScheduleService>> svs_;
   std::unordered_map<std::string, std::vector<weibo::WeiboSpider>> spiders_;
   std::unordered_map<std::string, bool> enable_on_default_;
@@ -124,21 +121,16 @@ inline void Weibo::WeiboPuller() {
     for (auto &spider : spiders) {
       std::vector<std::pair<std::string, std::string>> formatted_wb;
       auto lastest_wb = spider.GetLastestWeibos();
-      std::transform(lastest_wb.begin(), lastest_wb.end(),
-                     std::back_inserter(formatted_wb),
-                     [](auto &wb) { return weibo::weibo_to_text(wb); });
-      transform_if(
-          formatted_wb.begin(), formatted_wb.end(), std::back_inserter(weibos),
-          [this, &cur_time](const auto &fwb) {
-            // Todo: 使用时间来去重避免数据量过大时索引较慢
-            if (recorder_.IsExist(fwb.second)) return false;
-            recorder_.RecordWeibo(fwb.second, cur_time);
-            return true;
-          },
-          [](const auto &fwb) { return fwb.first; });
-      if (!weibos.empty())
+      for (auto &wb : lastest_wb)
+        std::transform(lastest_wb.begin(), lastest_wb.end(),
+                       std::back_inserter(weibos), [this, &cur_time](auto &wb) {
+                         auto fwb = weibo::weibo_to_text(wb);
+                         recorder_.RecordWeibo(fwb.second, cur_time, fwb.first);
+                         return fwb.first;
+                       });
+      if (!lastest_wb.empty())
         LOG_INFO("weibo: 成功获取@{}的新微博{}条", spider.GetUserName(),
-                 weibos.size());
+                 lastest_wb.size());
       else
         LOG_INFO("weibo: 未检测到@{}的新微博", spider.GetUserName());
     }

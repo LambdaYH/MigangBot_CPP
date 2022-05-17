@@ -8,6 +8,9 @@
 #include "bot/onebot_11/api_bot.h"
 
 namespace white {
+  
+using namespace std::chrono_literals;
+
 inline Bosma::Scheduler &Schedule() {
   static Bosma::Scheduler scheduler;
   return scheduler;
