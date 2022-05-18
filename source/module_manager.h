@@ -16,9 +16,7 @@ class ModuleManager {
   }
   template <typename T>
   void InitModule() {
-    if (!std::is_base_of<module::Module, T>::value)
-      return;  // add log here
-    else {
+    if constexpr (std::is_base_of<module::Module, T>::value) {
       try {
         module_container_.push_back(std::make_unique<T>());
         module_container_.back()->Register();
@@ -26,6 +24,8 @@ class ModuleManager {
       } catch (std::exception &e) {
         LOG_ERROR("加载[{}]时发生异常: {}", typeid(T).name(), e.what());
       }
+    } else if constexpr (std::is_base_of<module::ModulePack, T>::value) {
+      T().Register();
     }
   }
 
@@ -47,6 +47,12 @@ template <typename T>
 inline void AddModule() {
   white::ModuleManager::GetInstance().InitModule<T>();
 }
+
+template <typename T>
+inline void SubModule() {
+  white::ModuleManager::GetInstance().InitModule<T>();
+}
+
 }  // namespace white
 
 #endif

@@ -22,7 +22,7 @@ class WeiboSpider {
         filter_(filter),
         user_id_(std::move(user_id)),
         user_name_(GetUserInfo(user_id_)["screen_name"].get<std::string>()) {
-    GetLastestWeibos(); // 防止重复推送，只推送启动后的
+    GetLastestWeibos();  // 防止重复推送，只推送启动后的
   }
   std::vector<Json> GetLastestWeibos();
   const std::string &GetUserName() const { return user_name_; };
@@ -60,12 +60,9 @@ inline std::vector<Json> WeiboSpider::GetLastestWeibos() {
             }
           }
 
-          if (cur_time() - wb["created_at"].get<std::time_t>() > 7200) {
-            received_weibo_ids_.emplace(wb["id"].get<std::string>());
-            received_weibo_list_.emplace_back(wb["id"].get<std::string>());
-          }
-
-          if (received_weibo_ids_.count(wb["id"].get<std::string>())) continue;
+          if (received_weibo_ids_.count(wb["id"].get<std::string>()) ||
+              cur_time() - wb["created_at"].get<std::time_t>() > 7200)
+            continue;
 
           if (!filter_ || !wb.contains("retweet")) {
             received_weibo_list_.emplace_back(wb["id"].get<std::string>());
@@ -82,7 +79,7 @@ inline std::vector<Json> WeiboSpider::GetLastestWeibos() {
 inline void WeiboSpider::CleanBuffer() {
   while (received_weibo_list_.size() > 10) {
     received_weibo_ids_.erase(received_weibo_list_.front());
-    received_weibo_list_.front();
+    received_weibo_list_.pop_front();
   }
 }
 

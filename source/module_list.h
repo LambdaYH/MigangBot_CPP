@@ -5,14 +5,7 @@
 
 #include "modules/module/echo.h"
 
-#include "modules/module/botmanage/sv.h"
-#include "modules/module/botmanage/feedback.h"
-#include "modules/module/botmanage/friend_invite.h"
-#include "modules/module/botmanage/group_invite.h"
-#include "modules/module/botmanage/help.h"
-#include "modules/module/botmanage/status_info.h"
-#include "modules/module/botmanage/baned_kicked.h"
-#include "modules/module/botmanage/dismiss.h"
+#include "modules/module/botmanage/botmanage.h"
 
 #include "modules/module/tencentcloud_nlp/auto_summarization.h"
 #include "modules/module/tencentcloud_nlp/keywords_extraction.h"
@@ -31,14 +24,7 @@ inline void InitModuleList() {
   AddModule<Echo>();
 
   // botmanage
-  AddModule<SV>();
-  AddModule<Help>();
-  AddModule<StatusInfo>();
-  AddModule<FeedBack>();
-  AddModule<FriendInvite>();
-  AddModule<GroupInvite>();
-  AddModule<BandedOrKicked>();
-  AddModule<Dismiss>();
+  AddModule<BotManage>();
 
   // tencentcloud_nlp
   AddModule<AutoSummarization>();

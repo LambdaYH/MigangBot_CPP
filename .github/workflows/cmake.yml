@@ -33,14 +33,6 @@ jobs:
         sudo apt update 
         sudo apt install default-libmysqlclient-dev libopencv-dev uuid-dev libssl-dev libcurl4-openssl-dev ninja-build libtool -y
       
-    - name: tencentcloud-sdk-cpp
-      run: | 
-          git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git
-          cd tencentcloud-sdk-cpp
-          mkdir build && cd build
-          cmake -DBUILD_SHARED_LIBS=off -DBUILD_MODULES="nlp" ..
-          make && sudo make install
-
     - name: gumbo-parser
       run: | 
           git clone https://github.com/google/gumbo-parser.git

@@ -7,8 +7,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     add_compile_options(-fdiagnostics-color=always)
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -88,8 +86,8 @@ add_subdirectory(third-party/cocoyaxi)
 # tencentcloud-sdk-cpp
 set(BUILD_MODULES CACHE INTERNAL "nlp")
 set(Tencentcloud-sdk-cpp_LIBS
-    tencentcloud-sdk-cpp-nlp
-    tencentcloud-sdk-cpp-core
+    ${CMAKE_SOURCE_DIR}/libs/libtencentcloud-sdk-cpp-nlp.a
+    ${CMAKE_SOURCE_DIR}/libs/libtencentcloud-sdk-cpp-core.a
     crypto
     curl
     uuid
@@ -103,7 +101,8 @@ add_executable(${PROJECT_NAME}
                 third-party/cpp-base64/base64.cpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
-                            source 
+source 
+                            third-party/include
                             third-party/cpp-base64
                             third-party/cocoyaxi/include
                             ${CMAKE_BINARY_DIR}/third-party/libhv/include

@@ -288,7 +288,7 @@ class Scheduler {
 
       // for all tasks that have been triggered
       for (auto i = tasks.begin(); i != end_of_tasks_to_run; ++i) {
-        auto &task_weak = (*i).second;
+        auto task_weak = std::move(i->second);
         auto task = task_weak.lock();
         if (!task) continue;
         if (task->interval) {

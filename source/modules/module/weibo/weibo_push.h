@@ -119,7 +119,6 @@ inline void Weibo::WeiboPuller() {
   for (auto &[name, spiders] : spiders_) {
     std::vector<std::string> weibos;
     for (auto &spider : spiders) {
-      std::vector<std::pair<std::string, std::string>> formatted_wb;
       auto lastest_wb = spider.GetLastestWeibos();
       for (auto &wb : lastest_wb)
         std::transform(lastest_wb.begin(), lastest_wb.end(),

@@ -1,5 +1,5 @@
-#ifndef MIGANGBOT_MODULES_PLUGIN_INTERFACE_H_
-#define MIGANGBOT_MODULES_PLUGIN_INTERFACE_H_
+#ifndef MIGANGBOT_MODULES_MODULE_INTERFACE_H_
+#define MIGANGBOT_MODULES_MODULE_INTERFACE_H_
 
 #include <filesystem>
 #include <fstream>
@@ -72,6 +72,11 @@ class Module {
  private:
   const std::string config_file_;
   const std::string config_example_;
+};
+
+class ModulePack {
+ public:
+  virtual void Register() = 0;
 };
 
 }  // namespace module
