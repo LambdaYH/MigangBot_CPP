@@ -39,7 +39,7 @@ class ScheduleService : public Service {
   ScheduleService(const std::string &service_name,
                   const std::string &description, const int manage_permission,
                   const bool enable_on_default = true)
-      : Service(service_name, description, manage_permission,
+      : Service(service_name, "通用定时", description, manage_permission,
                 enable_on_default) {}
 
   ScheduleService(const std::string &service_name, const int manage_permission,

@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "aiorequests.h"
+#include "tools/aiorequests.h"
 #include "global_config.h"
 #include "modules/module/eorzea_zhanbu/zhanbu_recorder.h"
 #include "modules/module/eorzea_zhanbu/zhanbu_utils.h"

@@ -70,11 +70,11 @@ add_subdirectory(third-party/hiredis)
 # pugixml
 add_subdirectory(third-party/pugixml)
 
-# tidy-html5
-add_subdirectory(third-party/tidy-html5)
-
 # gumbo-query
 add_subdirectory(third-party/gumbo-query)
+
+# libxml2
+add_subdirectory(third-party/libxml2)
 
 # pcre2 (for fast regex)
 set(PCRE2_SUPPORT_JIT ON CACHE INTERNAL "")
@@ -101,7 +101,7 @@ add_executable(${PROJECT_NAME}
                 third-party/cpp-base64/base64.cpp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
-source 
+                            source 
                             third-party/include
                             third-party/cpp-base64
                             third-party/cocoyaxi/include
@@ -130,7 +130,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         pcre2-8-static
                         gumbo_query_static
                         libgumbo.a
-                        tidy-static
+                        LibXml2
 )
 
 IF(BUILD_TEST)

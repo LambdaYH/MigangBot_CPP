@@ -5,13 +5,13 @@
 
 #include <nlohmann/json.hpp>
 #include <fmt/format.h>
-#include <pugixml.hpp>
 #include <co/hash.h>
 
 #include "logger/logger.h"
 #include "message/utility.h"
 #include "utility.h"
-#include "aiorequests.h"
+#include "tools/aiorequests.h"
+#include "tools/libxml2_white/html_doc.h"
 
 constexpr auto kHttpPrefix = "https";
 
@@ -45,17 +45,6 @@ inline Json GetUserInfo(const std::string &user_id) {
   return Json{};
 }
 
-struct XmlAllText : pugi::xml_tree_walker {
-  XmlAllText(std::string &str) : ret(str) {}
-  virtual bool for_each(pugi::xml_node &node) {
-    ret += node.value();
-    return true;
-  }
-
- private:
-  std::string &ret;
-};
-
 inline std::time_t ParseTime(const std::string &expr) {
   std::tm tm{}; // 局部变量不默认初始化为0
   std::stringstream(expr) >> std::get_time(&tm, "%a %b %d %H:%M:%S +0800 %Y");
@@ -63,35 +52,21 @@ inline std::time_t ParseTime(const std::string &expr) {
 }
 
 inline std::string GetText(const std::string &text_body) {
-  struct HandleUrl : pugi::xml_tree_walker {
-    virtual bool for_each(pugi::xml_node &node) {
-      if (!node.attribute("href").empty()) {
-        auto url = fastring(node.attribute("href").value());
-        auto text_node =
-            node.find_child_by_attribute("class", "surl-text").first_child();
-        if (!std::string_view(text_node.value()).starts_with('#') &&
+  HtmlDoc doc;
+  doc.LoadFromString(text_body);
+  for(auto &node : doc.GetRootElement().FindChildrenByAttribute("class", "surl-text")) {
+    auto url = fastring(node.Parent().GetAtrribute("href"));
+    auto value = node.Child().Content();
+    if (!std::string_view(value).starts_with('#') &&
             (url.starts_with("https://weibo.cn/sinaurl?u=") ||
              url.starts_with("https://video.weibo.com"))) {
-          text_node.set_value(
+          node.Child().SetContent(
               fmt::format(
-                  "{}({})", text_node.value(),
-                  url_decode(url.replace("https://weibo.cn/sinaurl?u=", ""))
-                      .c_str())
-                  .c_str());
+                  "{}({})", value,
+                  url_decode(url.replace("https://weibo.cn/sinaurl?u=", "")).c_str()));
         }
-      }
-      return true;
-    }
-  };
-  pugi::xml_document doc;
-  auto html = html::CleanHTML(text_body);
-  doc.load_buffer(html.c_str(), html.size(), pugi::parse_ws_pcdata);
-  HandleUrl handle_url;
-  doc.child("html").child("body").traverse(handle_url);
-  std::string ret;
-  XmlAllText walker(ret);
-  doc.child("html").child("body").traverse(walker);
-  return html::unescape(message::Strip(ret, '\n'));
+  }
+  return html::unreliable_decode(doc.GetAllText());
 }
 
 inline Json GetPics(const Json &weibo_info) {
@@ -126,6 +101,10 @@ inline Json ParseWeibo(const Json &weibo_info) {
   weibo["id"] = weibo_info["id"].get<std::string>();
   // weibo["bid"] = weibo_info["bid"].get<std::string>();
   auto text_body = weibo_info["text"].get<std::string>();
+  ReplaceAll(text_body, "\u200b", "");
+  ReplaceAll(text_body, "<br/>", "\n");
+  ReplaceAll(text_body, "<br />", "\n");
+  ReplaceAll(text_body, "&", "&amp;");
   weibo["text"] = GetText(text_body);
   weibo["pics"] = GetPics(weibo_info);
   weibo["video_poster"] = GetVideoInfo(weibo_info);
@@ -137,6 +116,11 @@ inline Json GetLongWeibo(const std::string &id) {
   for (std::size_t i = 0; i < 5; ++i) {
     auto r = aiorequests::Get(
         fmt::format("{}://m.weibo.cn/detail/{}", kHttpPrefix, id), 15);
+    if(!r)
+    {
+      co::sleep(1000);
+      continue;
+    }
     auto html = r->Body();
     std::string_view html_view(html);
     auto pos_start = html_view.find("\"status\":");

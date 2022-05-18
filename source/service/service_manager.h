@@ -5,6 +5,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
+
 #include "type.h"
 #include <service/service.h>
 #include <service/triggered_service.h>
@@ -19,8 +21,7 @@ class ServiceManager {
   }
 
  public:
-  bool CheckService(const std::string &service_name)
-  {
+  bool CheckService(const std::string &service_name) {
     return service_name_map_.contains(service_name);
   }
 
@@ -52,18 +53,38 @@ class ServiceManager {
 
   void RegisterService(std::shared_ptr<Service> service) {
     service_name_map_.emplace(service->GetServiceName(), service);
+    package_service_map_[service->GetPackageName()].emplace(
+        service->GetServiceName(), service);
   }
 
-  auto GetServiceList(){
+  auto GetServiceList() {
     std::vector<std::pair<std::string, std::string>> ret;
-    for(auto &[name, sv] : service_name_map_)
+    for (auto &[name, sv] : service_name_map_)
       ret.emplace_back(name, sv->GetDescription());
     return ret;
   }
 
-  auto GetServiceList(GId group_id){
+  auto GetServiceList(GId group_id) {
     std::vector<std::tuple<std::string, std::string, bool>> ret;
-    for(auto &[name, sv] : service_name_map_)
+    for (auto &[name, sv] : service_name_map_)
+      ret.emplace_back(name, sv->GetDescription(), sv->GroupStatus(group_id));
+    return ret;
+  }
+
+  std::vector<std::pair<std::string, std::string>> GetPackageService(
+      const std::string &pacakge_name) {
+    if (!package_service_map_.count(pacakge_name)) return {};
+    std::vector<std::pair<std::string, std::string>> ret;
+    for (auto &[name, sv] : package_service_map_.at(pacakge_name))
+      ret.emplace_back(name, sv->GetDescription());
+    return ret;
+  }
+
+  std::vector<std::tuple<std::string, std::string, bool>> GetPackageService(
+      const std::string &pacakge_name, GId group_id) {
+    if (!package_service_map_.count(pacakge_name)) return {};
+    std::vector<std::tuple<std::string, std::string, bool>> ret;
+    for (auto &[name, sv] : package_service_map_.at(pacakge_name))
       ret.emplace_back(name, sv->GetDescription(), sv->GroupStatus(group_id));
     return ret;
   }
@@ -79,7 +100,10 @@ class ServiceManager {
   ~ServiceManager() {}
 
  private:
-  std::multimap<const std::string, std::shared_ptr<Service>> service_name_map_;
+  std::unordered_map<std::string,
+                     std::multimap<std::string, std::shared_ptr<Service>>>
+      package_service_map_;
+  std::multimap<std::string, std::shared_ptr<Service>> service_name_map_;
 };
 }  // namespace white
 

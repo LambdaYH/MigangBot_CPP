@@ -19,7 +19,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgproc/imgproc_c.h>
 
-#include "aiorequests.h"
+#include "tools/aiorequests.h"
 #include "event/event.h"
 #include "global_config.h"
 #include "logger/logger.h"

@@ -20,9 +20,11 @@
 namespace white {
 class Service {
  public:
-  Service(const std::string &service_name, const std::string &description,
-          const int manage_permission, const bool enable_on_default = true)
+  Service(const std::string &service_name, const std::string &package_name,
+          const std::string &description, const int manage_permission,
+          const bool enable_on_default = true)
       : service_name_(service_name),
+        package_name_(package_name),
         description_(description),
         manage_permission_(manage_permission),
         enable_on_default_(enable_on_default),
@@ -34,6 +36,7 @@ class Service {
 
  public:
   const std::string &GetServiceName() const noexcept { return service_name_; }
+  const std::string &GetPackageName() const noexcept { return package_name_; }
   const std::string &GetDescription() const noexcept { return description_; }
   const int Permission() const noexcept { return manage_permission_; };
 
@@ -70,8 +73,7 @@ class Service {
 
  protected:
   void LoadConfig() {
-    if(manage_permission_ == permission::ALWAYS_ON)
-      return;
+    if (manage_permission_ == permission::ALWAYS_ON) return;
     if (!std::filesystem::exists(config_path_)) {
       config_["enable_on_default"] = enable_on_default_;
       config_["groups"] = R"([])"_json;
@@ -96,8 +98,11 @@ class Service {
   std::mutex mutex_;
   std::unordered_set<GId> groups_;
 
- private:
   const std::string service_name_;
+
+ private:
+  const std::string package_name_;
+
   const std::string description_;
 
   const std::string config_path_;

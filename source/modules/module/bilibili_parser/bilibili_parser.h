@@ -13,7 +13,7 @@
 #include "Document.h"
 #include "Node.h"
 
-#include "aiorequests.h"
+#include "tools/aiorequests.h"
 #include "database/redis_wrapper.h"
 #include "event/type.h"
 #include "logger/logger.h"
