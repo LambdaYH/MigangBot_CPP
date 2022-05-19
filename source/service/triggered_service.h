@@ -28,7 +28,7 @@ class TriggeredService : public Service {
                    const int use_permission, const int manage_permission,
                    const bool enable_on_default = true,
                    const bool only_to_me = false)
-      : Service(service_name, "通用", description, manage_permission,
+      : Service(service_name, description, manage_permission,
                 enable_on_default),
         func_(new onebot11::FunctionForPlugin(std::forward<Func>(func))),
         use_permission_(use_permission),

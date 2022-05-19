@@ -20,11 +20,9 @@
 namespace white {
 class Service {
  public:
-  Service(const std::string &service_name, const std::string &package_name,
-          const std::string &description, const int manage_permission,
-          const bool enable_on_default = true)
+  Service(const std::string &service_name, const std::string &description,
+          const int manage_permission, const bool enable_on_default = true)
       : service_name_(service_name),
-        package_name_(package_name),
         description_(description),
         manage_permission_(manage_permission),
         enable_on_default_(enable_on_default),
@@ -36,7 +34,6 @@ class Service {
 
  public:
   const std::string &GetServiceName() const noexcept { return service_name_; }
-  const std::string &GetPackageName() const noexcept { return package_name_; }
   const std::string &GetDescription() const noexcept { return description_; }
   const int Permission() const noexcept { return manage_permission_; };
 
@@ -101,8 +98,6 @@ class Service {
   const std::string service_name_;
 
  private:
-  const std::string package_name_;
-
   const std::string description_;
 
   const std::string config_path_;
