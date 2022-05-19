@@ -20,12 +20,11 @@ class Echo : public Module {
 
 inline void Echo::Register() {
   OnPrefix({"/echo", "/回声"}, "__echo__", ACT_InClass(Echo::DoEcho));
-  OnPrefix({".echo", "。回声"}, "__echo_at__", ACT_InClass(Echo::DoEcho), true);
 }
 
 inline void Echo::DoEcho(const Event &event, onebot11::ApiBot &bot) {
   auto text = message::ExtraPlainText(event);
-  auto ret = bot.send(event, text).Ret();
+  bot.send(event, text);
 }
 
 }  // namespace module

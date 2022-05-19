@@ -95,7 +95,7 @@ inline bool EventHandler::RegisterCommand(
       return command_prefix_.Insert(command, service);
       break;
     case SUFFIX:
-      return command_suffix_.Insert(command, service);
+      return command_suffix_.InsertFromBack(command, service);
       break;
     case ALLMSG:
       all_msg_handler_.push_back(service);
@@ -188,14 +188,14 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
-              auto &service = command_prefix_.Search(message, event);
+              auto &service = command_prefix_.LongestPrefix(message, event);
               if (service && service->CheckIsEnable(group_id) &&
                   service->CheckPerm(perm) &&
                   service->CheckToMe(event.contains("__to_me__")))
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
-              auto &service = command_suffix_.SearchFromBack(message, event);
+              auto &service = command_suffix_.LongestSuffix(message, event);
               if (service && service->CheckIsEnable(group_id) &&
                   service->CheckPerm(perm) &&
                   service->CheckToMe(event.contains("__to_me__")))
@@ -225,13 +225,14 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
-              const auto &service = command_prefix_.Search(message, event);
+              const auto &service =
+                  command_prefix_.LongestPrefix(message, event);
               if (service && service->CheckPerm(perm))
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
               const auto &service =
-                  command_suffix_.SearchFromBack(message, event);
+                  command_suffix_.LongestSuffix(message, event);
               if (service && service->CheckPerm(perm))
                 go([&service, event, &bot] { service->Run(event, bot); });
             }

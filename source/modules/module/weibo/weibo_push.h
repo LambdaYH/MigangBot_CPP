@@ -133,10 +133,9 @@ inline void Weibo::WeiboPuller() {
       else
         LOG_INFO("weibo: 未检测到@{}的新微博", spider.GetUserName());
     }
-    for (auto &weibo : weibos) {
-      auto bots = Bots();
-      for (auto bot : bots) svs_.at(name)->BroadCast(bot, weibo, 0.5 * 1000);
-    }
+    auto bots = Bots();
+    for (auto bot : bots)
+      svs_.at(name)->BroadCast(bot, weibos.begin(), weibos.end(), 0.5 * 1000);
   }
   LOG_INFO("微博抓取结束");
 }

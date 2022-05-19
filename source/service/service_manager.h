@@ -50,11 +50,6 @@ class ServiceManager {
     return ret;
   }
 
-  void RegisterService(std::shared_ptr<Service> service) {
-    service_name_map_.emplace(service->GetServiceName(), service);
-    bundle_service_map_["通用"].emplace(service->GetServiceName(), service);
-  }
-
   void RegisterService(const std::string &bundle_name,
                        std::shared_ptr<Service> service) {
     service_name_map_.emplace(service->GetServiceName(), service);

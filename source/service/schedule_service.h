@@ -59,12 +59,26 @@ class ScheduleService : public Service {
                         enable_on_default) {}
 
  public:
-  void BroadCast(onebot11::ApiBot *bot, const std::string &message,
+  template <typename Str>
+  void BroadCast(onebot11::ApiBot *bot, Str &&message,
                  const std::time_t interval_ms) {
     auto group_to_send = GetEnableGroup(bot);
     for (auto group : group_to_send) {
-      bot->send_group_msg(group, message);
+      bot->send_group_msg(group, std::forward<Str>(message));
       co::sleep(interval_ms);
+    }
+  }
+
+  template <class InputIt>
+  void BroadCast(onebot11::ApiBot *bot, InputIt start, InputIt end,
+                 const std::time_t interval_ms) {
+    auto group_to_send = GetEnableGroup(bot);
+    while (start != end) {
+      for (auto group : group_to_send) {
+        bot->send_group_msg(group, *start);
+        co::sleep(interval_ms);
+      }
+      ++start;
     }
   }
 
