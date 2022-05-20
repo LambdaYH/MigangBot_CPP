@@ -124,13 +124,13 @@ inline std::string GetFromCache(const std::string &url) {
 }
 
 inline std::string GetRealUrl(const std::string &url) {
-  auto r = aiorequests::Get(url, 15);
+  auto r = aiorequests::Get(url, 15).get();
   if (HTTP_STATUS_IS_REDIRECT(r->status_code)) return r->GetHeader("location");
   return url;
 }
 
 inline Json BilibiliParser::GetJson(const std::string &url) {
-  auto r = aiorequests::Get(url, 15, header_);
+  auto r = aiorequests::Get(url, 15, header_).get();
   if (!r) return Json();
   return r->GetJson();
 }
@@ -195,7 +195,7 @@ inline std::string BilibiliParser::GetBilibiliBangumiDetail(
     AddInCacheNotRepeat(url, group_id);
     return cache;
   }
-  auto r = aiorequests::Get(url, 15, header_);
+  auto r = aiorequests::Get(url, 15, header_).get();
   if (!r) {
     LOG_WARN("BilibiliParser: 无法解析Bangumi: {}", url);
     return "";

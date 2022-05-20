@@ -71,22 +71,34 @@ class ServiceManager {
     return ret;
   }
 
-  std::vector<std::pair<std::string, std::string>> GetPackageService(
-      const std::string &pacakge_name) {
-    if (!bundle_service_map_.count(pacakge_name)) return {};
+  std::vector<std::pair<std::string, std::string>> GetBundleService(
+      const std::string &bundle_name) {
+    if (!bundle_service_map_.contains(bundle_name)) return {};
     std::vector<std::pair<std::string, std::string>> ret;
-    for (auto &[name, sv] : bundle_service_map_.at(pacakge_name))
+    for (auto &[name, sv] : bundle_service_map_.at(bundle_name))
       ret.emplace_back(name, sv->GetDescription());
     return ret;
   }
 
-  std::vector<std::tuple<std::string, std::string, bool>> GetPackageService(
-      const std::string &pacakge_name, GId group_id) {
-    if (!bundle_service_map_.count(pacakge_name)) return {};
+  std::vector<std::tuple<std::string, std::string, bool>> GetBundleService(
+      const std::string &bundle_name, GId group_id) {
+    if (!bundle_service_map_.contains(bundle_name)) return {};
     std::vector<std::tuple<std::string, std::string, bool>> ret;
-    for (auto &[name, sv] : bundle_service_map_.at(pacakge_name))
+    for (auto &[name, sv] : bundle_service_map_.at(bundle_name))
       ret.emplace_back(name, sv->GetDescription(), sv->GroupStatus(group_id));
     return ret;
+  }
+
+  std::vector<std::string> GetBundleList(){
+    std::vector<std::string> ret;
+    ret.reserve(bundle_service_map_.size());
+    for(auto &[name, _] : bundle_service_map_)
+      ret.push_back(name);
+    return ret;
+  }
+
+  bool CheckBundle(const std::string &bundle_name) {
+    return bundle_service_map_.contains(bundle_name);
   }
 
  public:

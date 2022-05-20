@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include "event/Registrar.h"
 #include "fmt/core.h"
 #include "global_config.h"
@@ -8,9 +7,11 @@
 #include "message/utility.h"
 #include "modules/module_interface.h"
 #include "permission/permission.h"
+#include "service/service.h"
 #include "service/service_manager.h"
 #include "type.h"
 #include "utility.h"
+#include "modules/module/botmanage/sv.h"
 
 namespace white {
 namespace module {
@@ -21,9 +22,10 @@ const std::array<std::string, 9> permission_str{
     "黑名单", "通常",   "私聊", "群成员",  "群管理员",
     "群主",   "白名单", "白",   "法外之地"};
 
-void HandleEnableSv(const Event &event, onebot11::ApiBot &bot);
-void HandleDisableSv(const Event &event, onebot11::ApiBot &bot);
-void HandleListSv(const Event &event, onebot11::ApiBot &bot);
+inline void HandleEnableSv(const Event &event, onebot11::ApiBot &bot);
+inline void HandleDisableSv(const Event &event, onebot11::ApiBot &bot);
+inline void HandleListSv(const Event &event, onebot11::ApiBot &bot);
+inline void HandleListSvBundle(const Event &event, onebot11::ApiBot &bot);
 
 }  // namespace sv
 
@@ -31,15 +33,21 @@ class SV : public Module {
  public:
   SV() : Module() {}
   virtual void Register() override {
-    OnPrefix({"启用", "enable"}, make_pair("__sv_control_enable__", "服务管理"), "启用特定服务",
-             ACT_OutClass(sv::HandleEnableSv), permission::GROUP_MEMBER,
-             permission::ALWAYS_ON);
-    OnPrefix({"禁用", "disable"}, make_pair("__sv_control_disable__", "服务管理"), "禁用特定服务",
+    OnPrefix({"启用", "enable"}, make_pair("__sv_control_enable__", "服务管理"),
+             "启用特定服务", ACT_OutClass(sv::HandleEnableSv),
+             permission::GROUP_MEMBER, permission::ALWAYS_ON);
+    OnPrefix({"禁用", "disable"},
+             make_pair("__sv_control_disable__", "服务管理"), "禁用特定服务",
              ACT_OutClass(sv::HandleDisableSv), permission::GROUP_MEMBER,
              permission::ALWAYS_ON);
-    OnFullmatch({"服务列表", "lssv", "列举服务"}, make_pair("__lssv__", "服务管理"), "列举各类服务列表",
+    OnFullmatch({"服务列表", "lssv", "列举服务"},
+                make_pair("__lssv__", "服务管理"), "列举各类服务列表",
                 ACT_OutClass(sv::HandleListSv), permission::NORMAL,
                 permission::SUPERUSER);
+    OnPrefix({"服务包列表", "lsb", "列举服务包"},
+             make_pair("__lssv_bundle__", "服务管理"), "列举服务包",
+             ACT_OutClass(sv::HandleListSvBundle), permission::NORMAL,
+             permission::SUPERUSER);
   }
 };
 
@@ -123,6 +131,52 @@ inline void HandleListSv(const Event &event, onebot11::ApiBot &bot) {
   msg.pop_back();
   msg.pop_back();
   bot.send(event, message_segment::image(TextToImg(msg)));
+}
+
+inline void HandleListSvBundle(const Event &event, onebot11::ApiBot &bot) {
+  auto option = message::Strip(message::ExtraPlainText(event));
+  if (option.empty()) {
+    std::string msg = "以下为所有可用包\n=====================\n";
+    auto bundle_list = ServiceManager::GetInstance().GetBundleList();
+    for (auto &bundle : bundle_list) {
+      auto service_in_bundle =
+          ServiceManager::GetInstance().GetBundleService(bundle);
+      for (auto &[name, _] : service_in_bundle)
+        if (!name.empty() && name[0] != '_') {
+          msg += "[" + bundle + "]\n";
+          break;
+        }
+    }
+    msg += "发送[lsb 包名]来查看包内的服务列表";
+    bot.send(event, message_segment::image(TextToImg(msg)));
+  } else {
+    if (!ServiceManager::GetInstance().CheckBundle(option)) {
+      bot.send(event,
+               fmt::format("不存在名为[{}]的服务包，请发送[lsb]查看可用包列表",
+                           option));
+      return;
+    }
+    std::string msg = fmt::format(
+        "以下为包[{}]中可用服务以及启用情况\n=====================\n", option);
+    if (event.contains("group_id")) {
+      auto service_in_bundle = ServiceManager::GetInstance().GetBundleService(
+          option, event["group_id"].get<GId>());
+      for (auto &[name, description, status] : service_in_bundle)
+        if (!name.empty() && name[0] != '_')
+          msg += fmt::format("[{}] {}: {}\n\n", status ? "✓" : "×", name,
+                             description.empty() ? "无简介" : description);
+    } else {
+      auto service_in_bundle =
+          ServiceManager::GetInstance().GetBundleService(option);
+      for (auto &[name, description] : service_in_bundle)
+        if (!name.empty() && name[0] != '_')
+          msg += fmt::format("{}: {}\n\n", name,
+                             description.empty() ? "无简介" : description);
+    }
+    msg.pop_back();
+    msg.pop_back();
+    bot.send(event, message_segment::image(TextToImg(msg)));
+  }
 }
 
 }  // namespace sv

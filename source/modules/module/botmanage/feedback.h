@@ -25,15 +25,15 @@ class FeedBack : public Module {
              ACT_InClass(FeedBack::Send), permission::NORMAL,
              permission::SUPERUSER);
     OnPrefix({".reply", "。reply"},
-             make_pair("__feedback_reply__",
-                       "对特定ID的留言予以回复，格式[.reply id message]"),
+             make_pair("__feedback_reply__", "机器人管理"),
+             "对特定ID的留言予以回复，格式[.reply id message]",
              ACT_InClass(FeedBack::Reply), permission::SUPERUSER,
              permission::SUPERUSER);
     OnPrefix({".feedbacklist", "。feedbacklist"},
              make_pair("__feedback_feedbacklist__", "机器人管理"),
-             "显示出特定ID的留言记录，格式[.feedbacklist id]", ACT_InClass(
-                 FeedBack::List),
-             permission::SUPERUSER, permission::SUPERUSER);
+             "显示出特定ID的留言记录，格式[.feedbacklist id]",
+             ACT_InClass(FeedBack::List), permission::SUPERUSER,
+             permission::SUPERUSER);
   }
 
  private:

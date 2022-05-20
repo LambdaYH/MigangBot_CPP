@@ -55,7 +55,8 @@ class co_future {
   }
 
  private:
-  co_future(std::shared_ptr<shared_state<T>> state) : state_(std::move(state)) {}
+  co_future(std::shared_ptr<shared_state<T>> state)
+      : state_(std::move(state)) {}
 
  private:
   std::shared_ptr<shared_state<T>> state_;

@@ -1,4 +1,7 @@
 #include "modules/module/botmanage/help.h"
+#include "message/utility.h"
+#include "modules/module/botmanage/sv.h"
+#include "service/service_manager.h"
 
 namespace white {
 namespace module {
@@ -17,9 +20,7 @@ Help::Help()
 }
 
 void Help::HelpMsg(const Event &event, onebot11::ApiBot &bot) {
-  auto msg = message::ExtraPlainText(event);
-  auto text = std::string_view(msg);
-  message::Strip(text, ' ');
+  auto text = message::Strip(message::ExtraPlainText(event));
   auto message_type = event["message_type"].get<std::string>();
   if (text.size() == 0) {
     if (message_type[0] == 'g')
@@ -33,7 +34,11 @@ void Help::HelpMsg(const Event &event, onebot11::ApiBot &bot) {
     else
       bot.send(event,
                    message_segment::image(TextToImg(help_msg_friend_others_)));
-  } else if (custom_help_keyword_.count(std::string(text))) {
+  }else if(ServiceManager::GetInstance().CheckBundle(text)) 
+  {
+    sv::HandleListSvBundle(event, bot);
+  }
+  else if (custom_help_keyword_.count(text)) {
     auto content =
         config_["自定义"][std::string(text)]["内容"].as<std::string>();
     bool is_send_in_image =

@@ -43,13 +43,13 @@ inline std::string GetMemoryStatus() {
 
 inline std::string GetNetworkStatus() {
   int baidu_status, google_status;
-  auto resp_baidu = aiorequests::Get("https://www.baidu.com", 5);
+  auto resp_baidu = aiorequests::Get("https://www.baidu.com", 5).get();
   if (!resp_baidu)
     baidu_status = 404;
   else
     baidu_status = resp_baidu->status_code;
 
-  auto resp_google = aiorequests::Get("https://www.google.com", 5);
+  auto resp_google = aiorequests::Get("https://www.google.com", 5).get();
   if (!resp_google)
     google_status = 404;
   else

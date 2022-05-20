@@ -17,23 +17,25 @@ using requests::Request;
 using requests::Response;
 using requests::ResponseCallback;
 
-inline Response aiorequest(Request req) {
-  hv::HttpClient cli;
-  co_promise<Response> promise;
-  cli.sendAsync(req, [&promise](const Response& resp) {
+static hv::HttpClient cli;
+
+inline co_future<Response> aiorequest(Request &&req) {
+  auto promise = std::make_shared<co_promise<Response>>();
+  auto ret = promise->get_future();
+  cli.sendAsync(req, [promise = std::move(promise)](const Response& resp) {
     if (resp == NULL)
-      promise.set_value(Response());
+      promise->set_value(Response());
     else
-      promise.set_value(resp);
+      promise->set_value(resp);
   });
-  return promise.get_future().get();
+  return ret;
 }
 
-inline Response aiorequest(http_method method, const char* url,
+inline co_future<Response> aiorequest(http_method method, const char* url,
                            const std::size_t timeout = 30,
                            const http_body& body = NoBody,
                            const http_headers& headers = DefaultHeaders) {
-  Request req(new HttpRequest);
+  auto req = std::make_shared<HttpRequest>();
   req->method = method;
   req->url = url;
   req->timeout = timeout;
@@ -43,15 +45,15 @@ inline Response aiorequest(http_method method, const char* url,
   if (&headers != &DefaultHeaders) {
     req->headers = headers;
   }
-  return aiorequest(req);
+  return aiorequest(std::move(req));
 }
 
-inline Response Get(const std::string& url, std::size_t timeout = 30,
+inline co_future<Response> Get(const std::string& url, std::size_t timeout = 30,
                     const http_headers& headers = DefaultHeaders) {
   return aiorequest(HTTP_GET, url.c_str(), timeout, NoBody, headers);
 }
 
-inline Response Post(const std::string& url, std::size_t timeout = 30,
+inline co_future<Response> Post(const std::string& url, std::size_t timeout = 30,
                      const http_body& body = NoBody,
                      const http_headers& headers = DefaultHeaders) {
   return aiorequest(HTTP_POST, url.c_str(), timeout, body, headers);

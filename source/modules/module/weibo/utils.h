@@ -25,7 +25,8 @@ inline Json GetJson(const std::string &params) {
   auto r =
       aiorequests::Get(fmt::format("{}://m.weibo.cn/api/container/getIndex?{}",
                                    kHttpPrefix, params),
-                       15);
+                       15)
+          .get();
   return r->GetJson();
 }
 
@@ -115,7 +116,7 @@ inline Json ParseWeibo(const Json &weibo_info) {
 inline Json GetLongWeibo(const std::string &id) {
   for (std::size_t i = 0; i < 5; ++i) {
     auto r = aiorequests::Get(
-        fmt::format("{}://m.weibo.cn/detail/{}", kHttpPrefix, id), 15);
+        fmt::format("{}://m.weibo.cn/detail/{}", kHttpPrefix, id), 15).get();
     if (!r) {
       co::sleep(1000);
       continue;
