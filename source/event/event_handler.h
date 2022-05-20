@@ -188,14 +188,14 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
-              auto &service = command_prefix_.LongestPrefix(message, event);
+              const auto &service = command_prefix_.LongestPrefix(message, event);
               if (service && service->CheckIsEnable(group_id) &&
                   service->CheckPerm(perm) &&
                   service->CheckToMe(event.contains("__to_me__")))
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
-              auto &service = command_suffix_.LongestSuffix(message, event);
+              const auto &service = command_suffix_.LongestSuffix(message, event);
               if (service && service->CheckIsEnable(group_id) &&
                   service->CheckPerm(perm) &&
                   service->CheckToMe(event.contains("__to_me__")))

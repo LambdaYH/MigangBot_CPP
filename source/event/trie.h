@@ -50,7 +50,7 @@ class Trie {
   };
 
  private:
-  template <bool Is_NegSize, typename It>
+  template <bool Is_From_Back, typename It>
   bool InsertImpl(It &&start, It &&end,
                   std::shared_ptr<TriggeredService> &&service) noexcept;
 
