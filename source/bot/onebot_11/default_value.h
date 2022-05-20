@@ -19,6 +19,8 @@ inline T DefaultValue() {
     return {0, "", "", 0};
   else if constexpr (std::is_same<T, std::vector<GroupInfo>>::value)
     return {};
+  else if constexpr (std::is_same<T, GroupMemberInfo>::value)
+    return GroupMemberInfo{};
 }
 }  // namespace onebot11
 }  // namespace white

@@ -27,6 +27,8 @@ namespace module {
 #define ACT_OutClass(func) \
   [](const Event &event, onebot11::ApiBot &bot) { func(event, bot); }
 
+using std::make_pair;
+
 using Config = YAML::Node;
 
 class Module {
@@ -74,7 +76,7 @@ class Module {
   const std::string config_example_;
 };
 
-class ModulePack {
+class ModuleBundle {
  public:
   virtual void Register() = 0;
 };

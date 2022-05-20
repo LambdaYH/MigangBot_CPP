@@ -14,9 +14,9 @@ class Dismiss : public Module {
  public:
   Dismiss() : Module() {}
   virtual void Register() override {
-    OnPrefix({".dismiss", "。dismiss"}, "__dismiss__",
-             ACT_InClass(Dismiss::HandleDismiss), permission::GROUP_ADMIN,
-             permission::SUPERUSER);
+    OnPrefix({".dismiss", "。dismiss"}, make_pair("__dismiss__", "机器人管理"),
+             "使用指令使机器人自助退群", ACT_InClass(Dismiss::HandleDismiss),
+             permission::GROUP_ADMIN, permission::SUPERUSER);
   }
 
  private:

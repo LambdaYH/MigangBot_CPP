@@ -16,7 +16,7 @@ class FutureWrapper {
   FutureWrapper(std::shared_ptr<std::promise<T>> &&p)
       : promise_(std::move(p)), future_(promise_->get_future()) {}
 
-  T Ret(std::size_t seconds = 30) {
+  T get(std::size_t seconds = 30) {
     auto status = future_.wait_for(std::chrono::seconds(seconds));
     switch (status) {
       case std::future_status::timeout:
@@ -40,7 +40,7 @@ class CoFutureWrapper {
   CoFutureWrapper(std::shared_ptr<co_promise<T>> &&p)
       : promise_(std::move(p)), future_(std::move(promise_->get_future())) {}
 
-  T Ret(uint32 ms = 30000) {
+  T get(uint32 ms = 30000) {
     auto status = future_.wait_for(ms);
     switch (status) {
       case co_future_status::timeout:

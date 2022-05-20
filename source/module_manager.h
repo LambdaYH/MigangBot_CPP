@@ -24,7 +24,7 @@ class ModuleManager {
       } catch (std::exception &e) {
         LOG_ERROR("加载[{}]时发生异常: {}", typeid(T).name(), e.what());
       }
-    } else if constexpr (std::is_base_of<module::ModulePack, T>::value) {
+    } else if constexpr (std::is_base_of<module::ModuleBundle, T>::value) {
       T().Register();
     }
   }

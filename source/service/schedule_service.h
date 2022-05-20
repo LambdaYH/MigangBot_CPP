@@ -88,7 +88,7 @@ class ScheduleService : public Service {
       std::lock_guard<std::mutex> locker(mutex_);
       return std::vector<GId>(groups_.begin(), groups_.end());
     }
-    auto groups = bot->get_group_list().Ret();
+    auto groups = bot->get_group_list().get();
     std::vector<GId> ret;
     {
       std::lock_guard<std::mutex> locker(mutex_);

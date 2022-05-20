@@ -65,7 +65,7 @@ class EorzeaZhanbu : public Module {
     }
   }
   virtual void Register() {
-    OnPrefix({"/zhanbu", "/占卜", "、占卜"}, "艾欧泽亚占卜",
+    OnPrefix({"/zhanbu", "/占卜", "、占卜"}, make_pair("艾欧泽亚占卜", "娱乐"),
              ACT_InClass(EorzeaZhanbu::Zhanbu));
   }
 
@@ -97,22 +97,22 @@ inline void EorzeaZhanbu::Zhanbu(const Event &event, onebot11::ApiBot &bot) {
   auto text = message::Strip(message::ExtraPlainText(event));
   if (!text.empty()) {
     auto msg_id = bot.send(event,
-                               eorzea_zhanbu::GetEventZhanbu(
-                                   event["user_id"].get<QId>(), text),
-                               true)
-                      .Ret();
+                           eorzea_zhanbu::GetEventZhanbu(
+                               event["user_id"].get<QId>(), text),
+                           true)
+                      .get();
     if (msg_id.message_id == 0)
-      bot.send(
-          event, *select_randomly(exception_msg_.begin(), exception_msg_.end()),
-          true);
+      bot.send(event,
+               *select_randomly(exception_msg_.begin(), exception_msg_.end()),
+               true);
   } else {
     auto msg_id =
         bot.send(event, GetEorzeaZhanbu(event["user_id"].get<QId>()), true)
-            .Ret();
+            .get();
     if (msg_id.message_id == 0)
-      bot.send(
-          event, *select_randomly(exception_msg_.begin(), exception_msg_.end()),
-          true);
+      bot.send(event,
+               *select_randomly(exception_msg_.begin(), exception_msg_.end()),
+               true);
   }
 }
 

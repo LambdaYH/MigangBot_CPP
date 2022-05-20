@@ -94,24 +94,27 @@ class StatusInfo : public Module {
 };
 
 inline void StatusInfo::Register() {
-  OnFullmatch({"/ping"}, "__ping__", ACT_InClass(StatusInfo::Ping), permission::NORMAL,
+  OnFullmatch({"/ping"}, make_pair("__ping__", "机器人管理"),
+              ACT_InClass(StatusInfo::Ping), permission::NORMAL,
               permission::SUPERUSER);
-  OnFullmatch({"status", "状态"}, "__status__", ACT_InClass(StatusInfo::Status),
+  OnFullmatch({"status", "状态"}, make_pair("__status__", "机器人管理"),
+              "显示主机硬件信息", ACT_InClass(StatusInfo::Status),
               permission::SUPERUSER, permission::SUPERUSER);
-  OnFullmatch({"network", "网络状况"}, "__network__", ACT_InClass(StatusInfo::Network),
-              permission::SUPERUSER, permission::SUPERUSER);
+  OnFullmatch({"network", "网络状况"}, make_pair("__network__", "机器人管理"),
+              ACT_InClass(StatusInfo::Network), permission::SUPERUSER,
+              permission::SUPERUSER);
 }
 
 inline void StatusInfo::Ping(const Event &event, onebot11::ApiBot &bot) {
   bot.send(event, fmt::format("[MigangBot]\n{}\n{}", GetCPUStatus(),
-                                  status_info::GetLatency(event)));
+                              status_info::GetLatency(event)));
 }
 
 inline void StatusInfo::Status(const Event &event, onebot11::ApiBot &bot) {
   bot.send(event, fmt::format("[MigangBot]\n{}\n{}\n{}\n{}",
-                                  status_info::GetDiskStatus(), GetCPUStatus(),
-                                  status_info::GetMemoryStatus(),
-                                  status_info::GetLatency(event)));
+                              status_info::GetDiskStatus(), GetCPUStatus(),
+                              status_info::GetMemoryStatus(),
+                              status_info::GetLatency(event)));
 }
 
 inline void StatusInfo::Network(const Event &event, onebot11::ApiBot &bot) {

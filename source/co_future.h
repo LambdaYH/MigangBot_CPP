@@ -21,7 +21,6 @@ struct shared_state {
   shared_state(bool is_complete) : is_complete_(is_complete) {}
 };
 
-// co_ promise must live longer than co_ future
 template <typename T>
 class co_future {
   friend class co_promise<T>;
@@ -46,9 +45,9 @@ class co_future {
   co_future(const co_future &) = delete;
   co_future &operator=(const co_future &) = delete;
 
-  co_future(co_future &&rhs) : state_(std::move(rhs.state_)) {}
+  co_future(co_future &&rhs) noexcept : state_(std::move(rhs.state_)) {}
 
-  co_future &operator=(co_future &&rhs) {
+  co_future &operator=(co_future &&rhs) noexcept {
     if (&rhs != this) {
       state_ = std::move(rhs.state_);
     }
@@ -56,10 +55,10 @@ class co_future {
   }
 
  private:
-  co_future(shared_state<T> *state) : state_(state) {}
+  co_future(std::shared_ptr<shared_state<T>> state) : state_(std::move(state)) {}
 
  private:
-  shared_state<T> *state_;
+  std::shared_ptr<shared_state<T>> state_;
 };
 
 template <typename T>
@@ -71,9 +70,9 @@ class co_promise {
   co_promise(const co_promise &) = delete;
   co_promise &operator=(const co_promise &) = delete;
 
-  co_promise(co_promise &&rhs) : state_(std::move(rhs.state_)) {}
+  co_promise(co_promise &&rhs) noexcept : state_(std::move(rhs.state_)) {}
 
-  co_promise &operator=(co_promise &&rhs) {
+  co_promise &operator=(co_promise &&rhs) noexcept {
     if (&rhs != this) {
       this->state_ = std::move(rhs.state_);
     }
@@ -81,7 +80,7 @@ class co_promise {
   }
 
  public:
-  co_future<T> get_future() { return co_future<T>(state_.get()); }
+  co_future<T> get_future() { return co_future<T>(state_); }
 
   void set_value(const T &value) {
     state_->value_ = value;
@@ -107,7 +106,7 @@ class co_promise {
   }
 
  private:
-  std::unique_ptr<shared_state<T>> state_;
+  std::shared_ptr<shared_state<T>> state_;
 };
 
 }  // namespace white

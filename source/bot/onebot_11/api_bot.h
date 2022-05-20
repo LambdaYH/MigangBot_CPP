@@ -67,6 +67,10 @@ class ApiBot {
 
   CoFutureWrapper<std::vector<GroupInfo>> get_group_list(bool no_cache = false);
 
+  CoFutureWrapper<GroupMemberInfo> get_group_member_info(const GId gid,
+                                                         const QId uid,
+                                                         bool no_cache = false);
+
   CoFutureWrapper<UserInfo> get_stranger_info(const QId user_id,
                                               bool no_cache = false);
 
@@ -155,7 +159,7 @@ inline std::string ApiBot::WaitForNextMessage(const Event &event) {
     }
   }
 
-  return CoFutureWrapper(std::move(p)).Ret();
+  return CoFutureWrapper(std::move(p)).get();
 }
 
 inline std::string ApiBot::WaitForNextMessageFrom(QId person) {
@@ -165,7 +169,7 @@ inline std::string ApiBot::WaitForNextMessageFrom(QId person) {
     std::lock_guard<std::mutex> locker(someone_need_message_mutex_[person]);
     someone_need_message_[person].push(std::weak_ptr(p));
   }
-  return CoFutureWrapper(std::move(p)).Ret();
+  return CoFutureWrapper(std::move(p)).get();
 }
 
 inline bool ApiBot::IsSomeOneNeedMessage(QId user_id) const {
@@ -311,6 +315,14 @@ inline CoFutureWrapper<std::vector<GroupInfo>> ApiBot::get_group_list(
     bool no_cache) {
   Json msg = api_impl::get_group_list(no_cache);
   auto ret = Echo<std::vector<GroupInfo>>(msg);
+  notify_->Run(msg.dump());
+  return ret;
+}
+
+inline CoFutureWrapper<GroupMemberInfo> ApiBot::get_group_member_info(
+    const GId gid, const QId uid, bool no_cache) {
+  auto msg = api_impl::get_group_member_info(gid, uid, no_cache);
+  auto ret = Echo<GroupMemberInfo>(msg);
   notify_->Run(msg.dump());
   return ret;
 }

@@ -11,11 +11,12 @@
 #include "modules/module/botmanage/status_info.h"
 #include "modules/module/botmanage/baned_kicked.h"
 #include "modules/module/botmanage/dismiss.h"
+#include "modules/module/botmanage/auto_clean_group.h"
 
 namespace white {
 namespace module {
 
-class BotManage : public ModulePack {
+class BotManage : public ModuleBundle {
  public:
   virtual void Register() override {
       SubModule<SV>();
@@ -26,6 +27,7 @@ class BotManage : public ModulePack {
       SubModule<GroupInvite>();
       SubModule<BandedOrKicked>();
       SubModule<Dismiss>();
+      SubModule<AutoCleanGroup>();
   }
 };
 }  // namespace module

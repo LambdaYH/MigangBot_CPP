@@ -94,7 +94,7 @@ class Weibo : public Module {
   }
   void Register() override {
     for (auto &[name, _] : spiders_) {
-      svs_.emplace(name, OnSchedule(name, permission::GROUP_ADMIN,
+      svs_.emplace(name, OnSchedule(make_pair(name, "订阅"), permission::GROUP_ADMIN,
                                     enable_on_default_.at(name)));
     }
     Schedule().interval(1min, [this]() { WeiboPuller(); });

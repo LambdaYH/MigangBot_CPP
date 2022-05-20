@@ -24,9 +24,9 @@ class FriendInvite : public Module {
     botmanage::add_friend_flag = config_["是否同意好友邀请"].as<bool>();
   }
   virtual void Register() override {
-    OnRequest("friend", "", "__处理好友邀请__",
-              ACT_InClass(FriendInvite::Handle_friend_invite), permission::NORMAL,
-              permission::SUPERUSER);
+    OnRequest("friend", "", make_pair("__处理好友邀请__", "机器人管理"),
+              ACT_InClass(FriendInvite::Handle_friend_invite),
+              permission::NORMAL, permission::SUPERUSER);
   }
 
  private:
@@ -41,7 +41,7 @@ inline void FriendInvite::Handle_friend_invite(const Event &event,
   auto user_id = event["user_id"].get<QId>();
   if (botmanage::add_friend_flag) {
     if (botmanage::IsBlackUser(user_id)) {
-      auto user_info = bot.get_stranger_info(user_id).Ret();
+      auto user_info = bot.get_stranger_info(user_id).get();
       for (auto white : config::SUPERUSERS)
         bot.send_private_msg(
             white, fmt::format("{}|好友添加请求，来自{}({}):已拒绝(黑名单)",
@@ -51,7 +51,7 @@ inline void FriendInvite::Handle_friend_invite(const Event &event,
       bot.approve(event);
       co::sleep(2000);
       bot.send_private_msg(user_id, botmanage::help_msg_friend_);
-      auto user_info = bot.get_stranger_info(user_id).Ret();
+      auto user_info = bot.get_stranger_info(user_id).get();
       for (auto white : config::SUPERUSERS)
         bot.send_private_msg(
             white, fmt::format("{}|好友添加请求，来自{}({}):已同意",
@@ -60,7 +60,7 @@ inline void FriendInvite::Handle_friend_invite(const Event &event,
     }
   } else {
     bot.reject(event, "抱歉，目前暂停加好友了~");
-    auto user_info = bot.get_stranger_info(user_id).Ret();
+    auto user_info = bot.get_stranger_info(user_id).get();
     for (auto white : config::SUPERUSERS)
       bot.send_private_msg(
           white,

@@ -46,7 +46,7 @@ inline Json GetUserInfo(const std::string &user_id) {
 }
 
 inline std::time_t ParseTime(const std::string &expr) {
-  std::tm tm{}; // 局部变量不默认初始化为0
+  std::tm tm{};  // 局部变量不默认初始化为0
   std::stringstream(expr) >> std::get_time(&tm, "%a %b %d %H:%M:%S +0800 %Y");
   return std::mktime(&tm);
 }
@@ -54,17 +54,17 @@ inline std::time_t ParseTime(const std::string &expr) {
 inline std::string GetText(const std::string &text_body) {
   HtmlDoc doc;
   doc.LoadFromString(text_body);
-  for(auto &node : doc.GetRootElement().FindChildrenByAttribute("class", "surl-text")) {
+  for (auto &node :
+       doc.GetRootElement().FindChildrenByAttribute("class", "surl-text")) {
     auto url = fastring(node.Parent().GetAtrribute("href"));
     auto value = node.Child().Content();
     if (!std::string_view(value).starts_with('#') &&
-            (url.starts_with("https://weibo.cn/sinaurl?u=") ||
-             url.starts_with("https://video.weibo.com"))) {
-          node.Child().SetContent(
-              fmt::format(
-                  "{}({})", value,
-                  url_decode(url.replace("https://weibo.cn/sinaurl?u=", "")).c_str()));
-        }
+        (url.starts_with("https://weibo.cn/sinaurl?u=") ||
+         url.starts_with("https://video.weibo.com"))) {
+      node.Child().SetContent(fmt::format(
+          "{}({})", value,
+          url_decode(url.replace("https://weibo.cn/sinaurl?u=", "")).c_str()));
+    }
   }
   return html::unreliable_decode(doc.GetAllText());
 }
@@ -116,8 +116,7 @@ inline Json GetLongWeibo(const std::string &id) {
   for (std::size_t i = 0; i < 5; ++i) {
     auto r = aiorequests::Get(
         fmt::format("{}://m.weibo.cn/detail/{}", kHttpPrefix, id), 15);
-    if(!r)
-    {
+    if (!r) {
       co::sleep(1000);
       continue;
     }

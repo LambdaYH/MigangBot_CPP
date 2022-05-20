@@ -16,6 +16,7 @@ bool add_group_flag;
 bool reject_group_force_flag;
 std::string help_msg_group_;
 std::string help_msg_friend_;
+int auto_clean_after;
 
 std::unordered_map<QId, std::string> Qid_blacklist;
 std::unordered_map<GId, std::string> Gid_blacklist;

@@ -20,12 +20,20 @@ class FeedBack : public Module {
  public:
   FeedBack() : Module() {}
   virtual void Register() {
-    OnPrefix({".send", "。send"}, "feedback_send", ACT_InClass(FeedBack::Send),
-             permission::NORMAL, permission::SUPERUSER);
-    OnPrefix({".reply", "。reply"}, "__feedback_reply__", ACT_InClass(FeedBack::Reply),
+    OnPrefix({".send", "。send"}, make_pair("feedback_send", "机器人管理"),
+             "发送留言给维护者，格式[.send message]",
+             ACT_InClass(FeedBack::Send), permission::NORMAL,
+             permission::SUPERUSER);
+    OnPrefix({".reply", "。reply"},
+             make_pair("__feedback_reply__",
+                       "对特定ID的留言予以回复，格式[.reply id message]"),
+             ACT_InClass(FeedBack::Reply), permission::SUPERUSER,
+             permission::SUPERUSER);
+    OnPrefix({".feedbacklist", "。feedbacklist"},
+             make_pair("__feedback_feedbacklist__", "机器人管理"),
+             "显示出特定ID的留言记录，格式[.feedbacklist id]", ACT_InClass(
+                 FeedBack::List),
              permission::SUPERUSER, permission::SUPERUSER);
-    OnPrefix({".feedbacklist", "。feedbacklist"}, "__feedback_feedbacklist__",
-             ACT_InClass(FeedBack::List), permission::SUPERUSER, permission::SUPERUSER);
   }
 
  private:
@@ -53,7 +61,7 @@ inline void FeedBack::Send(const Event &event, onebot11::ApiBot &bot) {
   auto whites = config::SUPERUSERS;
   if (event.contains("group_id")) {
     auto group_id = event["group_id"].get<GId>();
-    auto group_info = bot.get_group_info(group_id).Ret();
+    auto group_info = bot.get_group_info(group_id).get();
     std::string group_name;
     if (group_info.group_id == 0)
       group_name = "#未知群名#";

@@ -31,13 +31,13 @@ class SV : public Module {
  public:
   SV() : Module() {}
   virtual void Register() override {
-    OnPrefix({"启用", "enable"}, "__sv_control_enable__", "启用特定服务",
+    OnPrefix({"启用", "enable"}, make_pair("__sv_control_enable__", "服务管理"), "启用特定服务",
              ACT_OutClass(sv::HandleEnableSv), permission::GROUP_MEMBER,
              permission::ALWAYS_ON);
-    OnPrefix({"禁用", "disable"}, "__sv_control_disable__", "禁用特定服务",
+    OnPrefix({"禁用", "disable"}, make_pair("__sv_control_disable__", "服务管理"), "禁用特定服务",
              ACT_OutClass(sv::HandleDisableSv), permission::GROUP_MEMBER,
              permission::ALWAYS_ON);
-    OnFullmatch({"服务列表", "lssv", "列举服务"}, "__lssv__",
+    OnFullmatch({"服务列表", "lssv", "列举服务"}, make_pair("__lssv__", "服务管理"), "列举各类服务列表",
                 ACT_OutClass(sv::HandleListSv), permission::NORMAL,
                 permission::SUPERUSER);
   }

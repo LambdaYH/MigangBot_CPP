@@ -28,12 +28,13 @@ class GroupInvite : public Module {
         config_["是否自动退出被迫自动入的群"].as<bool>();
   }
   virtual void Register() override {
-    OnRequest("group", "invite", "__处理邀请加群__",
+    OnRequest("group", "invite", make_pair("__处理邀请加群__", "机器人管理"),
               ACT_InClass(GroupInvite::Handle_group_invite), permission::NORMAL,
               permission::SUPERUSER);
-    OnNotice("group_increase", "", "__处理群员增加__",
-             ACT_InClass(GroupInvite::Handle_group_increase), permission::NORMAL,
-             permission::SUPERUSER);
+    OnNotice("group_increase", "", make_pair("__处理群员增加__", "机器人管理"),
+             "如果群员增加的是自己，就判断是一次邀请加群",
+             ACT_InClass(GroupInvite::Handle_group_increase),
+             permission::NORMAL, permission::SUPERUSER);
   }
 
  private:
@@ -55,7 +56,7 @@ inline void GroupInvite::Handle_group_invite(const Event &event,
       bot.reject(event, fmt::format("黑名单:{}", botmanage::IsBlackUser(user_id)
                                                      ? user_id
                                                      : group_id));
-      auto user_info = bot.get_stranger_info(user_id).Ret();
+      auto user_info = bot.get_stranger_info(user_id).get();
       for (auto white : config::SUPERUSERS)
         bot.send_private_msg(
             white, fmt::format("{}|{}已拒绝加入(群){}，邀请人{}({})(黑名单)",
@@ -63,7 +64,7 @@ inline void GroupInvite::Handle_group_invite(const Event &event,
                                group_id, user_info.nickname, user_id));
     } else {
       bot.approve(event);
-      auto user_info = bot.get_stranger_info(user_id).Ret();
+      auto user_info = bot.get_stranger_info(user_id).get();
       for (auto white : config::SUPERUSERS)
         bot.send_private_msg(
             white, fmt::format("{}|{}新加入(群){}，邀请人{}({})",
@@ -72,7 +73,7 @@ inline void GroupInvite::Handle_group_invite(const Event &event,
     }
   } else {
     bot.reject(event, reason_);
-    auto user_info = bot.get_stranger_info(user_id).Ret();
+    auto user_info = bot.get_stranger_info(user_id).get();
     for (auto white : config::SUPERUSERS)
       bot.send_private_msg(
           white,
