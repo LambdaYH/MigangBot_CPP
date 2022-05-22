@@ -17,6 +17,7 @@
 #include "permission/permission.h"
 #include "utility.h"
 #include "event/Registrar.h"
+#include "global_config.h"
 
 namespace white {
 namespace module {
@@ -28,8 +29,40 @@ namespace module {
   [](const Event &event, onebot11::ApiBot &bot) { func(event, bot); }
 
 using std::make_pair;
+using ScheduleServicePtr = std::shared_ptr<ScheduleService>;
 
 using Config = YAML::Node;
+
+inline YAML::Node LoadConfig(const std::string &config_file,
+                             const std::string &config_example) {
+  YAML::Node ret;
+  if (config_file.empty()) {
+    LOG_WARN("未配置配置文件路径", config_file);
+    return ret;
+  }
+  if (!std::string_view(config_file).ends_with("yml")) {
+    LOG_WARN("配置文件格式错误，应当为.yml");
+    return ret;
+  }
+  std::filesystem::path path;
+  if (config_file[0] != '/') path = config::kConfigDir / config_file;
+  if (!std::filesystem::exists(path)) {
+    LOG_WARN("无法加载配置文件[{}]", config_file);
+    LOG_INFO("尝试生成配置文件");
+    auto parent_path = path.parent_path();
+    if (!std::filesystem::exists(parent_path) &&
+        !std::filesystem::create_directories(parent_path)) {
+      LOG_ERROR("创建配置文件[{}]失败", config_file);
+      return ret;
+    }
+    std::fstream f(path, std::ios_base::out);
+    f << config_example;
+    f.close();
+    LOG_INFO("已成功创建[{}]", config_file);
+  }
+  ret = YAML::LoadFile(path);
+  return ret;
+}
 
 class Module {
  public:
@@ -41,35 +74,7 @@ class Module {
   virtual void Register() = 0;
 
  protected:
-  YAML::Node LoadConfig() {
-    YAML::Node ret;
-    if (config_file_.empty()) {
-      LOG_WARN("未配置配置文件路径", config_file_);
-      return ret;
-    }
-    if (!std::string_view(config_file_).ends_with("yml")) {
-      LOG_WARN("配置文件格式错误，应当为.yml");
-      return ret;
-    }
-    std::filesystem::path path;
-    if (config_file_[0] != '/') path = config::kConfigDir / config_file_;
-    if (!std::filesystem::exists(path)) {
-      LOG_WARN("无法加载配置文件[{}]", config_file_);
-      LOG_INFO("尝试生成配置文件");
-      auto parent_path = path.parent_path();
-      if (!std::filesystem::exists(parent_path) &&
-          !std::filesystem::create_directories(parent_path)) {
-        LOG_ERROR("创建配置文件[{}]失败", config_file_);
-        return ret;
-      }
-      std::fstream f(path, std::ios_base::out);
-      f << config_example_;
-      f.close();
-      LOG_INFO("已成功创建[{}]", config_file_);
-    }
-    ret = YAML::LoadFile(path);
-    return ret;
-  }
+  YAML::Node LoadConfig() { return module::LoadConfig(config_file_, config_example_); }
 
  private:
   const std::string config_file_;

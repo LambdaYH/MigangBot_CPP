@@ -32,6 +32,14 @@ void AddToQQBlackList(QId uid, const std::string &reason);
 
 void AddToGroupBlackList(GId gid, const std::string &reason);
 
+bool DelFromQQBlackList(QId uid);
+
+bool DelFromGroupBlackList(GId gid);
+
+const std::unordered_map<QId, std::string> &GetQQBlackList();
+
+const std::unordered_map<GId, std::string> &GetGroupBlackList();
+
 bool IsBlackUser(QId uid);
 
 bool IsBlackGroup(GId gid);

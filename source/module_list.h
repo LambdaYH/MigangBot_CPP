@@ -16,6 +16,10 @@
 
 #include "modules/module/weibo/weibo_push.h"
 
+#include "modules/module/morning/morning.h"
+
+#include "modules/module/weather/weather.h"
+
 namespace white {
 namespace module {
 
@@ -38,6 +42,11 @@ inline void InitModuleList() {
 
   // weibo
   AddModule<Weibo>();
+
+  AddModule<Morning>();
+
+  AddModule<Weather>();
+
 }
 
 }  // namespace module

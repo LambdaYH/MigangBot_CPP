@@ -116,7 +116,8 @@ inline Json ParseWeibo(const Json &weibo_info) {
 inline Json GetLongWeibo(const std::string &id) {
   for (std::size_t i = 0; i < 5; ++i) {
     auto r = aiorequests::Get(
-        fmt::format("{}://m.weibo.cn/detail/{}", kHttpPrefix, id), 15).get();
+                 fmt::format("{}://m.weibo.cn/detail/{}", kHttpPrefix, id), 15)
+                 .get();
     if (!r) {
       co::sleep(1000);
       continue;
@@ -124,18 +125,21 @@ inline Json GetLongWeibo(const std::string &id) {
     auto html = r->Body();
     std::string_view html_view(html);
     auto pos_start = html_view.find("\"status\":");
+    if (pos_start == std::string::npos) continue;
     auto pos_end = html_view.rfind("},");
+    if (pos_end == std::string::npos) continue;
     try {
       html_view = html_view.substr(pos_start, pos_end - pos_start + 1);
       html_view.remove_prefix(html_view.find_first_of("{"));
       Json weibo_info = Json::parse(html_view);
       return ParseWeibo(weibo_info);
-    } catch (const Json::exception &e) {
+    } catch (const std::exception &e) {
       LOG_WARN("weibo: 抓取异常 {}", e.what());
       LOG_DEBUG("抓取异常的网页信息: {}", html);
       co::sleep(1000);
     }
   }
+  LOG_WARN("weibo: GetLongWeibo({})，已重试5次", id);
   return Json{};
 }
 

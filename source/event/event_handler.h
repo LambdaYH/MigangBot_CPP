@@ -23,6 +23,7 @@
 #include "permission/permission.h"
 #include "utility.h"
 #include "service/service_manager.h"
+#include "global_config.h"
 
 namespace white {
 
@@ -173,8 +174,12 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
             event["__to_me__"] = true;
             event["message"] = msg;
           }
+        } else if (msg.starts_with(config::BOT_NAME)) {
+          event["__to_me__"] = true;
+          msg.remove_prefix(config::BOT_NAME.size());
+          event["message"] = msg;
         }
-        auto message = event["message"].get<std::string>();
+        std::string message{msg};
         switch (message_type) {
           case 'g': {
             auto group_id = event["group_id"].get<GId>();
@@ -188,14 +193,16 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
-              const auto &service = command_prefix_.LongestPrefix(message, event);
+              const auto &service =
+                  command_prefix_.LongestPrefix(message, event);
               if (service && service->CheckIsEnable(group_id) &&
                   service->CheckPerm(perm) &&
                   service->CheckToMe(event.contains("__to_me__")))
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
-              const auto &service = command_suffix_.LongestSuffix(message, event);
+              const auto &service =
+                  command_suffix_.LongestSuffix(message, event);
               if (service && service->CheckIsEnable(group_id) &&
                   service->CheckPerm(perm) &&
                   service->CheckToMe(event.contains("__to_me__")))

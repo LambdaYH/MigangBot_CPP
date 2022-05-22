@@ -52,20 +52,18 @@ void CreateGroupTable() {
 }
 
 void LoadFromQQTable() {
-  auto all_bLack_qq =
-      sql::MySQLWrapper()
-          .Execute("SELECT UID, reason FROM BlackListQQ")
-          .FetchAll();
+  auto all_bLack_qq = sql::MySQLWrapper()
+                          .Execute("SELECT UID, reason FROM BlackListQQ")
+                          .FetchAll();
   for (auto &qq : all_bLack_qq) {
     Qid_blacklist.emplace(stoull(qq[0]), qq[1]);
   }
 }
 
 void LoadFromGroupTable() {
-  auto all_bLack_group =
-      sql::MySQLWrapper()
-          .Execute("SELECT GID, reason FROM BlackListGroup")
-          .FetchAll();
+  auto all_bLack_group = sql::MySQLWrapper()
+                             .Execute("SELECT GID, reason FROM BlackListGroup")
+                             .FetchAll();
   for (auto &group : all_bLack_group) {
     Gid_blacklist.emplace(stoull(group[0]), group[1]);
   }
@@ -73,27 +71,55 @@ void LoadFromGroupTable() {
 
 bool AddToQQTable(QId uid, const std::string &reason) {
   int ec;
-  sql::MySQLWrapper().Execute(
-      fmt::format("REPLACE INTO BlackListGroup\n"
-                  "VALUES(\n"
-                  "{},\n"
-                  "\"{}\")",
-                  uid, reason), &ec);
-  if(ec)
-    return false;
+  sql::MySQLWrapper().Execute(fmt::format("REPLACE INTO BlackListGroup\n"
+                                          "VALUES(\n"
+                                          "{},\n"
+                                          "\"{}\")",
+                                          uid, reason),
+                              &ec);
+  if (ec) return false;
   return true;
 }
 
 bool AddToGroupTable(GId gid, const std::string &reason) {
   int ec;
+  sql::MySQLWrapper().Execute(fmt::format("REPLACE INTO BlackListQQ\n"
+                                          "VALUES(\n"
+                                          "{},\n"
+                                          "\"{}\")",
+                                          gid, reason),
+                              &ec);
+  if (ec) return false;
+  return true;
+}
+
+bool DelFromQQTable(QId uid) {
+  int ec;
   sql::MySQLWrapper().Execute(
-      fmt::format("REPLACE INTO BlackListQQ\n"
-                  "VALUES(\n"
-                  "{},\n"
-                  "\"{}\")",
-                  gid, reason), &ec);
-  if(ec)
-    return false;
+      fmt::format("DELETE FROM BlackListQQ WHERE UID = {}", uid), &ec);
+  if (ec) return false;
+  return true;
+}
+
+bool DelFromGroupTable(GId gid) {
+  int ec;
+  sql::MySQLWrapper().Execute(
+      fmt::format("DELETE FROM BlackListGroup WHERE GID = {}", gid), &ec);
+  if (ec) return false;
+  return true;
+}
+
+bool DelFromQQBlackList(QId uid) {
+  if (!Qid_blacklist.contains(uid)) return false;
+  Qid_blacklist.erase(uid);
+  DelFromQQTable(uid);
+  return true;
+}
+
+bool DelFromGroupBlackList(GId gid) {
+  if (!Gid_blacklist.contains(gid)) return false;
+  Gid_blacklist.erase(gid);
+  DelFromGroupTable(gid);
   return true;
 }
 
@@ -114,13 +140,17 @@ void AddToGroupBlackList(GId gid, const std::string &reason) {
   Gid_blacklist[gid] = reason;
 }
 
-bool IsBlackGroup(GId gid) {
-  return Gid_blacklist.count(gid);
+const std::unordered_map<QId, std::string> &GetQQBlackList() {
+  return Qid_blacklist;
 }
 
-bool IsBlackUser(QId uid) {
-  return Qid_blacklist.count(uid);
+const std::unordered_map<GId, std::string> &GetGroupBlackList() {
+  return Gid_blacklist;
 }
+
+bool IsBlackGroup(GId gid) { return Gid_blacklist.count(gid); }
+
+bool IsBlackUser(QId uid) { return Qid_blacklist.count(uid); }
 
 }  // namespace botmanage
 }  // namespace module

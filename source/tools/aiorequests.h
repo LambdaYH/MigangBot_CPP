@@ -17,16 +17,15 @@ using requests::Request;
 using requests::Response;
 using requests::ResponseCallback;
 
-static hv::HttpClient cli;
-
 inline co_future<Response> aiorequest(Request &&req) {
+  static hv::HttpClient cli;
   auto promise = std::make_shared<co_promise<Response>>();
   auto ret = promise->get_future();
   cli.sendAsync(req, [promise = std::move(promise)](const Response& resp) {
     if (resp == NULL)
       promise->set_value(Response());
     else
-      promise->set_value(resp);
+      promise->set_value(std::move(resp));
   });
   return ret;
 }

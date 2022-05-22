@@ -4,6 +4,8 @@
 #include "module_manager.h"
 
 #include "modules/module/botmanage/sv.h"
+#include "modules/module/botmanage/manage_bot.h"
+#include "modules/module/botmanage/white_black.h"
 #include "modules/module/botmanage/feedback.h"
 #include "modules/module/botmanage/friend_invite.h"
 #include "modules/module/botmanage/group_invite.h"
@@ -20,6 +22,8 @@ class BotManage : public ModuleBundle {
  public:
   virtual void Register() override {
       SubModule<SV>();
+      SubModule<ManageBot>();
+      SubModule<WhiteBlack>();
       SubModule<Help>();
       SubModule<StatusInfo>();
       SubModule<FeedBack>();

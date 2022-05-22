@@ -23,6 +23,10 @@ inline std::string ReverseUTF8(const std::string &str) {
   return utf8::utf16to8(str_u16);
 }
 
+inline bool IsDigitStr(const std::string_view &str) {
+  return std::all_of(str.begin(), str.end(), isdigit);
+}
+
 inline bool IsDigitStr(const std::string &str) {
   return std::all_of(str.begin(), str.end(), isdigit);
 }
