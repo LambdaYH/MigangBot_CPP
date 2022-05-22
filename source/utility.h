@@ -14,6 +14,7 @@
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <utf8.h>
+#include <zlib.h>
 
 namespace white {
 
@@ -174,6 +175,48 @@ inline std::string unreliable_decode(const std::string &data) {
 }
 
 }  // namespace html
+
+namespace zlib {
+
+// https://blog.csdn.net/wangzhicheng1983/article/details/104049585
+inline bool gzip_compress(const std::string &original_str, std::string &str) {
+    z_stream d_stream = { 0 };
+    if (Z_OK != deflateInit2(&d_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, MAX_WBITS + 16, 9, Z_DEFAULT_STRATEGY)) {
+        return false;
+    }
+    uLong len = compressBound(original_str.size());
+    unsigned char *buf = (unsigned char*)malloc(len);
+    if (!buf) {
+        return false;
+    }
+    d_stream.next_in = (unsigned char *)(original_str.c_str());
+    d_stream.avail_in  = original_str.size();
+    d_stream.next_out = buf;
+    d_stream.avail_out = len;
+    deflate(&d_stream, Z_SYNC_FLUSH);
+    deflateEnd(&d_stream);
+    str.assign((char *)buf, d_stream.total_out);
+    free(buf);
+    return true;
+}
+
+inline std::string gzip_uncompress(const std::string &original_str) {
+  std::string  str;
+    unsigned char buf[102400] = "";
+    uLong len = 102400;
+    z_stream d_stream = { 0 };
+    int res = inflateInit2(&d_stream, MAX_WBITS + 16);
+    d_stream.next_in = (unsigned char *)(original_str.c_str());
+    d_stream.avail_in = original_str.size();
+    d_stream.next_out = buf;
+    d_stream.avail_out = len;
+    inflate(&d_stream, Z_SYNC_FLUSH);
+    inflateEnd(&d_stream);
+    str.assign((char *)buf, d_stream.total_out);
+    return str;
+}
+
+} // namespace zlib
 
 }  // namespace white
 

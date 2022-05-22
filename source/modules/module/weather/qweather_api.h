@@ -9,10 +9,12 @@
 #include "co/fastring.h"
 #include "co/hash/url.h"
 #include "co/str.h"
+#include "hv/hurl.h"
 #include "message/utility.h"
 #include "tools/aiorequests.h"
 #include "logger/logger.h"
 #include "modules/module/weather/qweather_settings.h"
+#include "utility.h"
 
 namespace white {
 namespace qweather {
@@ -25,17 +27,23 @@ struct LocationInfo {
   std::string adm2;
 };
 
+inline Json GetJson(const std::string &url) {
+  auto r = aiorequests::Get(HUrl::escapeUrl(url), 7).get();
+  if(!r)
+    return {};
+  return Json::parse(zlib::gzip_uncompress(r->Body()));
+}
+
 inline std::vector<LocationInfo> GetLocationName(const std::string &location,
                                                  const std::string &key) {
   auto url = fmt::format(
-      "https://geoapi.heweather.net/v2/city/lookup?key={}&location={}", key,
+      "https://geoapi.qweather.net/v2/city/lookup?key={}&location={}", key,
       location);
-  auto r = aiorequests::Get(url_encode(url).c_str(), 5).get();
-  if (!r) {
+  auto resp = GetJson(url);
+  if (!resp) {
     LOG_ERROR("获取城市信息数据超时");
     return {};
   };
-  auto resp = r->GetJson();
   if (!resp.contains("code") || resp["code"].get<std::string>() != "200") {
     LOG_ERROR("城市信息搜索接口调用失败, {}", resp["code"].get<std::string>());
     return {};
@@ -52,14 +60,13 @@ inline std::vector<LocationInfo> GetLocationName(const std::string &location,
 inline nlohmann::json GetWeatherNow(const std::string &location,
                                     const std::string &key) {
   auto url = fmt::format(
-      "https://devapi.heweather.net/v7/weather/now?key={}&location={}", key,
+      "https://devapi.qweather.net/v7/weather/now?key={}&location={}", key,
       location);
-  auto r = aiorequests::Get(url_encode(url).c_str(), 5).get();
-  if (!r) {
+  auto js = GetJson(url);
+  if (!js) {
     LOG_ERROR("获取实况天气数据超时");
     return {};
   }
-  auto js = r->GetJson();
   auto location_info = GetLocationName(location, key);
   if (location_info.empty()) return {};
   auto location_id = location_info[0].id;
@@ -78,14 +85,13 @@ inline std::vector<nlohmann::json> GetWeatherForcast(const std::string &location
   if (location_info.empty()) return {};
   auto location_id = location_info[0].id;
   auto url = fmt::format(
-      "https://devapi.heweather.net/v7/weather/3d?key={}&location={}", key,
+      "https://devapi.qweather.net/v7/weather/3d?key={}&location={}", key,
       location);
-  auto r = aiorequests::Get(url_encode(url).c_str(), 5).get();
-  if (!r) {
+  auto js = GetJson(url);
+  if (!js) {
     LOG_ERROR("获取天气预报数据超时");
     return {};
   }
-  auto js = r->GetJson();
   if (js["code"].get<std::string>() != "200") {
     LOG_ERROR("天气预报获取接口调用失败");
     return {};
