@@ -29,8 +29,7 @@ struct LocationInfo {
 
 inline Json GetJson(const std::string &url) {
   auto r = aiorequests::Get(HUrl::escapeUrl(url), 7).get();
-  if(!r)
-    return {};
+  if (!r) return {};
   return Json::parse(zlib::gzip_uncompress(r->Body()));
 }
 
@@ -50,10 +49,10 @@ inline std::vector<LocationInfo> GetLocationName(const std::string &location,
   }
   std::vector<LocationInfo> ret;
   for (auto &item : resp["location"])
-    ret.emplace_back(
+    ret.emplace_back(LocationInfo{
         item["id"].get<std::string>(), item["name"].get<std::string>(),
         item["country"].get<std::string>(), item["adm1"].get<std::string>(),
-        item["adm2"].get<std::string>());
+        item["adm2"].get<std::string>()});
   return ret;
 }
 
@@ -79,8 +78,8 @@ inline nlohmann::json GetWeatherNow(const std::string &location,
   return js["now"];
 }
 
-inline std::vector<nlohmann::json> GetWeatherForcast(const std::string &location,
-                                        const std::string &key) {
+inline std::vector<nlohmann::json> GetWeatherForcast(
+    const std::string &location, const std::string &key) {
   auto location_info = GetLocationName(location, key);
   if (location_info.empty()) return {};
   auto location_id = location_info[0].id;
@@ -97,31 +96,30 @@ inline std::vector<nlohmann::json> GetWeatherForcast(const std::string &location
     return {};
   }
   std::vector<nlohmann::json> ret;
-  for(auto &item : js["daily"]) {
+  for (auto &item : js["daily"]) {
     ret.push_back(item);
   }
   return ret;
 }
 
 inline std::string GetWeatherText(const std::string &text, bool is_day) {
-  if(is_day)
-    return kDesciptionDay.at(text);
+  if (is_day) return kDesciptionDay.at(text);
   return kDesciptionNight.at(text);
 }
 
 inline std::string GetUVText(int uv) {
-    auto text = fmt::format("今日紫外线强度指数为{}，", uv);
-    if(uv >= 0 && uv < 3)
-        text += kUVDesciption[0];
-    else if(uv >= 3 && uv < 5)
-        text += kUVDesciption[1];
-    else if(uv >= 5 && uv < 7)
-        text += kUVDesciption[2];
-    else if(uv >= 7 && uv < 10)
-        text += kUVDesciption[3];
-    else if(uv >= 10)
-        text += kUVDesciption[4];
-    return text;
+  auto text = fmt::format("今日紫外线强度指数为{}，", uv);
+  if (uv >= 0 && uv < 3)
+    text += kUVDesciption[0];
+  else if (uv >= 3 && uv < 5)
+    text += kUVDesciption[1];
+  else if (uv >= 5 && uv < 7)
+    text += kUVDesciption[2];
+  else if (uv >= 7 && uv < 10)
+    text += kUVDesciption[3];
+  else if (uv >= 10)
+    text += kUVDesciption[4];
+  return text;
 }
 
 inline std::string YMDTOCHS(const std::string &ymd) {

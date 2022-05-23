@@ -26,10 +26,10 @@ class BotSet {
   auto AddBot(onebot11::ApiBot *bot) {
     std::lock_guard<std::mutex> locker(mutex_);
     bots_.push_front(bot);
-    return bots_.begin();
+    return bots_.cbegin();
   }
 
-  void RemoveBot(const auto &it) {
+  void RemoveBot(std::list<onebot11::ApiBot *>::const_iterator &it) {
     std::lock_guard<std::mutex> locker(mutex_);
     bots_.erase(it);
   }

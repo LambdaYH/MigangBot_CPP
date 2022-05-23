@@ -50,7 +50,7 @@ class Bot : public std::enable_shared_from_this<Bot> {
   tbb::concurrent_unordered_map<std::time_t, std::function<void(const Json &)>>
       echo_function_;
   onebot11::ApiBot api_bot_;
-  std::list<onebot11::ApiBot *>::iterator botset_it_;
+  std::list<onebot11::ApiBot *>::const_iterator botset_it_;
   EventHandler &handler_;
 };
 
