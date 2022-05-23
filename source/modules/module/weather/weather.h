@@ -105,7 +105,7 @@ inline void Weather::SetLocation(const Event &event, onebot11::ApiBot &bot) {
   }
   std::string msg = "请选择想要查询的城市~";
   for (std::size_t i = 0; auto &location : location_list) {
-    msg += fmt::format("\n{}.{} - {} - {} - {}", i, location.country,
+    msg += fmt::format("\n{}.{} - {} - {} - {}", i++, location.country,
                        location.adm1, location.adm2, location.name);
     gid_uid_locationid_[key].push_back(location);
   }
@@ -134,7 +134,7 @@ inline void Weather::RealTimeWeather(const Event &event,
   if (location_idx >= gid_uid_locationid_.at(key).size()) location_idx = 0;
   auto location_id = gid_uid_locationid_.at(key)[location_idx].id;
   auto weather = qweather::GetWeatherNow(location_id, api_key_);
-  if (!weather) {
+  if (weather.empty()) {
     bot.send(event, "查询出错...", true);
     return;
   }

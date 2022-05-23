@@ -40,7 +40,7 @@ inline std::vector<LocationInfo> GetLocationName(const std::string &location,
       "https://geoapi.qweather.net/v2/city/lookup?key={}&location={}", key,
       location);
   auto resp = GetJson(url);
-  if (!resp) {
+  if (resp.empty()) {
     LOG_ERROR("获取城市信息数据超时");
     return {};
   };
@@ -63,7 +63,7 @@ inline nlohmann::json GetWeatherNow(const std::string &location,
       "https://devapi.qweather.net/v7/weather/now?key={}&location={}", key,
       location);
   auto js = GetJson(url);
-  if (!js) {
+  if (js.empty()) {
     LOG_ERROR("获取实况天气数据超时");
     return {};
   }
@@ -88,7 +88,7 @@ inline std::vector<nlohmann::json> GetWeatherForcast(const std::string &location
       "https://devapi.qweather.net/v7/weather/3d?key={}&location={}", key,
       location);
   auto js = GetJson(url);
-  if (!js) {
+  if (js.empty()) {
     LOG_ERROR("获取天气预报数据超时");
     return {};
   }
