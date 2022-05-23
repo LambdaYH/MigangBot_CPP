@@ -9,6 +9,7 @@ namespace eorzean_weather {
 struct WeatherRate {
   int weather;
   int rate;
+  WeatherRate(int weather, int rate) : weather(weather), rate(rate) {}
 };
 
 extern std::unordered_map<std::string, std::string> alter_name_idx;
