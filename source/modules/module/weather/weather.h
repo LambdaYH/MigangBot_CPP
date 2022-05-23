@@ -151,8 +151,7 @@ inline void Weather::RealTimeWeather(const Event &event,
       "当前相对湿度:{}%\n"
       "当前大气压强:{}hpa\n"
       "当前能见度:{}km\n"
-      "当前云量:{}%\n"
-      "也可以进入{}查看当前城市天气详情",
+      "当前云量:{}%",
       weather["name"].get<std::string>(), obt.c_str(),
       weather["temp"].get<std::string>(), weather["text"].get<std::string>(),
       weather["temp"].get<std::string>(),
@@ -160,9 +159,10 @@ inline void Weather::RealTimeWeather(const Event &event,
       weather["windScale"].get<std::string>(),
       weather["humidity"].get<std::string>(),
       weather["pressure"].get<std::string>(), weather["vis"].get<std::string>(),
-      weather["cloud"].get<std::string>(),
-      weather["fxLink"].get<std::string>());
-  bot.send(event, message_segment::image(TextToImg(msg)), true);
+      weather["cloud"].get<std::string>());
+  msg = fmt::format("{}\n也可以进入{}查看当前城市天气详情哦~", msg,
+                    weather["fxLink"].get<std::string>());
+  bot.send(event, msg, true);
 }
 
 inline void Weather::TodayWeather(const Event &event, onebot11::ApiBot &bot) {
@@ -205,8 +205,7 @@ inline void Weather::TodayWeather(const Event &event, onebot11::ApiBot &bot) {
       "日出时间为{}，日落时间则为{}哒\n"
       "今晚的{}将在{}升起，{}落下\n"
       "今日的相对湿度为{}%，大气压强为{}hpa\n"
-      "能见度为{}km，云量为{}%，总降水量为{}mm\n"
-      "也可以进入{}查看当前城市天气详情哦~)",
+      "能见度为{}km，云量为{}%，总降水量为{}mm",
       qweather::YMDTOCHS(tenki["fxDate"].get<std::string>()),
       tenki["name"].get<std::string>(), text_day,
       tenki["tempMin"].get<std::string>(), tenki["tempMax"].get<std::string>(),
@@ -221,8 +220,9 @@ inline void Weather::TodayWeather(const Event &event, onebot11::ApiBot &bot) {
       qweather::HMTOCHS(tenki["moonset"].get<std::string>()),
       tenki["humidity"].get<std::string>(),
       tenki["pressure"].get<std::string>(), tenki["vis"].get<std::string>(),
-      tenki["cloud"].get<std::string>(), tenki["precip"].get<std::string>(),
-      tenki["fxLink"].get<std::string>());
+      tenki["cloud"].get<std::string>(), tenki["precip"].get<std::string>());
+  msg = fmt::format("{}\n也可以进入{}查看当前城市天气详情哦~", msg,
+                    tenki["fxLink"].get<std::string>());
   bot.send(event, message_segment::image(TextToImg(msg)), true);
 }
 

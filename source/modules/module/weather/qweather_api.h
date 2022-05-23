@@ -97,6 +97,8 @@ inline std::vector<nlohmann::json> GetWeatherForcast(
   }
   std::vector<nlohmann::json> ret;
   for (auto &item : js["daily"]) {
+    item["fxLink"] = js["fxLink"];
+    item["name"] = location_info[0].name;
     ret.push_back(item);
   }
   return ret;
