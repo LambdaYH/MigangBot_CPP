@@ -1,0 +1,9 @@
+#ifndef MIGANGBOT_DB_TABLE_LIST_H_
+#define MIGANGBOT_DB_TABLE_LIST_H_
+
+namespace white {
+  namespace table {
+    
+  }
+}
+#endif

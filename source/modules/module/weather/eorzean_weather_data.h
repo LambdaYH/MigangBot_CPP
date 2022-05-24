@@ -19,7 +19,7 @@ extern std::unordered_map<int, std::vector<WeatherRate>> weather_rate_idx;
 
 void Init();
 
-void Update();
+bool Update();
 
 }  // namespace eorzean_weather
 }  // namespace white

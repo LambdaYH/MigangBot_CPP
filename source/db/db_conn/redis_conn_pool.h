@@ -1,5 +1,5 @@
-#ifndef MIGANGBOT_DATABASE_REDIS_CONN_POOL_H_
-#define MIGANGBOT_DATABASE_REDIS_CONN_POOL_H_
+#ifndef MIGANGBOT_DB_DB_CONN_REDIS_CONN_POOL_H_
+#define MIGANGBOT_DB_DB_CONN_REDIS_CONN_POOL_H_
 
 #include <string>
 #include <unordered_map>
@@ -20,9 +20,9 @@ class RedisConnPool {
     return pool;
   }
 
-  redisContext &GetConn();
+  redisContext &Get();
 
-  void FreeConn(redisContext &conn);
+  void Free(redisContext &conn);
 
   void Init(const std::string &host, const unsigned int port,
             std::size_t conn_num);
@@ -45,7 +45,7 @@ class RedisConnPool {
   std::unordered_map<redisContext *, std::size_t> redis_conn_to_id_;
 };
 
-inline redisContext &RedisConnPool::GetConn() {
+inline redisContext &RedisConnPool::Get() {
   std::size_t id;
   redis_conn_id_queue_.pop(id);
   if (redis_conn_pool_[id]->err) {
@@ -63,7 +63,7 @@ inline redisContext &RedisConnPool::GetConn() {
   return *redis_conn_pool_[id];
 }
 
-inline void RedisConnPool::FreeConn(redisContext &conn) {
+inline void RedisConnPool::Free(redisContext &conn) {
   std::size_t id = redis_conn_to_id_[&conn];
   redis_conn_id_queue_.push(id);
 }

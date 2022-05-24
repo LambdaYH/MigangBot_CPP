@@ -14,13 +14,14 @@
 #include <hv/hlog.h>
 #include <yaml-cpp/yaml.h>
 
-#include "database/mysql_conn_pool.h"
-#include "database/redis_conn_pool.h"
+// #include "database/mysql_conn_pool.h"
+#include "db/db_conn/orm_pool.h"
 #include "event/event_handler.h"
 #include "global_config.h"
 #include "logger/logger.h"
 #include "module_list.h"
 #include "server.h"
+#include "sqlpp11/mysql/connection_config.h"
 
 YAML::Node white::global_config;
 std::filesystem::path white::config::kConfigDir;
@@ -107,13 +108,23 @@ int main(int argc, char** argv) {
   white::LOG_INIT(log_file, log_level);
 
   // 初始化数据库连接池
-  white::sql::MySQLConnPool::GetInstance().Init(
-      white::global_config["DataBase"]["Host"].as<std::string>(),
-      white::global_config["DataBase"]["Username"].as<std::string>(),
-      white::global_config["DataBase"]["Password"].as<std::string>(),
-      white::global_config["DataBase"]["Name"].as<std::string>(),
-      white::global_config["DataBase"]["Port"].as<unsigned int>(),
-      white::global_config["Dev"]["SqlPool"].as<std::size_t>());
+  // white::sql::MySQLConnPool::GetInstance().Init(
+  //     white::global_config["DataBase"]["Host"].as<std::string>(),
+  //     white::global_config["DataBase"]["Username"].as<std::string>(),
+  //     white::global_config["DataBase"]["Password"].as<std::string>(),
+  //     white::global_config["DataBase"]["Name"].as<std::string>(),
+  //     white::global_config["DataBase"]["Port"].as<unsigned int>(),
+  //     white::global_config["Dev"]["SqlPool"].as<std::size_t>());
+  {
+  auto config = std::make_shared<sqlpp::mysql::connection_config>();
+  config->auto_reconnect = true;
+  config->database = white::global_config["DataBase"]["Name"].as<std::string>();
+  config->host = white::global_config["DataBase"]["Host"].as<std::string>();
+  config->port = white::global_config["DataBase"]["Port"].as<unsigned int>();
+  config->user = white::global_config["DataBase"]["Username"].as<std::string>();
+  config->password = white::global_config["DataBase"]["Password"].as<std::string>();
+  white::orm::mariadb::OrmPool::GetInstance().Init(config, white::global_config["Dev"]["SqlPool"].as<std::size_t>());
+  }
 
   // 初始化Redis连接池
   white::redis::RedisConnPool::GetInstance().Init(

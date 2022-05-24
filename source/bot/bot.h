@@ -41,8 +41,6 @@ class Bot : public std::enable_shared_from_this<Bot> {
 
   void Notify(std::string &&msg);
 
-  template <typename F>
-  void SetEchoFunction(const std::time_t echo_code, F &&func);
   bool EventProcess(const Event &event) noexcept;
 
  private:
@@ -56,9 +54,7 @@ class Bot : public std::enable_shared_from_this<Bot> {
 
 inline Bot::Bot()
     : api_bot_([this](std::string &&msg) { Notify(std::move(msg)); },
-               [this](const auto time_t, auto &&func) {
-                 SetEchoFunction(time_t, std::forward<decltype(func)>(func));
-               }),
+               echo_function_),
       handler_(EventHandler::GetInstance()) {}
 
 inline Bot::~Bot() { BotSet::GetInstance().RemoveBot(botset_it_); }
@@ -80,11 +76,6 @@ inline void Bot::OnRead(const std::string &msg) noexcept { Process(msg); }
 inline void Bot::Notify(std::string &&msg) {
   LOG_DEBUG("Msg To sent: {}", msg);
   channel_->send(std::move(msg));
-}
-
-template <typename F>
-inline void Bot::SetEchoFunction(const std::time_t echo_code, F &&func) {
-  echo_function_[echo_code] = std::forward<F>(func);
 }
 
 inline void Bot::Process(const std::string &message) noexcept {

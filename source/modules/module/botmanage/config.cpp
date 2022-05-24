@@ -4,8 +4,12 @@
 
 #include <fmt/format.h>
 
+#include "db/db_orm.h"
+#include "sqlpp11/exception.h"
+#include "sqlpp11/remove.h"
+#include "sqlpp11/verbatim.h"
 #include "type.h"
-#include <database/mysql_wrapper.h>
+#include "db/db.h"
 
 namespace white {
 namespace module {
@@ -22,90 +26,92 @@ std::unordered_map<QId, std::string> Qid_blacklist;
 std::unordered_map<GId, std::string> Gid_blacklist;
 
 void CreateQQTable() {
-  sql::MySQLWrapper sql_wrapper;
-  std::string query =
-      "CREATE TABLE IF NOT EXISTS BlackListQQ\n"
-      "(UID        INT             NOT NULL ,\n"
-      "reason      VARCHAR(255)    NOT NULL,\n"
-      "PRIMARY KEY(UID))";
-  int ec;
-  sql_wrapper.Execute(query, &ec);
-  if (ec) {
-    LOG_ERROR("Botmanage_qqblackList: 创建表发生错误。code: {}", ec);
+  try {
+    mariadb::DB().Execute(
+        "CREATE TABLE IF NOT EXISTS BlackListQQ\n"
+        "(UID        INT             NOT NULL ,\n"
+        "reason      VARCHAR(255)    NOT NULL,\n"
+        "PRIMARY KEY(UID))");
+  } catch (const sqlpp::exception &e) {
+    LOG_ERROR("Botmanage_qqblackList: 创建表发生错误。code: {}", e.what());
     return;
   }
 }
 
 void CreateGroupTable() {
-  sql::MySQLWrapper sql_wrapper;
-  std::string query =
-      "CREATE TABLE IF NOT EXISTS BlackListGroup\n"
-      "(GID        INT             NOT NULL ,\n"
-      "reason      VARCHAR(255)    NOT NULL,\n"
-      "PRIMARY KEY(GID))";
-  int ec;
-  sql_wrapper.Execute(query, &ec);
-  if (ec) {
-    LOG_ERROR("Botmanage_qqblackList: 创建表发生错误。code: {}", ec);
+  try {
+    mariadb::DB().Execute(
+        "CREATE TABLE IF NOT EXISTS BlackListGroup\n"
+        "(GID        INT             NOT NULL ,\n"
+        "reason      VARCHAR(255)    NOT NULL,\n"
+        "PRIMARY KEY(GID))");
+  } catch (const sqlpp::exception &e) {
+    LOG_ERROR("Botmanage_groupblackList: 创建表发生错误。code: {}", e.what());
     return;
   }
 }
 
 void LoadFromQQTable() {
-  auto all_bLack_qq = sql::MySQLWrapper()
-                          .Execute("SELECT UID, reason FROM BlackListQQ")
-                          .FetchAll();
-  for (auto &qq : all_bLack_qq) {
-    Qid_blacklist.emplace(stoull(qq[0]), qq[1]);
+  db::BlackListQQ bq;
+  for (const auto &qq : mariadb::DB()(
+           sqlpp::select(bq.UID, bq.reason).from(bq).unconditionally())) {
+    Qid_blacklist.emplace(qq.UID, qq.reason);
   }
 }
 
 void LoadFromGroupTable() {
-  auto all_bLack_group = sql::MySQLWrapper()
-                             .Execute("SELECT GID, reason FROM BlackListGroup")
-                             .FetchAll();
-  for (auto &group : all_bLack_group) {
-    Gid_blacklist.emplace(stoull(group[0]), group[1]);
+  db::BlackListGroup bg;
+  for (const auto &group : mariadb::DB()(
+           sqlpp::select(bg.GID, bg.reason).from(bg).unconditionally())) {
+    Gid_blacklist.emplace(group.GID, group.reason);
   }
 }
 
 bool AddToQQTable(QId uid, const std::string &reason) {
-  int ec;
-  sql::MySQLWrapper().Execute(fmt::format("REPLACE INTO BlackListGroup\n"
-                                          "VALUES(\n"
-                                          "{},\n"
-                                          "\"{}\")",
-                                          uid, reason),
-                              &ec);
-  if (ec) return false;
+  mariadb::DB db;
+  db::BlackListQQ bq;
+  try {
+    if (!db(sqlpp::select(bq.UID).from(bq).where(bq.UID == uid)).empty())
+      db(sqlpp::update(bq).set(bq.reason = reason).where(bq.UID == uid));
+    else
+      db(sqlpp::insert_into(bq).set(bq.UID = uid, bq.reason = reason));
+  } catch (const sqlpp::exception &e) {
+    return false;
+  }
   return true;
 }
 
 bool AddToGroupTable(GId gid, const std::string &reason) {
-  int ec;
-  sql::MySQLWrapper().Execute(fmt::format("REPLACE INTO BlackListQQ\n"
-                                          "VALUES(\n"
-                                          "{},\n"
-                                          "\"{}\")",
-                                          gid, reason),
-                              &ec);
-  if (ec) return false;
+  mariadb::DB db;
+  db::BlackListGroup bg;
+  try {
+    if (!db(sqlpp::select(bg.GID).from(bg).where(bg.GID == gid)).empty())
+      db(sqlpp::update(bg).set(bg.reason = reason).where(bg.GID == gid));
+    else
+      db(sqlpp::insert_into(bg).set(bg.GID = gid, bg.reason = reason));
+  } catch (const sqlpp::exception &e) {
+    return false;
+  }
   return true;
 }
 
 bool DelFromQQTable(QId uid) {
-  int ec;
-  sql::MySQLWrapper().Execute(
-      fmt::format("DELETE FROM BlackListQQ WHERE UID = {}", uid), &ec);
-  if (ec) return false;
+  db::BlackListQQ bq;
+  try {
+    mariadb::DB()(sqlpp::remove_from(bq).where(bq.UID == uid));
+  } catch (const sqlpp::exception &e) {
+    return false;
+  }
   return true;
 }
 
 bool DelFromGroupTable(GId gid) {
-  int ec;
-  sql::MySQLWrapper().Execute(
-      fmt::format("DELETE FROM BlackListGroup WHERE GID = {}", gid), &ec);
-  if (ec) return false;
+  db::BlackListGroup bg;
+  try {
+    mariadb::DB()(sqlpp::remove_from(bg).where(bg.GID == gid));
+  } catch (const sqlpp::exception &e) {
+    return false;
+  }
   return true;
 }
 

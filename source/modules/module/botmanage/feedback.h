@@ -110,7 +110,7 @@ inline void FeedBack::Reply(const Event &event, onebot11::ApiBot &bot) {
     bot.send(event, "输入的留言ID有误,请输入数字", true);
     return;
   }
-  auto search_ret = record_.GetFeedback(feedback_id);
+  auto search_ret = record_.GetFeedback(std::stoll(feedback_id));
   if (search_ret.empty()) {
     bot.send(event,
              fmt::format("不存在ID[{}]的留言,请输入1-{}之间的数字", feedback_id,
@@ -146,7 +146,7 @@ inline void FeedBack::List(const Event &event, onebot11::ApiBot &bot) {
     bot.send(event, "输入的留言ID有误,请输入数字", true);
     return;
   }
-  auto search_ret = record_.GetFeedback(feedback_id);
+  auto search_ret = record_.GetFeedback(std::stoll(feedback_id));
   if (search_ret.empty()) {
     bot.send(event,
              fmt::format("不存在ID[{}]的留言,请输入1-{}之间的数字", feedback_id,

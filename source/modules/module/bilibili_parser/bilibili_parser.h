@@ -14,7 +14,7 @@
 #include "Node.h"
 
 #include "tools/aiorequests.h"
-#include "database/redis_wrapper.h"
+#include "db/db.h"
 #include "event/type.h"
 #include "logger/logger.h"
 #include "message/message_segment.h"
@@ -82,7 +82,7 @@ class BilibiliParser : public Module {
 };
 
 inline bool IsInCache(const std::string &url, const GId group_id) {
-  redis::RedisWrapper redis_wrapper;
+  redis::DB redis_wrapper;
   if (!redis_wrapper.Execute(fmt::format(
           "GET {}", fmt::format("bnotrepeat:{}:{}", group_id, url))))
     return false;
@@ -94,7 +94,7 @@ constexpr auto kExpiredTime = 15;
 
 // 防止短时间内重复发送
 inline bool AddInCacheNotRepeat(const std::string &url, const GId group_id) {
-  redis::RedisWrapper redis_wrapper;
+  redis::DB redis_wrapper;
   if (!redis_wrapper.Execute(fmt::format(
           "SET {} 0 EX {}", fmt::format("bnotrepeat:{}:{}", group_id, url),
           kExpiredTime)))
@@ -106,7 +106,7 @@ inline bool AddInCacheNotRepeat(const std::string &url, const GId group_id) {
 constexpr auto kExpiredTimeCache = 120;
 
 inline bool AddInCache(const std::string &url, const std::string &value) {
-  redis::RedisWrapper redis_wrapper;
+  redis::DB redis_wrapper;
   if (!redis_wrapper.Execute(fmt::format("SET {} {} EX {}",
                                          fmt::format("bcache:{}", url), value,
                                          kExpiredTimeCache)))
@@ -115,7 +115,7 @@ inline bool AddInCache(const std::string &url, const std::string &value) {
 }
 
 inline std::string GetFromCache(const std::string &url) {
-  redis::RedisWrapper redis_wrapper;
+  redis::DB redis_wrapper;
   if (!redis_wrapper.Execute(
           fmt::format("GET {}", fmt::format("bcache:{}", url))))
     return "";

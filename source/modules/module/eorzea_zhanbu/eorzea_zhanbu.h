@@ -120,7 +120,7 @@ inline std::string EorzeaZhanbu::GetEorzeaZhanbu(const QId uid) {
   auto cur_time = datetime::GetCurrentLocalTimeStamp();
   auto record = recorder_.GetZhanbuRecord(uid);
   static auto basemap_base_path = config::kAssetsDir / "images" / "zhanbu";
-  if (record.empty() || std::stoll(record.back()) <= cur_time) {
+  if (std::get<6>(record) == 0 || std::get<6>(record) <= cur_time) {
     std::string luck, yi, ji, dye, append_msg, occupation;
     std::tie(luck, yi, ji, dye, append_msg, occupation) = GetZhanbuResult(uid);
     auto basemap = fmt::format("{}/{}", occupation, GetBasemap(occupation));
@@ -129,8 +129,8 @@ inline std::string EorzeaZhanbu::GetEorzeaZhanbu(const QId uid) {
     return eorzea_zhanbu::Draw(luck, yi, ji, dye, append_msg,
                                basemap_base_path / basemap);
   } else {
-    return eorzea_zhanbu::Draw(record[1], record[2], record[3], record[4],
-                               record[5], basemap_base_path / record[6]);
+    return eorzea_zhanbu::Draw(std::get<0>(record), std::get<1>(record), std::get<2>(record), std::get<3>(record),
+                               std::get<4>(record), basemap_base_path / std::get<5>(record));
   }
   return "";
 }

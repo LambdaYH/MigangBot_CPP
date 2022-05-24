@@ -76,6 +76,10 @@ add_subdirectory(third-party/gumbo-query)
 # libxml2
 add_subdirectory(third-party/libxml2)
 
+# sqlpp11
+set(BUILD_MYSQL_CONNECTOR ON CACHE INTERNAL "Build MySQL Connector")
+add_subdirectory(third-party/sqlpp11)
+
 # pcre2 (for fast regex)
 set(PCRE2_SUPPORT_JIT ON CACHE INTERNAL "")
 add_subdirectory(third-party/pcre2)
@@ -131,6 +135,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         gumbo_query_static
                         libgumbo.a
                         LibXml2
+                        sqlpp11
 )
 
 IF(BUILD_TEST)

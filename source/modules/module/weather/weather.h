@@ -10,6 +10,7 @@
 #include "modules/module/weather/eorzean_weather_data.h"
 #include "modules/module/weather/eorzean_weather.h"
 #include "modules/module/weather/qweather_api.h"
+#include "permission/permission.h"
 #include "type.h"
 #include "utility.h"
 
@@ -59,6 +60,11 @@ class Weather : public Module {
              ACT_InClass(TodayWeather));
     OnPrefix({"天气简报"}, make_pair("天气简报", "天气"),
              ACT_InClass(WeatherShortDesc));
+
+    OnFullmatch({"更新艾欧泽亚天气数据"},
+                make_pair("__update_eorzean_weather_data__", "天气"),
+                ACT_InClass(UpdateEorzeanWeatherData), permission::SUPERUSER,
+                permission::ALWAYS_ON);
   }
 
  private:
@@ -69,6 +75,7 @@ class Weather : public Module {
   void RealTimeWeather(const Event &event, onebot11::ApiBot &bot);
   void TodayWeather(const Event &event, onebot11::ApiBot &bot);
   void WeatherShortDesc(const Event &event, onebot11::ApiBot &bot);
+  void UpdateEorzeanWeatherData(const Event &event, onebot11::ApiBot &bot);
 
  private:
   std::string api_key_;
@@ -100,7 +107,7 @@ inline void Weather::SetLocation(const Event &event, onebot11::ApiBot &bot) {
   }
   auto location_list = qweather::GetLocationName(city_name, api_key_);
   if (location_list.empty()) {
-    bot.send(event, fmt::format("未找到名为[{}的城市或网络异常", city_name));
+    bot.send(event, fmt::format("未找到名为[{}]的城市或网络异常", city_name));
     return;
   }
   std::string msg = "请选择想要查询的城市~";
@@ -160,7 +167,8 @@ inline void Weather::RealTimeWeather(const Event &event,
       weather["humidity"].get<std::string>(),
       weather["pressure"].get<std::string>(), weather["vis"].get<std::string>(),
       weather["cloud"].get<std::string>());
-  msg = fmt::format("{}\n也可以进入{}查看当前城市天气详情哦~", msg,
+  msg = fmt::format("{}\n也可以进入{}查看当前城市天气详情哦~",
+                    message_segment::image(TextToImg(msg)),
                     weather["fxLink"].get<std::string>());
   bot.send(event, msg, true);
 }
@@ -221,9 +229,10 @@ inline void Weather::TodayWeather(const Event &event, onebot11::ApiBot &bot) {
       tenki["humidity"].get<std::string>(),
       tenki["pressure"].get<std::string>(), tenki["vis"].get<std::string>(),
       tenki["cloud"].get<std::string>(), tenki["precip"].get<std::string>());
-  msg = fmt::format("{}\n也可以进入{}查看当前城市天气详情哦~", msg,
+  msg = fmt::format("{}\n也可以进入{}查看当前城市天气详情哦~",
+                    message_segment::image(TextToImg(msg)),
                     tenki["fxLink"].get<std::string>());
-  bot.send(event, message_segment::image(TextToImg(msg)), true);
+  bot.send(event, msg, true);
 }
 
 inline void Weather::WeatherShortDesc(const Event &event,
@@ -271,6 +280,21 @@ inline void Weather::WeatherShortDesc(const Event &event,
                        text_trans, temp_trans);
   }
   bot.send(event, message_segment::image(TextToImg(msg)), true);
+}
+
+inline void Weather::UpdateEorzeanWeatherData(const Event &event, onebot11::ApiBot &bot) {
+  if(eorzean_weather::Update())
+    bot.send(event, "更新艾欧泽亚天气数据成功");
+  else
+    bot.send(event, "更新艾欧泽亚天气数据失败");
+}
+
+namespace weather {
+
+inline std::string ExtractCityName() {
+  
+}
+
 }
 
 }  // namespace module
