@@ -22,6 +22,7 @@ Based on [ithewei/libhv](https://github.com/ithewei/libhv) and [idealvin/cocoyax
 | EorzeaZhanbu | EorzeaZhanbu | 艾欧泽亚占卜 | [示例](examples/eorzea_zhanbu.md) | 
 | BilibiliParser | BilibiliParser | 对群内的B站番剧/视频/直播等信息进行解析 | [示例](examples/bilibiliparser.md) |
 | Weibo | Weibo | 自动推送微博，具体推送项可在`configs/weibo/weibo.yml`中设置 | 顾名思义 |  
+| Weather | Weather | 天气查询 | 无 |  
 
 ## For User
 
