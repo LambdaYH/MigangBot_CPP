@@ -13,8 +13,8 @@
 #include "Document.h"
 #include "Node.h"
 
-#include "aiorequests.h"
-#include "database/redis_wrapper.h"
+#include "tools/aiorequests.h"
+#include "db/db.h"
 #include "event/type.h"
 #include "logger/logger.h"
 #include "message/message_segment.h"
@@ -51,7 +51,8 @@ class BilibiliParser : public Module {
     OnRegex(
         {R"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)",
          R"((av|AV)\d+)", R"((BV|bv)([a-zA-Z0-9])+)"},
-        "哔哩哔哩解析", ACT_InClass(BilibiliParser::Parser), permission::GROUP_MEMBER);
+        "哔哩哔哩解析", ACT_InClass(BilibiliParser::Parser),
+        permission::GROUP_MEMBER);
   }
 
  private:
@@ -59,7 +60,8 @@ class BilibiliParser : public Module {
 
   std::string ExtractDetails(const std::string &url, const GId group_id);
 
-  std::string GetBilibiliVideoDetail(const std::string &url, const GId group_id);
+  std::string GetBilibiliVideoDetail(const std::string &url,
+                                     const GId group_id);
 
   std::string GetBilibiliBangumiDetail(const std::string &url,
                                        const GId group_id);
@@ -80,7 +82,7 @@ class BilibiliParser : public Module {
 };
 
 inline bool IsInCache(const std::string &url, const GId group_id) {
-  redis::RedisWrapper redis_wrapper;
+  redis::DB redis_wrapper;
   if (!redis_wrapper.Execute(fmt::format(
           "GET {}", fmt::format("bnotrepeat:{}:{}", group_id, url))))
     return false;
@@ -92,7 +94,7 @@ constexpr auto kExpiredTime = 15;
 
 // 防止短时间内重复发送
 inline bool AddInCacheNotRepeat(const std::string &url, const GId group_id) {
-  redis::RedisWrapper redis_wrapper;
+  redis::DB redis_wrapper;
   if (!redis_wrapper.Execute(fmt::format(
           "SET {} 0 EX {}", fmt::format("bnotrepeat:{}:{}", group_id, url),
           kExpiredTime)))
@@ -104,7 +106,7 @@ inline bool AddInCacheNotRepeat(const std::string &url, const GId group_id) {
 constexpr auto kExpiredTimeCache = 120;
 
 inline bool AddInCache(const std::string &url, const std::string &value) {
-  redis::RedisWrapper redis_wrapper;
+  redis::DB redis_wrapper;
   if (!redis_wrapper.Execute(fmt::format("SET {} {} EX {}",
                                          fmt::format("bcache:{}", url), value,
                                          kExpiredTimeCache)))
@@ -113,7 +115,7 @@ inline bool AddInCache(const std::string &url, const std::string &value) {
 }
 
 inline std::string GetFromCache(const std::string &url) {
-  redis::RedisWrapper redis_wrapper;
+  redis::DB redis_wrapper;
   if (!redis_wrapper.Execute(
           fmt::format("GET {}", fmt::format("bcache:{}", url))))
     return "";
@@ -122,19 +124,19 @@ inline std::string GetFromCache(const std::string &url) {
 }
 
 inline std::string GetRealUrl(const std::string &url) {
-  auto r = aiorequests::Get(url, 15);
+  auto r = aiorequests::Get(url, 15).get();
   if (HTTP_STATUS_IS_REDIRECT(r->status_code)) return r->GetHeader("location");
   return url;
 }
 
 inline Json BilibiliParser::GetJson(const std::string &url) {
-  auto r = aiorequests::Get(url, 15, header_);
+  auto r = aiorequests::Get(url, 15, header_).get();
   if (!r) return Json();
   return r->GetJson();
 }
 
-inline std::string BilibiliParser::GetBilibiliVideoDetail(const std::string &url,
-                                                          const GId group_id) {
+inline std::string BilibiliParser::GetBilibiliVideoDetail(
+    const std::string &url, const GId group_id) {
   auto cache = GetFromCache(url);
   if (!cache.empty()) {
     AddInCacheNotRepeat(url, group_id);
@@ -143,11 +145,12 @@ inline std::string BilibiliParser::GetBilibiliVideoDetail(const std::string &url
   std::smatch aid, bvid;
   std::string api_url;
   if (std::regex_search(url, aid, aid_pattern_))
-    api_url = fmt::format("https://api.bilibili.com/x/web-interface/view?aid={}",
-                      aid[0].str().substr(2));
+    api_url =
+        fmt::format("https://api.bilibili.com/x/web-interface/view?aid={}",
+                    aid[0].str().substr(2));
   else if (std::regex_search(url, bvid, bvid_pattern_))
-    api_url = fmt::format("https://api.bilibili.com/x/web-interface/view?bvid={}",
-                      bvid[0].str());
+    api_url = fmt::format(
+        "https://api.bilibili.com/x/web-interface/view?bvid={}", bvid[0].str());
   auto details = GetJson(api_url);
   if (!details.contains("code") || details["code"].get<int>() != 0) {
     LOG_WARN("BilibiliParser: 无法解析Video: {}", api_url);
@@ -163,8 +166,8 @@ inline std::string BilibiliParser::GetBilibiliVideoDetail(const std::string &url
   std::smatch part;
   if (std::regex_search(url, part, std::regex(R"(\?p=\d+)")) &&
       part[0].str() != "?p=1") {
-    title +=
-        "[P" + std::regex_replace(part[0].str(), std::regex(R"(\?p=)"), "") + "]";
+    title += "[P" +
+             std::regex_replace(part[0].str(), std::regex(R"(\?p=)"), "") + "]";
     link += part[0].str();
   }
   if (IsInCache(link, group_id)) return "";
@@ -192,7 +195,7 @@ inline std::string BilibiliParser::GetBilibiliBangumiDetail(
     AddInCacheNotRepeat(url, group_id);
     return cache;
   }
-  auto r = aiorequests::Get(url, 15, header_);
+  auto r = aiorequests::Get(url, 15, header_).get();
   if (!r) {
     LOG_WARN("BilibiliParser: 无法解析Bangumi: {}", url);
     return "";
@@ -346,11 +349,11 @@ inline void BilibiliParser::Parser(const Event &event, onebot11::ApiBot &bot) {
     LOG_DEBUG("BilibiliParser: 即将开始解析 {}", url);
     auto msg = ExtractDetails(url, group_id);
     if (msg.empty()) continue;
-    auto ret = bot.send(event, msg).Ret();
+    auto ret = bot.send(event, msg).get();
     if (ret.message_id == 0) {
       LOG_WARN("解析消息发送失败");
-      bot.send(
-          event, "由于风控等原因链接解析结果无法发送(如有误检测请忽略)", true);
+      bot.send(event, "由于风控等原因链接解析结果无法发送(如有误检测请忽略)",
+               true);
     }
   }
 }

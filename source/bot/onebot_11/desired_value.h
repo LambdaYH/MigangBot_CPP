@@ -26,7 +26,22 @@ inline T DesiredValue(const Json &value) {
                    value[i]["member_count"].get<int>(),
                    value[i]["max_member_count"].get<int>()});
     return v;
-  }
+  } else if constexpr (std::is_same<T, GroupMemberInfo>::value)
+    return {value["group_id"].get<GId>(),
+            value["user_id"].get<QId>(),
+            value["nickname"].get<std::string>(),
+            value["card"].get<std::string>(),
+            value["sex"].get<std::string>(),
+            value["age"].get<int>(),
+            value["area"].get<std::string>(),
+            value["join_time"].get<int>(),
+            value["last_sent_time"].get<int>(),
+            value["level"].get<std::string>(),
+            value["role"].get<std::string>(),
+            value["unfriendly"].get<bool>(),
+            value["title"].get<std::string>(),
+            value["title_expire_time"].get<int>(),
+            value["card_changeable"].get<bool>()};
 }
 }  // namespace onebot11
 }  // namespace white

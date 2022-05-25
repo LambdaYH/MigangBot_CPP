@@ -32,6 +32,24 @@ struct UserInfo {
   int32_t age;
 };
 
+struct GroupMemberInfo {
+  GId group_id;
+  QId user_id;
+  std::string nickname;
+  std::string card;
+  std::string sex;
+  int age;
+  std::string area;
+  int join_time;
+  int last_sent_time;
+  std::string level;
+  std::string role;
+  bool unfriendly;
+  std::string title;
+  int title_expire_time;
+  bool card_changeable;
+};
+
 }  // namespace white
 
 #endif

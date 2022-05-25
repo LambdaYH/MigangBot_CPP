@@ -1,8 +1,10 @@
 #pragma once
 
-#include "database/mysql_wrapper.h"
+#include "db/db.h"
+#include "db/db_orm.h"
 #include "fmt/format.h"
 #include "logger/logger.h"
+#include "sqlpp11/insert.h"
 #include "type.h"
 
 namespace white {
@@ -11,48 +13,48 @@ namespace module {
 class WeiboRecorder {
  public:
   WeiboRecorder() {
-    sql::MySQLWrapper sql_wrapper;
-    std::string query =
-        "CREATE TABLE IF NOT EXISTS Weibos\n"
-        "(weibo_id    char(25)    NOT NULL,\n"
-        "push_time    char(20)    NOT NULL,\n"
-        "PRIMARY KEY(weibo_id))";
-    int ec;
-    sql_wrapper.Execute(query, &ec);
-    if (ec) {
-      LOG_ERROR("WeiboRecorder: 创建表发生错误。code: {}", ec);
+    try {
+      mariadb::DB().Execute(
+          "CREATE TABLE IF NOT EXISTS Weibos\n"
+          "(id          INT         NOT NULL AUTO_INCREMENT,\n"
+          "weibo_id     char(25)    NOT NULL,\n"
+          "push_time    char(20)    NOT NULL,\n"
+          "content      TEXT        NOT NULL,\n"
+          "PRIMARY KEY(id))");
+    } catch (const sqlpp::exception &e) {
+      LOG_ERROR("WeiboRecorder: 创建表发生错误。code: {}", e.what());
       return;
     }
   }
 
-  bool RecordWeibo(const std::string &weibo_id,
-                   const std::string &push_time) {
-    sql::MySQLWrapper sql_wrapper;
-    auto query = fmt::format(
-        "INSERT INTO Weibos(weibo_id, push_time)\n"
-        "VALUES(\n"
-        "\"{}\",\n"
-        "\"{}\")",
-        weibo_id, push_time);
-    int ec;
-    sql_wrapper.Execute(query, &ec);
-    if (ec) {
-      LOG_ERROR("WeiboRecorder: 更新表发生错误。");
+  bool RecordWeibo(const std::string &weibo_id, const std::string &push_time,
+                   const std::string &content) {
+    try {
+      mariadb::DB()(sqlpp::insert_into(wb_).set(wb_.weiboId = weibo_id,
+                                                wb_.pushTime = push_time,
+                                                wb_.content = content));
+    } catch (const sqlpp::exception &e) {
+      LOG_ERROR("WeiboRecorder: 更新表发生错误。code: {}", e.what());
       return false;
     }
     return true;
   }
 
-  bool IsExist(const std::string &weibo_id){
-    sql::MySQLWrapper sql_wrapper;
-    int ec;
-    sql_wrapper.Execute(fmt::format("SELECT weibo_id FROM Weibos WHERE weibo_id=\"{}\"", weibo_id), &ec);
-    if (ec) {
-      LOG_ERROR("WeiboRecorder: 更新表发生错误。");
+  bool IsExist(const std::string &weibo_id) {
+    try {
+      return !mariadb::DB()(sqlpp::select(wb_.weiboId)
+                                .from(wb_)
+                                .where(wb_.weiboId == weibo_id))
+                  .empty();
+    } catch (const sqlpp::exception &e) {
+      LOG_ERROR("WeiboRecorder: 更新表发生错误。code: {}", e.what());
       return false;
     }
-    return !sql_wrapper.FetchOne().empty();
+    return true;
   }
+
+ private:
+  db::Weibos wb_;
 };
 
 }  // namespace module

@@ -43,6 +43,9 @@
 [submodule "third-party/gumbo-query"]
 	path = third-party/gumbo-query
 	url = https://github.com/lazytiger/gumbo-query.git
-[submodule "third-party/tidy-html5"]
-	path = third-party/tidy-html5
-	url = https://github.com/htacg/tidy-html5.git
+[submodule "third-party/libxml2"]
+	path = third-party/libxml2
+	url = https://gitlab.gnome.org/GNOME/libxml2.git
+[submodule "third-party/sqlpp11"]
+	path = third-party/sqlpp11
+	url = https://github.com/rbock/sqlpp11.git

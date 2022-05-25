@@ -36,21 +36,49 @@ inline void transform_if(InputIt first, InputIt last, OutputIt dest, Pred pred,
 // everyschedule task must own its own service
 class ScheduleService : public Service {
  public:
+  ScheduleService(const std::string &service_name,
+                  const std::string &description, const int manage_permission,
+                  const bool enable_on_default = true)
+      : Service(service_name, description, manage_permission,
+                enable_on_default) {}
+
   ScheduleService(const std::string &service_name, const int manage_permission,
                   const bool enable_on_default = true)
-      : Service(service_name, manage_permission, enable_on_default) {}
+      : ScheduleService(service_name, "", manage_permission,
+                        enable_on_default) {}
+
   ScheduleService(const std::string &service_name,
                   const bool enable_on_default = true)
-      : ScheduleService(service_name, permission::GROUP_ADMIN,
+      : ScheduleService(service_name, "", permission::GROUP_ADMIN,
+                        enable_on_default) {}
+
+  ScheduleService(const std::string &service_name,
+                  const std::string &description,
+                  const bool enable_on_default = true)
+      : ScheduleService(service_name, description, permission::GROUP_ADMIN,
                         enable_on_default) {}
 
  public:
-  void BroadCast(onebot11::ApiBot *bot, const std::string &message,
-                 const std::time_t interval_ms) {
+  template <typename Str>
+  void BroadCast(onebot11::ApiBot *bot, Str &&message,
+                 const std::time_t interval_ms = 500) {
     auto group_to_send = GetEnableGroup(bot);
     for (auto group : group_to_send) {
-      bot->send_group_msg(group, message);
+      bot->send_group_msg(group, std::forward<Str>(message));
       co::sleep(interval_ms);
+    }
+  }
+
+  template <class InputIt>
+  void BroadCast(onebot11::ApiBot *bot, InputIt start, InputIt end,
+                 const std::time_t interval_ms) {
+    auto group_to_send = GetEnableGroup(bot);
+    while (start != end) {
+      for (auto group : group_to_send) {
+        bot->send_group_msg(group, *start);
+        co::sleep(interval_ms);
+      }
+      ++start;
     }
   }
 
@@ -60,7 +88,7 @@ class ScheduleService : public Service {
       std::lock_guard<std::mutex> locker(mutex_);
       return std::vector<GId>(groups_.begin(), groups_.end());
     }
-    auto groups = bot->get_group_list().Ret();
+    auto groups = bot->get_group_list().get();
     std::vector<GId> ret;
     {
       std::lock_guard<std::mutex> locker(mutex_);

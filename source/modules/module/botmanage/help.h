@@ -34,7 +34,7 @@ class Help : public Module {
  public:
   Help();
   virtual void Register() {
-    OnPrefix({".help", "/帮助", "。help"}, "__help__", ACT_InClass(Help::HelpMsg),
+    OnPrefix({".help", "/帮助", "。help"}, make_pair("__help__", "机器人管理"), ACT_InClass(Help::HelpMsg),
              permission::NORMAL, permission::SUPERUSER);
   }
 

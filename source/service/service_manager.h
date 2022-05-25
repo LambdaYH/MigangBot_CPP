@@ -4,6 +4,8 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
+
 #include "type.h"
 #include <service/service.h>
 #include <service/triggered_service.h>
@@ -18,17 +20,15 @@ class ServiceManager {
   }
 
  public:
-  bool CheckService(const std::string &service_name)
-  {
+  bool CheckService(const std::string &service_name) {
     return service_name_map_.contains(service_name);
   }
 
-  bool CheckServiceStatus(const std::string &service_name, const GId group_id)
-  {
+  std::vector<int> CheckPermission(const std::string &service_name) {
     auto range = service_name_map_.equal_range(service_name);
-    auto ret = true;
+    std::vector<int> ret;
     for (auto it = range.first; it != range.second; ++it)
-      ret &= it->second->GroupStatus(group_id);
+      ret.emplace_back(it->second->Permission());
     return ret;
   }
 
@@ -50,8 +50,55 @@ class ServiceManager {
     return ret;
   }
 
-  void RegisterService(std::shared_ptr<Service> service) {
+  void RegisterService(const std::string &bundle_name,
+                       std::shared_ptr<Service> service) {
     service_name_map_.emplace(service->GetServiceName(), service);
+    bundle_service_map_[bundle_name].emplace(service->GetServiceName(),
+                                             service);
+  }
+
+  auto GetServiceList() {
+    std::vector<std::pair<std::string, std::string>> ret;
+    for (auto &[name, sv] : service_name_map_)
+      ret.emplace_back(name, sv->GetDescription());
+    return ret;
+  }
+
+  auto GetServiceList(GId group_id) {
+    std::vector<std::tuple<std::string, std::string, bool>> ret;
+    for (auto &[name, sv] : service_name_map_)
+      ret.emplace_back(name, sv->GetDescription(), sv->GroupStatus(group_id));
+    return ret;
+  }
+
+  std::vector<std::pair<std::string, std::string>> GetBundleService(
+      const std::string &bundle_name) {
+    if (!bundle_service_map_.contains(bundle_name)) return {};
+    std::vector<std::pair<std::string, std::string>> ret;
+    for (auto &[name, sv] : bundle_service_map_.at(bundle_name))
+      ret.emplace_back(name, sv->GetDescription());
+    return ret;
+  }
+
+  std::vector<std::tuple<std::string, std::string, bool>> GetBundleService(
+      const std::string &bundle_name, GId group_id) {
+    if (!bundle_service_map_.contains(bundle_name)) return {};
+    std::vector<std::tuple<std::string, std::string, bool>> ret;
+    for (auto &[name, sv] : bundle_service_map_.at(bundle_name))
+      ret.emplace_back(name, sv->GetDescription(), sv->GroupStatus(group_id));
+    return ret;
+  }
+
+  std::vector<std::string> GetBundleList(){
+    std::vector<std::string> ret;
+    ret.reserve(bundle_service_map_.size());
+    for(auto &[name, _] : bundle_service_map_)
+      ret.push_back(name);
+    return ret;
+  }
+
+  bool CheckBundle(const std::string &bundle_name) {
+    return bundle_service_map_.contains(bundle_name);
   }
 
  public:
@@ -65,7 +112,9 @@ class ServiceManager {
   ~ServiceManager() {}
 
  private:
-  std::multimap<const std::string, std::shared_ptr<Service>> service_name_map_;
+  std::map<std::string, std::multimap<std::string, std::shared_ptr<Service>>>
+      bundle_service_map_;
+  std::multimap<std::string, std::shared_ptr<Service>> service_name_map_;
 };
 }  // namespace white
 

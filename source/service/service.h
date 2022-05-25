@@ -20,9 +20,10 @@
 namespace white {
 class Service {
  public:
-  Service(const std::string &service_name, const int manage_permission,
-          const bool enable_on_default = true)
+  Service(const std::string &service_name, const std::string &description,
+          const int manage_permission, const bool enable_on_default = true)
       : service_name_(service_name),
+        description_(description),
         manage_permission_(manage_permission),
         enable_on_default_(enable_on_default),
         config_path_(config::kServiceDir / (service_name_ + ".json")) {
@@ -33,6 +34,8 @@ class Service {
 
  public:
   const std::string &GetServiceName() const noexcept { return service_name_; }
+  const std::string &GetDescription() const noexcept { return description_; }
+  const int Permission() const noexcept { return manage_permission_; };
 
   bool GroupEnable(const GId group_id, const int permission) {
     if (permission < manage_permission_) return false;
@@ -60,15 +63,14 @@ class Service {
     return true;
   }
 
-  bool GroupStatus(const GId group_id)
-  {
-    if(enable_on_default_)
-      return !groups_.count(group_id);
+  bool GroupStatus(const GId group_id) {
+    if (enable_on_default_) return !groups_.count(group_id);
     return groups_.count(group_id);
   }
 
  protected:
   void LoadConfig() {
+    if (manage_permission_ == permission::ALWAYS_ON) return;
     if (!std::filesystem::exists(config_path_)) {
       config_["enable_on_default"] = enable_on_default_;
       config_["groups"] = R"([])"_json;
@@ -93,8 +95,10 @@ class Service {
   std::mutex mutex_;
   std::unordered_set<GId> groups_;
 
- private:
   const std::string service_name_;
+
+ private:
+  const std::string description_;
 
   const std::string config_path_;
 

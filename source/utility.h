@@ -11,11 +11,10 @@
 #include <regex>
 #include <string>
 
-#include <tidy.h>
-#include <tidybuffio.h>
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <utf8.h>
+#include <zlib.h>
 
 namespace white {
 
@@ -23,6 +22,10 @@ inline std::string ReverseUTF8(const std::string &str) {
   std::u16string str_u16 = utf8::utf8to16(str);
   std::reverse(str_u16.begin(), str_u16.end());
   return utf8::utf16to8(str_u16);
+}
+
+inline bool IsDigitStr(const std::string_view &str) {
+  return std::all_of(str.begin(), str.end(), isdigit);
 }
 
 inline bool IsDigitStr(const std::string &str) {
@@ -135,61 +138,85 @@ inline std::string encode(const std::string &data) {
   return buffer;
 }
 
-inline std::string unescape(const std::string &data) {
-  auto ret = data;
-  ReplaceAll(ret, "&amp;", "&");
-  ReplaceAll(ret, "&quot;", "\"");
-  ReplaceAll(ret, "&apos;", "\'");
-  ReplaceAll(ret, "&lt;", "<");
-  ReplaceAll(ret, "&gt;", ">");
+inline std::string unreliable_decode(const std::string &data) {
+  std::string ret;
+  int n = data.size();
+  char ch;
+  for(std::size_t i = 0; i < n; ++i) {
+    ch = data[i];
+    if(ch != '&') {
+      ret.push_back(ch);
+      continue;
+    }
+    if(i == n - 1)
+      return "";
+    auto end = data.find_first_of(';', i);
+    if(end == std::string::npos)
+      return "";
+    switch(data[i + 1]){
+      case 'a':
+        if(end - i == 4)
+          ret.push_back('&');
+        else
+          ret.push_back('\'');
+        break;
+      case 'q':
+        ret.push_back('\"');
+        break;
+      case 'l':
+        ret.push_back('<');
+        break;
+      case 'g':
+        ret.push_back('>');
+    }
+    i = end;
+  }
   return ret;
 }
 
-// convert html to xml
-// https://blog.laplante.io/2013/02/parsing-html-with-C/
-inline std::string CleanHTML(const std::string &html) {
-  // Initialize a Tidy document
-  TidyDoc tidyDoc = tidyCreate();
-  TidyBuffer tidyOutputBuffer = {0};
+}  // namespace html
 
-  // Configure Tidy
-  // The flags tell Tidy to output XML and disable showing warnings
-  bool configSuccess = tidyOptSetBool(tidyDoc, TidyXhtmlOut, yes) &&
-                       tidyOptSetBool(tidyDoc, TidyQuiet, yes) &&
-                       tidyOptSetBool(tidyDoc, TidyNumEntities, yes) &&
-                       tidyOptSetBool(tidyDoc, TidyLiteralAttribs, yes) &&
-                       tidyOptSetBool(tidyDoc, TidyShowWarnings, no);
+namespace zlib {
 
-  int tidyResponseCode = -1;
-
-  // Parse input
-  if (configSuccess)
-    tidyResponseCode = tidyParseString(tidyDoc, html.c_str());
-
-  // Process HTML
-  if (tidyResponseCode >= 0)
-    tidyResponseCode = tidyCleanAndRepair(tidyDoc);
-
-  // Output the HTML to our buffer
-  if (tidyResponseCode >= 0)
-    tidyResponseCode = tidySaveBuffer(tidyDoc, &tidyOutputBuffer);
-
-  // Any errors from Tidy?
-  if (tidyResponseCode < 0)
-    throw fmt::format(
-        "Tidy encountered an error while parsing an HTML response. Tidy "
-        "response code: {}",
-        tidyResponseCode);
-
-  // Grab the result from the buffer and then free Tidy's memory
-  std::string tidyResult = (char *)tidyOutputBuffer.bp;
-  tidyBufFree(&tidyOutputBuffer);
-  tidyRelease(tidyDoc);
-
-  return tidyResult;
+// https://blog.csdn.net/wangzhicheng1983/article/details/104049585
+inline bool gzip_compress(const std::string &original_str, std::string &str) {
+    z_stream d_stream = { 0 };
+    if (Z_OK != deflateInit2(&d_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, MAX_WBITS + 16, 9, Z_DEFAULT_STRATEGY)) {
+        return false;
+    }
+    uLong len = compressBound(original_str.size());
+    unsigned char *buf = (unsigned char*)malloc(len);
+    if (!buf) {
+        return false;
+    }
+    d_stream.next_in = (unsigned char *)(original_str.c_str());
+    d_stream.avail_in  = original_str.size();
+    d_stream.next_out = buf;
+    d_stream.avail_out = len;
+    deflate(&d_stream, Z_SYNC_FLUSH);
+    deflateEnd(&d_stream);
+    str.assign((char *)buf, d_stream.total_out);
+    free(buf);
+    return true;
 }
 
-}  // namespace html
+inline std::string gzip_uncompress(const std::string &original_str) {
+  std::string  str;
+    unsigned char buf[102400] = "";
+    uLong len = 102400;
+    z_stream d_stream = { 0 };
+    int res = inflateInit2(&d_stream, MAX_WBITS + 16);
+    d_stream.next_in = (unsigned char *)(original_str.c_str());
+    d_stream.avail_in = original_str.size();
+    d_stream.next_out = buf;
+    d_stream.avail_out = len;
+    inflate(&d_stream, Z_SYNC_FLUSH);
+    inflateEnd(&d_stream);
+    str.assign((char *)buf, d_stream.total_out);
+    return str;
+}
+
+} // namespace zlib
 
 }  // namespace white
 

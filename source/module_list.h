@@ -5,11 +5,7 @@
 
 #include "modules/module/echo.h"
 
-#include "modules/module/botmanage/feedback.h"
-#include "modules/module/botmanage/friend_invite.h"
-#include "modules/module/botmanage/group_invite.h"
-#include "modules/module/botmanage/help.h"
-#include "modules/module/botmanage/status_info.h"
+#include "modules/module/botmanage/botmanage.h"
 
 #include "modules/module/tencentcloud_nlp/auto_summarization.h"
 #include "modules/module/tencentcloud_nlp/keywords_extraction.h"
@@ -20,6 +16,10 @@
 
 #include "modules/module/weibo/weibo_push.h"
 
+#include "modules/module/morning/morning.h"
+
+#include "modules/module/weather/weather.h"
+
 namespace white {
 namespace module {
 
@@ -28,11 +28,7 @@ inline void InitModuleList() {
   AddModule<Echo>();
 
   // botmanage
-  AddModule<Help>();
-  AddModule<StatusInfo>();
-  AddModule<FeedBack>();
-  AddModule<FriendInvite>();
-  AddModule<GroupInvite>();
+  AddModule<BotManage>();
 
   // tencentcloud_nlp
   AddModule<AutoSummarization>();
@@ -46,6 +42,11 @@ inline void InitModuleList() {
 
   // weibo
   AddModule<Weibo>();
+
+  AddModule<Morning>();
+
+  AddModule<Weather>();
+
 }
 
 }  // namespace module

@@ -145,7 +145,7 @@ inline std::string TextToImg(const std::string &text) {
   img_height = lines.size() * font_height;
   int gap = 5;
   auto real_width = img_width + border * 4;
-  auto real_height = img_height + border * 4 + gap * (lines.size() - 1);
+  auto real_height = img_height + border * 4 + gap * lines.size();
   cv::Mat img(real_height, real_width, CV_8UC3,
               cv::Scalar(239, 204, 175));  // B-G-R in opencv
   cv::Mat roi = img(cv::Rect(border, border, real_width - 2 * border,

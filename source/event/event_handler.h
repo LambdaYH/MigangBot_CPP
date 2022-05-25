@@ -23,11 +23,9 @@
 #include "permission/permission.h"
 #include "utility.h"
 #include "service/service_manager.h"
+#include "global_config.h"
 
 namespace white {
-
-// 存储命令的array的大小，取决于权限设置，Superuser总是为最大值
-constexpr auto kCommandArraySize = permission::SUPERUSER + 1;
 
 class EventHandler {
  public:
@@ -98,7 +96,7 @@ inline bool EventHandler::RegisterCommand(
       return command_prefix_.Insert(command, service);
       break;
     case SUFFIX:
-      return command_suffix_.Insert(command, service);
+      return command_suffix_.InsertFromBack(command, service);
       break;
     case ALLMSG:
       all_msg_handler_.push_back(service);
@@ -131,49 +129,6 @@ inline bool EventHandler::RegisterRegex(
   return true;
 }
 
-inline void HandleControlCommand(const std::string_view &msg, const int perm,
-                                 const Event &event, onebot11::ApiBot &bot) {
-  if (msg.starts_with("启用") || msg.starts_with("enable")) {
-    auto group_id = event["group_id"].get<GId>();
-    auto service_name =
-        msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
-    if (!service_name.empty()) {
-      go([group_id, &bot, name = std::string(service_name), perm] {
-        if (!ServiceManager::GetInstance().CheckService(name)) {
-          bot.send_group_msg(group_id, fmt::format("服务[{}]不存在", name));
-          return;
-        }
-        if (ServiceManager::GetInstance().GroupEnable(name, group_id, perm))
-
-          bot.send_group_msg(group_id, fmt::format("已成功启用服务[{}]", name));
-
-        else
-          bot.send_group_msg(
-              group_id, fmt::format("未能(完全)启用服务[{}]，权限不足", name));
-      });
-    }
-  } else if (msg.starts_with("禁用") || msg.starts_with("disable")) {
-    auto group_id = event["group_id"].get<GId>();
-    auto service_name =
-        msg.substr(std::min(msg.find_last_of(' ') + 1, msg.size()));
-    if (!service_name.empty()) {
-      go([group_id, &bot, name = std::string(service_name), perm] {
-        if (!ServiceManager::GetInstance().CheckService(name)) {
-          bot.send_group_msg(group_id, fmt::format("服务[{}]不存在", name));
-          return;
-        }
-        if (ServiceManager::GetInstance().GroupDisable(name, group_id, perm))
-
-          bot.send_group_msg(group_id, fmt::format("已成功禁用服务[{}]", name));
-
-        else
-          bot.send_group_msg(
-              group_id, fmt::format("未能(完全)禁用服务[{}]，权限不足", name));
-      });
-    }
-  }
-}
-
 inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
   if (!filter_->Filter(event)) return false;
   if (event.contains("post_type")) {
@@ -203,7 +158,6 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                        event["group_id"].get<GId>(),
                        event["sender"].value("nickname", ""),
                        event["sender"].value("user_id", 0), msg);
-            HandleControlCommand(msg, perm, event, bot);
             break;
           default:
             break;
@@ -214,15 +168,18 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
           auto at_id_start = std::min(static_cast<std::size_t>(10), msg.size());
           auto at_id_end = std::min(msg.find_first_of(']'), msg.size());
           auto at_id = msg.substr(at_id_start, at_id_end - at_id_start);
-          auto self_id = std::to_string(event["self_id"].get<QId>());
-          if (at_id == self_id) {
+          if (at_id == std::to_string(event["self_id"].get<QId>())) {
             msg = msg.substr(msg.find_first_of(']') + 1);
             msg = msg.substr(msg.find_first_not_of(' '));
             event["__to_me__"] = true;
-            event["message"] = std::string(msg);
+            event["message"] = msg;
           }
+        } else if (msg.starts_with(config::BOT_NAME)) {
+          event["__to_me__"] = true;
+          msg.remove_prefix(config::BOT_NAME.size());
+          event["message"] = msg;
         }
-        auto message = event["message"].get<std::string>();
+        std::string message{msg};
         switch (message_type) {
           case 'g': {
             auto group_id = event["group_id"].get<GId>();
@@ -236,14 +193,16 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
-              auto &service = command_prefix_.Search(message, event);
+              const auto &service =
+                  command_prefix_.LongestPrefix(message, event);
               if (service && service->CheckIsEnable(group_id) &&
                   service->CheckPerm(perm) &&
                   service->CheckToMe(event.contains("__to_me__")))
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
-              auto &service = command_suffix_.SearchFromBack(message, event);
+              const auto &service =
+                  command_suffix_.LongestSuffix(message, event);
               if (service && service->CheckIsEnable(group_id) &&
                   service->CheckPerm(perm) &&
                   service->CheckToMe(event.contains("__to_me__")))
@@ -273,13 +232,14 @@ inline bool EventHandler::Handle(Event &event, onebot11::ApiBot &bot) noexcept {
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
-              const auto &service = command_prefix_.Search(message, event);
+              const auto &service =
+                  command_prefix_.LongestPrefix(message, event);
               if (service && service->CheckPerm(perm))
                 go([&service, event, &bot] { service->Run(event, bot); });
             }
             {
               const auto &service =
-                  command_suffix_.SearchFromBack(message, event);
+                  command_suffix_.LongestSuffix(message, event);
               if (service && service->CheckPerm(perm))
                 go([&service, event, &bot] { service->Run(event, bot); });
             }

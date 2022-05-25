@@ -14,13 +14,14 @@
 #include <hv/hlog.h>
 #include <yaml-cpp/yaml.h>
 
-#include "database/mysql_conn_pool.h"
-#include "database/redis_conn_pool.h"
+// #include "database/mysql_conn_pool.h"
+#include "db/db_conn/orm_pool.h"
 #include "event/event_handler.h"
 #include "global_config.h"
 #include "logger/logger.h"
 #include "module_list.h"
 #include "server.h"
+#include "sqlpp11/mysql/connection_config.h"
 
 YAML::Node white::global_config;
 std::filesystem::path white::config::kConfigDir;
@@ -59,6 +60,8 @@ constexpr auto kGlobalConfigExample =
     "  RedisPool: 5                     # Redis连接池连接数";
 
 int main(int argc, char** argv) {
+  hlog_disable();
+  flag::init(argc, argv);
   // load config
   std::filesystem::path current_working_dir = std::filesystem::current_path();
   std::filesystem::path config_doc_path = current_working_dir / "config.yml";
@@ -88,8 +91,6 @@ int main(int argc, char** argv) {
     std::cout << "服务配置目录已创建" << std::endl;
   }
 
-  flag::init(argc, argv);
-
   // 加载配置文件
   white::global_config = YAML::LoadFile(config_doc_path);
 
@@ -107,13 +108,23 @@ int main(int argc, char** argv) {
   white::LOG_INIT(log_file, log_level);
 
   // 初始化数据库连接池
-  white::sql::MySQLConnPool::GetInstance().Init(
-      white::global_config["DataBase"]["Host"].as<std::string>(),
-      white::global_config["DataBase"]["Username"].as<std::string>(),
-      white::global_config["DataBase"]["Password"].as<std::string>(),
-      white::global_config["DataBase"]["Name"].as<std::string>(),
-      white::global_config["DataBase"]["Port"].as<unsigned int>(),
-      white::global_config["Dev"]["SqlPool"].as<std::size_t>());
+  // white::sql::MySQLConnPool::GetInstance().Init(
+  //     white::global_config["DataBase"]["Host"].as<std::string>(),
+  //     white::global_config["DataBase"]["Username"].as<std::string>(),
+  //     white::global_config["DataBase"]["Password"].as<std::string>(),
+  //     white::global_config["DataBase"]["Name"].as<std::string>(),
+  //     white::global_config["DataBase"]["Port"].as<unsigned int>(),
+  //     white::global_config["Dev"]["SqlPool"].as<std::size_t>());
+  {
+  auto config = std::make_shared<sqlpp::mysql::connection_config>();
+  config->auto_reconnect = true;
+  config->database = white::global_config["DataBase"]["Name"].as<std::string>();
+  config->host = white::global_config["DataBase"]["Host"].as<std::string>();
+  config->port = white::global_config["DataBase"]["Port"].as<unsigned int>();
+  config->user = white::global_config["DataBase"]["Username"].as<std::string>();
+  config->password = white::global_config["DataBase"]["Password"].as<std::string>();
+  white::orm::mariadb::OrmPool::GetInstance().Init(config, white::global_config["Dev"]["SqlPool"].as<std::size_t>());
+  }
 
   // 初始化Redis连接池
   white::redis::RedisConnPool::GetInstance().Init(
@@ -137,12 +148,7 @@ int main(int argc, char** argv) {
   white::LOG_INFO("MigangBot已初始化");
   white::LOG_INFO("监听地址: {}:{}", address, port);
 
-  hlog_disable();
-
-  white::Server server(port, address);
-
-  // init schedule ...
-  server.Run();
+  white::Server(port, address).Run();
 
   return EXIT_SUCCESS;
 }

@@ -13,21 +13,17 @@ RUN     apt update \
                     libtool
 WORKDIR /build_temp
 COPY . /build_temp
-RUN     git clone https://github.com/TencentCloud/tencentcloud-sdk-cpp.git \
-    &&  cd tencentcloud-sdk-cpp \
-    &&  mkdir build && cd build \
-    &&  cmake -DBUILD_SHARED_LIBS=off -DBUILD_MODULES="nlp" .. \
-    &&  make && make install \
-    &&  git clone https://github.com/google/gumbo-parser.git \
+RUN     git clone https://github.com/google/gumbo-parser.git \
     &&  cd gumbo-parser \
     &&  ./autogen.sh \
     &&  ./configure \
     &&  make && make install \
     &&  cd /build_temp \
-    &&  cmake -DCMAKE_BUILD_TYPE=Release . \
+    &&  mkdir build && cd build \
+    &&  cmake -DCMAKE_BUILD_TYPE=Release .. \
     &&  make \
     &&  mkdir /MigangBot \
-    &&  cp /build_temp/bin/MigangBot /MigangBot \
+    &&  cp /build_temp/build/bin/MigangBot /MigangBot \
     &&  cp /build_temp/resources/* -r /MigangBot \
     &&  rm -rf /build_temp/
 WORKDIR /MigangBot

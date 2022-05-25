@@ -13,6 +13,7 @@
 #include <utility>
 
 #include <co/co.h>
+#include <oneapi/tbb/concurrent_unordered_map.h>
 
 #include "api/onebot_11/api_impl.h"
 #include "bot/onebot_11/future_wrapper.h"
@@ -67,6 +68,10 @@ class ApiBot {
 
   CoFutureWrapper<std::vector<GroupInfo>> get_group_list(bool no_cache = false);
 
+  CoFutureWrapper<GroupMemberInfo> get_group_member_info(const GId gid,
+                                                         const QId uid,
+                                                         bool no_cache = false);
+
   CoFutureWrapper<UserInfo> get_stranger_info(const QId user_id,
                                               bool no_cache = false);
 
@@ -78,6 +83,19 @@ class ApiBot {
   void approve(const Event &event);
 
   void set_group_leave(const GId group_id, bool is_dismiss = false);
+
+  template <typename Ret, typename JsonData>
+  CoFutureWrapper<Ret> SendRaw(JsonData &&data) {
+    auto ret = Echo<Ret>(data);
+    notify_->Run(data.dump());
+    return ret;
+  };
+
+  void SendRaw(Json &&data) { notify_->Run(data.dump()); };
+
+  void SendRaw(Json &data) { notify_->Run(data.dump()); };
+
+  void SendRaw(std::string &&str) { notify_->Run(std::move(str)); };
 
  public:
   std::string WaitForNextMessage(const Event &event);
@@ -95,58 +113,37 @@ class ApiBot {
   void FeedMessage(GId group_id, QId user_id, Str &&message);
 
  public:
-  template<typename Notify, typename SetEcho>
-  ApiBot(Notify &&notify, SetEcho &&set_echo_function)
+  template <typename Notify>
+  ApiBot(Notify &&notify,
+         tbb::concurrent_unordered_map<
+             std::time_t, std::function<void(const Json &)>> &echo_function)
       : notify_(new FunctionForNotify(std::forward<Notify>(notify))),
-        set_echo_function_(new FunctionForSetEcho(std::forward<SetEcho>(set_echo_function))),
+        echo_function_(echo_function),
         u_(-10000, 10000) {}
 
-  ~ApiBot() {
-    delete notify_;
-    delete set_echo_function_;
-  }
+  ~ApiBot() { delete notify_; }
 
  private:
   template <typename T>
   void EchoFunction(const std::weak_ptr<co_promise<T>> &weak_p,
-                    const Json &value) {
-    auto shared_p = weak_p.lock();
-    if (!shared_p) return;
-    try {
-      if (value.is_null()) {
-        shared_p->set_value(DefaultValue<T>());
-        return;
-      }
-      shared_p->set_value(DesiredValue<T>(value));
-    } catch (const std::exception &e) {
-      LOG_ERROR("Exception In EchoFunction: {}", e.what());
-    }
+                    const Json &value) const;
+
+  template <typename F>
+  inline void SetEchoFunction(const std::time_t echo_code, F &&func) {
+    echo_function_[echo_code] = std::forward<F>(func);
   }
 
   template <typename T>
-  CoFutureWrapper<T> Echo(Json &msg) {
-    static auto timestamp_micro = []() {
-      return std::chrono::time_point_cast<std::chrono::microseconds>(
-                 std::chrono::high_resolution_clock::now())
-          .time_since_epoch()
-          .count();
-    };
-    std::time_t echo_code =
-        timestamp_micro() +
-        u_(random_engine_) *
-            10000;  // 用纳秒会导致接受的和发送的不一致，姑且用微秒吧
-    msg["echo"] = echo_code;  // 多线程下降低冲突的可能性，加个随机数
-    auto promise = std::make_shared<co_promise<T>>();
-    set_echo_function_->Run(
-        echo_code, [this, weak_p = std::weak_ptr(promise)](const Json &value) {
-          EchoFunction(weak_p, value);
-        });
-    return CoFutureWrapper{std::move(promise)};
-  }
+  CoFutureWrapper<T> Echo(Json &msg);
+
+ private:
+  template <bool Is_Approve, typename Str>
+  void HandleAddRequestImpl(const Event &event, Str &&reason);
 
  private:
   const ClosureNotify *const notify_;
-  const ClosureSetEcho *const set_echo_function_;
+  tbb::concurrent_unordered_map<std::time_t, std::function<void(const Json &)>>
+      &echo_function_;
 
   std::mt19937 random_engine_;
   std::uniform_int_distribution<std::time_t> u_;
@@ -180,7 +177,7 @@ inline std::string ApiBot::WaitForNextMessage(const Event &event) {
     }
   }
 
-  return CoFutureWrapper(std::move(p)).Ret();
+  return CoFutureWrapper(std::move(p)).get();
 }
 
 inline std::string ApiBot::WaitForNextMessageFrom(QId person) {
@@ -190,7 +187,7 @@ inline std::string ApiBot::WaitForNextMessageFrom(QId person) {
     std::lock_guard<std::mutex> locker(someone_need_message_mutex_[person]);
     someone_need_message_[person].push(std::weak_ptr(p));
   }
-  return CoFutureWrapper(std::move(p)).Ret();
+  return CoFutureWrapper(std::move(p)).get();
 }
 
 inline bool ApiBot::IsSomeOneNeedMessage(QId user_id) const {
@@ -235,14 +232,49 @@ inline void ApiBot::FeedMessage(GId group_id, QId user_id, Str &&message) {
     someone_group_message_.erase(group_id);
 }
 
+template <typename T>
+inline void ApiBot::EchoFunction(const std::weak_ptr<co_promise<T>> &weak_p,
+                                 const Json &value) const {
+  auto shared_p = weak_p.lock();
+  if (!shared_p) return;
+  try {
+    if (value.is_null()) {
+      shared_p->set_value(DefaultValue<T>());
+      return;
+    }
+    shared_p->set_value(DesiredValue<T>(value));
+  } catch (const std::exception &e) {
+    LOG_ERROR("Exception In EchoFunction: {}", e.what());
+  }
+}
+
+template <typename T>
+inline CoFutureWrapper<T> ApiBot::Echo(Json &msg) {
+  static auto timestamp_micro = []() {
+    return std::chrono::time_point_cast<std::chrono::microseconds>(
+               std::chrono::high_resolution_clock::now())
+        .time_since_epoch()
+        .count();
+  };
+  std::time_t echo_code =
+      timestamp_micro() +
+      u_(random_engine_) *
+          10000;  // 用纳秒会导致接受的和发送的不一致，姑且用微秒吧
+  msg["echo"] = echo_code;  // 多线程下降低冲突的可能性，加个随机数
+  auto promise = std::make_shared<co_promise<T>>();
+  SetEchoFunction(echo_code,
+                  [this, weak_p = std::weak_ptr(promise)](const Json &value) {
+                    EchoFunction(weak_p, value);
+                  });
+  return CoFutureWrapper{std::move(promise)};
+}
+
 template <typename Str>
 inline CoFutureWrapper<MessageID> ApiBot::send_private_msg(
     const uint64_t user_id, Str &&message, bool auto_escape) {
   Json msg = api_impl::send_private_msg(user_id, std::forward<Str>(message),
                                         auto_escape);
-  auto ret = Echo<MessageID>(msg);
-  notify_->Run(msg.dump());
-  return ret;
+  return SendRaw<MessageID>(msg);
 }
 
 template <typename Str>
@@ -251,9 +283,7 @@ inline CoFutureWrapper<MessageID> ApiBot::send_group_msg(const GId group_id,
                                                          bool auto_escape) {
   Json msg = api_impl::send_group_msg(group_id, std::forward<Str>(message),
                                       auto_escape);
-  auto ret = Echo<MessageID>(msg);
-  notify_->Run(msg.dump());
-  return ret;
+  return SendRaw<MessageID>(msg);
 }
 
 template <typename Type, typename Str, typename ID>
@@ -262,9 +292,7 @@ inline CoFutureWrapper<MessageID> ApiBot::send_msg(Type &&type, Str &&message,
   Json msg =
       api_impl::send_msg(std::forward<Type>(type), std::forward<Str>(message),
                          std::forward<ID>(id), auto_escape);
-  auto ret = Echo<MessageID>(msg);
-  notify_->Run(msg.dump());
-  return ret;
+  return SendRaw<MessageID>(msg);
 }
 
 template <typename Str>
@@ -290,63 +318,59 @@ inline CoFutureWrapper<MessageID> ApiBot::send(const Event &event,
 inline CoFutureWrapper<GroupInfo> ApiBot::get_group_info(const GId group_id,
                                                          bool no_cache) {
   Json msg = api_impl::get_group_info(group_id, no_cache);
-  auto ret = Echo<GroupInfo>(msg);
-  notify_->Run(msg.dump());
-  return ret;
+  return SendRaw<GroupInfo>(msg);
 }
 
 inline CoFutureWrapper<std::vector<GroupInfo>> ApiBot::get_group_list(
     bool no_cache) {
   Json msg = api_impl::get_group_list(no_cache);
-  auto ret = Echo<std::vector<GroupInfo>>(msg);
-  notify_->Run(msg.dump());
-  return ret;
+  return SendRaw<std::vector<GroupInfo>>(msg);
+}
+
+inline CoFutureWrapper<GroupMemberInfo> ApiBot::get_group_member_info(
+    const GId gid, const QId uid, bool no_cache) {
+  auto msg = api_impl::get_group_member_info(gid, uid, no_cache);
+  return SendRaw<GroupMemberInfo>(msg);
 }
 
 inline CoFutureWrapper<UserInfo> ApiBot::get_stranger_info(const QId user_id,
                                                            bool no_cache) {
   auto msg = api_impl::get_stranger_info(user_id);
-  auto ret = Echo<UserInfo>(msg);
-  notify_->Run(msg.dump());
-  return ret;
+  return SendRaw<UserInfo>(msg);
 }
 
 inline void ApiBot::delete_msg(MsgId msg_id) {
   Json msg = api_impl::delete_msg(msg_id);
-  notify_->Run(msg.dump());
+  SendRaw(msg);
+}
+
+template <bool Is_Approve, typename Str>
+inline void ApiBot::HandleAddRequestImpl(const Event &event, Str &&reason) {
+  auto flag = event["flag"].get<std::string>();
+  auto request_type = event["request_type"].get<std::string>();
+  if (request_type == "friend") {
+    auto msg = api_impl::set_friend_add_request(flag, Is_Approve);
+    SendRaw(msg);
+  } else if (request_type == "group" &&
+             event["sub_type"].get<std::string>() == "invite") {
+    auto msg = api_impl::set_group_add_request(
+        flag, "invite", std::forward<Str>(reason), Is_Approve);
+    SendRaw(msg);
+  }
 }
 
 template <typename Str>
 inline void ApiBot::reject(const Event &event, Str &&reason) {
-  auto flag = event["flag"].get<std::string>();
-  auto request_type = event["request_type"].get<std::string>();
-  if (request_type == "friend") {
-    auto msg = api_impl::set_friend_add_request(flag, false);
-    notify_->Run(msg.dump());
-  } else if (request_type == "group" &&
-             event["sub_type"].get<std::string>() == "invite") {
-    auto msg = api_impl::set_group_add_request(
-        flag, "invite", std::forward<Str>(reason), false);
-    notify_->Run(msg.dump());
-  }
+  HandleAddRequestImpl<false>(event, std::forward<Str>(reason));
 }
 
 inline void ApiBot::approve(const Event &event) {
-  auto flag = event["flag"].get<std::string>();
-  auto request_type = event["request_type"].get<std::string>();
-  if (request_type == "friend") {
-    auto msg = api_impl::set_friend_add_request(flag, true);
-    notify_->Run(msg.dump());
-  } else if (request_type == "group" &&
-             event["sub_type"].get<std::string>() == "invite") {
-    auto msg = api_impl::set_group_add_request(flag, "invite", "", true);
-    notify_->Run(msg.dump());
-  }
+  HandleAddRequestImpl<true>(event, "");
 }
 
 inline void ApiBot::set_group_leave(const GId group_id, bool is_dismiss) {
   auto msg = api_impl::set_group_leave(group_id, is_dismiss);
-  notify_->Run(msg.dump());
+  SendRaw(msg);
 }
 
 }  // namespace onebot11

@@ -19,7 +19,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgproc/imgproc_c.h>
 
-#include "aiorequests.h"
+#include "tools/aiorequests.h"
 #include "event/event.h"
 #include "global_config.h"
 #include "logger/logger.h"
@@ -72,7 +72,7 @@ inline std::string GetEventZhanbu(const QId uid, const std::string &thing) {
 
 inline std::string GetHitokoto() {
   auto r = aiorequests::Get(
-      "https://v1.hitokoto.cn/?encode=text&max_length=16&c=d&c=e&c=i&c=k", 5);
+      "https://v1.hitokoto.cn/?encode=text&max_length=16&c=d&c=e&c=i&c=k", 5).get();
   if (!r) return "......( )";
   return std::regex_replace(r->Body(), std::regex("\""), "\\\"");
 }

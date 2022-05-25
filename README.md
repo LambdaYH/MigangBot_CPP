@@ -15,6 +15,8 @@ Based on [ithewei/libhv](https://github.com/ithewei/libhv) and [idealvin/cocoyax
 | BotManage | feedback | 用户可以给维护者发送消息，维护者也可以进行回复 | [示例](examples/botmanage_feedback.md) |
 | BotManage | friend_invite | 处理好友邀请事件 | 顾名思义 |
 | BotManage | group_invite | 处理入群事件 | 顾名思义 |
+| BotManage | BandedOrKicked | 处理被t和被禁言事件 | 顾名思义 |
+| BotManage | dismiss | 使用dismiss命令退群 | 顾名思义 |
 | TencentCloudNLP | AutoSummarization | 使用腾讯云NLP API进行摘要提取 | [示例](examples/TencentCloudNLP.md) | 
 | TencentCloudNLP | KeywordsExtraction | 使用腾讯云NLP API进行关键词提取 | [示例](examples/TencentCloudNLP.md) | 
 | EorzeaZhanbu | EorzeaZhanbu | 艾欧泽亚占卜 | [示例](examples/eorzea_zhanbu.md) | 

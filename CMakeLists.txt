@@ -70,11 +70,15 @@ add_subdirectory(third-party/hiredis)
 # pugixml
 add_subdirectory(third-party/pugixml)
 
-# tidy-html5
-add_subdirectory(third-party/tidy-html5)
-
 # gumbo-query
 add_subdirectory(third-party/gumbo-query)
+
+# libxml2
+add_subdirectory(third-party/libxml2)
+
+# sqlpp11
+set(BUILD_MYSQL_CONNECTOR ON CACHE INTERNAL "Build MySQL Connector")
+add_subdirectory(third-party/sqlpp11)
 
 # pcre2 (for fast regex)
 set(PCRE2_SUPPORT_JIT ON CACHE INTERNAL "")
@@ -86,8 +90,8 @@ add_subdirectory(third-party/cocoyaxi)
 # tencentcloud-sdk-cpp
 set(BUILD_MODULES CACHE INTERNAL "nlp")
 set(Tencentcloud-sdk-cpp_LIBS
-    tencentcloud-sdk-cpp-nlp
-    tencentcloud-sdk-cpp-core
+    ${CMAKE_SOURCE_DIR}/libs/libtencentcloud-sdk-cpp-nlp.a
+    ${CMAKE_SOURCE_DIR}/libs/libtencentcloud-sdk-cpp-core.a
     crypto
     curl
     uuid
@@ -102,6 +106,7 @@ add_executable(${PROJECT_NAME}
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
                             source 
+                            third-party/include
                             third-party/cpp-base64
                             third-party/cocoyaxi/include
                             ${CMAKE_BINARY_DIR}/third-party/libhv/include
@@ -129,7 +134,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                         pcre2-8-static
                         gumbo_query_static
                         libgumbo.a
-                        tidy-static
+                        LibXml2
+                        sqlpp11
 )
 
 IF(BUILD_TEST)
