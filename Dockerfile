@@ -10,7 +10,8 @@ RUN     apt update \
                     default-libmysqlclient-dev \
                     libopencv-dev \
                     redis-server \
-                    libtool
+                    libtool \
+                    python3
 WORKDIR /build_temp
 COPY . /build_temp
 RUN     git clone https://github.com/google/gumbo-parser.git \

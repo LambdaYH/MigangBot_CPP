@@ -70,10 +70,8 @@ add_subdirectory(third-party/hiredis)
 # pugixml
 add_subdirectory(third-party/pugixml)
 
-# gumbo-query
-add_subdirectory(third-party/gumbo-query)
-
 # libxml2
+set(LIBXML2_WITH_PYTHON OFF CACHE INTERNAL "Build Python bindings")
 add_subdirectory(third-party/libxml2)
 
 # sqlpp11
@@ -86,6 +84,9 @@ add_subdirectory(third-party/pcre2)
 
 # cocoyaxi(coroutines library)
 add_subdirectory(third-party/cocoyaxi)
+
+# gumbo_query
+add_subdirectory(third-party/gumbo-query)
 
 # tencentcloud-sdk-cpp
 set(BUILD_MODULES CACHE INTERNAL "nlp")
